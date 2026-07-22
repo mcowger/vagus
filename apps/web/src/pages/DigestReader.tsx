@@ -98,34 +98,62 @@ function CitationPill({
 	);
 }
 
-function cleanCodeFenceText(text?: string | null): string {
-	if (!text) return "";
-	let cleaned = text.trim();
+function parseRawClusterSummary(raw?: string | null): {
+	summary: string;
+	perspectives?: string[];
+	timeline?: string[];
+} {
+	if (!raw) return { summary: "" };
+	let text = raw.trim();
 
 	// Strip code fences if present
-	if (cleaned.startsWith("```") || cleaned.includes("```json")) {
-		cleaned = cleaned.replace(/^```(?:json|JSON)?\s*/i, "").replace(/\s*```$/i, "").trim();
+	if (text.startsWith("```") || text.includes("```json")) {
+		text = text.replace(/^```(?:json|JSON)?\s*/i, "").replace(/\s*```$/i, "").trim();
 	}
 
-	// Parse raw JSON object strings to extract inner summary/text field
-	if (cleaned.startsWith("{")) {
+	if (text.startsWith("{")) {
+		// 1. Direct JSON parse
 		try {
-			const parsed = JSON.parse(cleaned);
-			if (parsed && typeof parsed === "object") {
-				if (typeof parsed.summary === "string" && parsed.summary.trim()) {
-					return parsed.summary.trim();
-				}
-				if (typeof parsed.executive_summary === "string" && parsed.executive_summary.trim()) {
-					return parsed.executive_summary.trim();
-				}
-				if (typeof parsed.text === "string" && parsed.text.trim()) {
-					return parsed.text.trim();
-				}
+			const obj = JSON.parse(text);
+			if (obj && typeof obj === "object" && typeof obj.summary === "string" && obj.summary.trim()) {
+				return {
+					summary: obj.summary.trim(),
+					perspectives: Array.isArray(obj.perspectives) ? obj.perspectives.map(String) : undefined,
+					timeline: Array.isArray(obj.timeline) ? obj.timeline.map(String) : undefined,
+				};
 			}
 		} catch {}
+
+		// 2. Unquoted JSON key repair e.g. { title: "...", summary: "..." }
+		try {
+			const fixedKeys = text.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+			const obj = JSON.parse(fixedKeys);
+			if (obj && typeof obj === "object" && typeof obj.summary === "string" && obj.summary.trim()) {
+				return {
+					summary: obj.summary.trim(),
+					perspectives: Array.isArray(obj.perspectives) ? obj.perspectives.map(String) : undefined,
+					timeline: Array.isArray(obj.timeline) ? obj.timeline.map(String) : undefined,
+				};
+			}
+		} catch {}
+
+		// 3. Fallback Regex Extraction
+		const summaryRegex = /(?:"summary"|summary)\s*:\s*"(.*?)"\s*,\s*(?:"perspectives"|perspectives|timeline|"timeline")/s;
+		const match = text.match(summaryRegex) || text.match(/(?:"summary"|summary)\s*:\s*"((?:[^"\\]|\\.)*)"/s);
+		if (match && match[1]) {
+			const extractedSummary = match[1].replace(/\\"/g, '"').replace(/\\n/g, "\n").trim();
+			if (extractedSummary) {
+				return { summary: extractedSummary };
+			}
+		}
 	}
 
-	return cleaned;
+	return { summary: text };
+}
+
+function cleanCodeFenceText(text?: string | null): string {
+	if (!text) return "";
+	return parseRawClusterSummary(text).summary;
 }
 
 /** Helper to render inline text with markdown bold, colons, and interactive favicon citation pills */
@@ -603,12 +631,16 @@ export const DigestReader: React.FC = () => {
 											(c) => c.digest_cluster_id === cluster.id
 										);
 
-										const perspectives: string[] = Array.isArray(cluster.perspectives)
+										const parsedCluster = parseRawClusterSummary(cluster.summary);
+										const cleanSummary = parsedCluster.summary || cluster.summary;
+
+										const perspectives: string[] = Array.isArray(cluster.perspectives) && cluster.perspectives.length > 0
 											? cluster.perspectives
-											: [];
-										const timeline: any[] = Array.isArray(cluster.timeline)
+											: parsedCluster.perspectives || [];
+
+										const timeline: any[] = Array.isArray(cluster.timeline) && cluster.timeline.length > 0
 											? cluster.timeline
-											: [];
+											: parsedCluster.timeline || [];
 
 										const clusterVote = feedbackQuery.data?.feedback?.[`cluster:${cluster.id}`] ?? 0;
 
@@ -679,7 +711,7 @@ export const DigestReader: React.FC = () => {
 																<span>⚡ Key Cluster Points</span>
 															</h4>
 															<ul className="space-y-2">
-																{getTldrBullets(cluster.summary).map((bullet, bIdx) => (
+																{getTldrBullets(cleanSummary).map((bullet, bIdx) => (
 																	<li key={bIdx} className="flex items-start gap-2 text-sm text-slate-800 leading-relaxed">
 																		<span className="text-indigo-500 font-bold">•</span>
 																		<div>
@@ -698,7 +730,7 @@ export const DigestReader: React.FC = () => {
 																	Synthesized Summary
 																</h4>
 																<div className="text-sm text-slate-800 leading-relaxed space-y-3">
-																	{cluster.summary.split("\n\n").map((paragraph, pIdx) => (
+																	{cleanSummary.split("\n\n").map((paragraph, pIdx) => (
 																		<p key={pIdx}>
 																			<TextWithCitations text={paragraph} citationMap={citationMap} />
 																		</p>

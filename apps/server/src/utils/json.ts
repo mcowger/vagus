@@ -41,7 +41,18 @@ export function extractJsonFromText<T = any>(text: string): T | null {
 		} catch {}
 	}
 
-	// 4. Search for outer [...] array block
+	// 4. Fallback Regex Extraction for common JSON object fields (summary, title, etc.)
+	const summaryMatch = text.match(/(?:"summary"|summary)\s*:\s*"(.*?)"\s*,\s*(?:"perspectives"|perspectives|timeline|"timeline")/s)
+		|| text.match(/(?:"summary"|summary)\s*:\s*"((?:[^"\\]|\\.)*)"/s);
+
+	if (summaryMatch && summaryMatch[1]) {
+		const extractedSummary = summaryMatch[1].replace(/\\"/g, '"').replace(/\\n/g, "\n").trim();
+		if (extractedSummary) {
+			return { summary: extractedSummary } as any;
+		}
+	}
+
+	// 5. Search for outer [...] array block
 	const firstBracket = text.indexOf("[");
 	const lastBracket = text.lastIndexOf("]");
 	if (firstBracket !== -1 && lastBracket > firstBracket) {
