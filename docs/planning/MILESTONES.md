@@ -24,6 +24,12 @@
 - **Multi-tenant from the start (S2)**: all pipeline schema carries `user_id` where
   applicable from its first appearance; fixtures use ≥2 users once scoring/synthesis exist.
 - **Deployable (M2+)**: each milestone runs under Docker Compose with a `./data` volume.
+- **Parallelization convention**: each milestone lists a **Sync-first** step (shared
+  contracts — interfaces, schemas, job signatures — that one agent lands first and
+  everyone imports) followed by **Tracks** that can run **concurrently** as independent
+  subagents. Tracks are designed to depend on *contracts*, not on each other's runtime
+  output, so they integrate cleanly at the end. Fakes/fixtures (T12) let a track test in
+  isolation before its upstream track exists.
 
 ---
 
@@ -50,6 +56,20 @@ user-visible digest output yet.
 - Structured request logging + request IDs (NFR-8).
 
 **Out / deferred**: Docker/CI (M2), any ingestion or pipeline, provider config.
+
+**Parallelization** — *do these sync points first, then fan out.*
+- **Sync-first (blocking, 1 agent):** repo/workspace scaffold, the shared `bun:sqlite`
+  connection module, the initial Kysely schema types, and the tRPC `AppRouter` +
+  context shape. Everything else imports these, so land them before fanning out.
+- **Track A — Auth** (BetterAuth setup, first-user-admin hook, roles/isDisabled,
+  allowlist). Depends on: DB connection.
+- **Track B — Queue/coordinator** (plainjob wiring, worker, `run`/stage tables +
+  advance logic, no-op job, overlap guard, graceful shutdown). Depends on: DB connection.
+- **Track C — Web shell** (React + shadcn app shell, router, react-query tRPC client,
+  auth screens). Depends on: `AppRouter` type only (can mock procedures until A lands).
+- **Track D — Ops plumbing** (config bootstrap, structured logging + request IDs,
+  `/healthz`). Independent.
+- Tracks A–D run **concurrently** after the sync-first step; integrate at the end.
 
 **DoD**
 - Fresh DB boots, migrations run, first user becomes admin, can sign in and see the shell.
@@ -82,6 +102,22 @@ packaging and CI in place.
 
 **Out / deferred**: extraction/Readability (M3), other source types (M7).
 
+**Parallelization** — *agree the adapter interface + config schema first.*
+- **Sync-first (blocking, 1 agent):** the `SourceAdapter` interface (item shape + stable
+  identity key), the provider/config + `source` + `processed_key` schema/migrations, and
+  the `fetch-source` job contract. These are the shared contracts every track binds to.
+- **Track A — RSS adapter** (rss-parser) + its recorded fixtures. Fully independent once
+  the interface exists.
+- **Track B — Brave News adapter** (REST client + key handling) + fixtures. Independent
+  of A (both implement the same interface, no shared code beyond it).
+- **Track C — Ingestion core** (`fetch-source` job, idempotency via `processed_key`,
+  cold-start reconciliation, concurrency limits, per-source failure isolation). Depends
+  on the interface, not on A/B (test with a fake adapter).
+- **Track D — Operator UI** (provider/key screen, source CRUD, run history). Depends on
+  the tRPC procedures; can build against typed stubs in parallel with C.
+- **Track E — Deploy/CI** (Dockerfile, compose, `./data` volume, CI workflow, fixture
+  plumbing). Independent; land early so A–D are continuously tested.
+
 **DoD**
 - Admin adds a Brave key + an RSS source and a Brave source via the UI; a manual run
   fetches items from both; re-running immediately ingests **nothing new** (idempotency
@@ -107,6 +143,19 @@ one-line summary.
   A task defaults to a cheap model).
 
 **Out / deferred**: embeddings/clustering (M4), multi-doc synthesis (M5).
+
+**Parallelization**
+- **Sync-first (blocking, 1 agent):** the `article` schema additions (content, reading
+  time, `stage_a_bullet`), the `extract-article`/`stage-a-bullet` job contracts, and the
+  pi-ai `Models` setup + `task_model` mapping (used by Stage A and every later LLM task).
+- **Track A — Extraction** (linkedom + Readability, standard article object, reading-time,
+  skip-when-content-present) + messy-HTML fixtures. Independent.
+- **Track B — Stage A bullets** (cheap-model summarization, shared/reuse, usage capture)
+  using the **mock LLM** — needs the `Models`/`task_model` contract, not Track A's output
+  (test with fixture articles).
+- **Track C — Per-task model config** (`task_model` schema + minimal admin control).
+  Mostly independent; coordinate on the mapping shape from the sync-first step.
+- A and B run concurrently; wire the pipeline order (extract → bullet) at integration.
 
 **DoD**
 - Offline E2E: fixtures → fetch → extract → article rows with content + reading time +
@@ -135,6 +184,22 @@ which clusters are relevant to them.
   for borderline clusters (per-task model tier). Selects capped set of clusters per user.
 
 **Out / deferred**: Stage B/C synthesis + digest rendering (M5).
+
+**Parallelization** — *the `Embedder` + `VectorIndex` interfaces are the key contracts.*
+- **Sync-first (blocking, 1 agent):** the `Embedder` interface (+ deterministic fake),
+  the `VectorIndex` interface, the `interest_profile`/`cluster`/`cluster_article` schema,
+  and the `score-user` job contract.
+- **Track A — Embeddings** (BYO `/v1/embeddings` client + admin config, `embed-article`
+  job, BLOB storage). Implements `Embedder`; independent.
+- **Track B — Clustering** (brute-force cosine behind `VectorIndex`, threshold,
+  primary-vs-syndication, lexical fallback) using the **fake embedder** — does not wait
+  on Track A. Pure, heavily unit-tested.
+- **Track C — Profiles** (`interest_profile` schema + profile editor UI + profile
+  embedding). UI depends only on tRPC stubs; independent of A/B.
+- **Track D — Hybrid scoring** (`score-user`: similarity + keyword/entity boost +
+  include/exclude + LLM tiebreaker). Depends on the `VectorIndex` + profile *contracts*,
+  testable with fixture clusters + fake embedder in parallel with B/C.
+- A–D run **concurrently** against the fakes; integrate on the real embedder at the end.
 
 **DoD**
 - Offline E2E with **≥2 users**: an event covered by multiple fixture articles collapses
@@ -165,6 +230,20 @@ in the browser.
 
 **Out / deferred**: scheduling, notifications, pruning (M6); breadth + polish (M7).
 
+**Parallelization** — *lock the structured-output schemas + citation contract first.*
+- **Sync-first (blocking, 1 agent):** the TypeBox `submit_cluster_summary` /
+  `submit_digest` tool schemas, the `citation` schema + stable-ID grounding contract, and
+  the `digest`/`digest_cluster` schema. UI and backend both bind to these types.
+- **Track A — Stage B synthesis** (`synthesize-cluster` job, tool-call + `validateToolCall`
+  + retry). Mock LLM (`fauxProvider`) scripted to emit the tool call; independent.
+- **Track B — Stage C assembly** (`assemble-digest` job). Depends on the digest schema,
+  not on A's runtime output (test with fixture cluster summaries).
+- **Track C — Citation grounding + validation** (reject/repair out-of-set IDs, persist
+  `citation`). Pure logic; unit-testable independently and reused by A and B.
+- **Track D — Digest reader UI** (source chips, per-story source list, TL;DR/Deep-Dive
+  toggle, stable URL, JSON endpoint). Builds against the digest types + fixture digests,
+  fully parallel to A–C.
+
 **DoD**
 - Offline E2E end to end (≥2 users): fixtures → … → two distinct cited digests rendered
   in the reader; **every bullet links to ≥1 source URL** (no uncited claims); verbosity
@@ -190,6 +269,16 @@ in the browser.
 
 **Out / deferred**: additional sources + polish UI (M7).
 
+**Parallelization** — *three largely independent concerns.*
+- **Track A — Scheduling** (plainjob cron run-start, manual "run now", overlap guard).
+  Touches the queue/coordinator from M1.
+- **Track B — Notifications** (per-user ntfy client, debounce/batch queue, deep-links,
+  automatic publish, `notification_state`) against a **fake ntfy endpoint**. Independent
+  of A.
+- **Track C — Retention/pruning** (`prune` job, `settings` for windows, keep-idempotency-
+  keys logic). Independent of A/B; pure DB work.
+- All three run **concurrently**; only the end-to-end DoD test needs them together.
+
 **DoD**
 - A scheduled tick triggers a full run producing per-user digests and **one ntfy push per
   user with a topic** (verified against a fake ntfy endpoint in fixtures). Debounce
@@ -211,6 +300,17 @@ in the browser.
   prompts, retention settings), run-detail drill-down.
 - Hardening: adapter fixtures for the new sources; extend the offline E2E to include a
   scrape/Readability path and the new adapters.
+
+**Parallelization** — *highly parallel; adapters share only the M2 `SourceAdapter` interface.*
+- **Track A — Hacker News adapter** (+ fixtures). Independent.
+- **Track B — GitHub Trending adapter** (HTML parse, + fixtures). Independent.
+- **Track C — Generic scrape adapter** (fetch → linkedom → Readability, + fixtures).
+  Reuses M3 extraction; independent.
+- **Track D — Usage/cost dashboard** (per-run tokens/cost UI). Independent read-side UI.
+- **Track E — Advanced admin** (users depth, provider/model + task-model tiers,
+  thresholds, prompts, retention settings, run-detail drill-down). Independent UI/tRPC.
+- Tracks A–E have **no interdependencies** — ideal for a wide fan-out of subagents; each
+  lands with its own fixtures/tests.
 
 **DoD**
 - All five source types ingest under the common interface with fixtures; a scrape source
