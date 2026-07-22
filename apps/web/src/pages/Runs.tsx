@@ -3,6 +3,33 @@ import { trpc } from "../trpc";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 
+const STAGE_TITLE_MAP: Record<string, string> = {
+	ingest: "Source Feed Ingestion",
+	"fetch-source": "Source Feed Ingestion",
+	extract: "Article Content Extraction",
+	"extract-article": "Article Content Extraction",
+	stage_a: "Article Summarization",
+	stage_a_bullet: "Article Summarization",
+	embed: "Vector Embedding Generation",
+	"embed-article": "Vector Embedding Generation",
+	cluster: "Story Clustering",
+	"cluster-run": "Story Clustering",
+	score: "Profile Relevance Scoring",
+	"score-user": "Profile Relevance Scoring",
+	synthesize: "Story Cluster Synthesis",
+	"synthesize-cluster": "Story Cluster Synthesis",
+	synthesize_cluster: "Story Cluster Synthesis",
+	assemble: "Executive Digest Assembly",
+	stage_c: "Executive Digest Assembly",
+	"assemble-digest": "Executive Digest Assembly",
+	noop: "No-Op Process",
+};
+
+function formatStageName(stage: string): string {
+	if (!stage) return "Unknown Stage";
+	return STAGE_TITLE_MAP[stage] || stage.replace(/_/g, " ").replace(/-/g, " ");
+}
+
 export const Runs: React.FC = () => {
 	const utils = trpc.useUtils();
 	const runsQuery = trpc.runs.listRuns.useQuery({ limit: 50 }, { refetchInterval: 3000 } as any);
@@ -73,17 +100,30 @@ export const Runs: React.FC = () => {
 											{run.stages.map((stage) => (
 												<div
 													key={stage.id}
-													className="p-2.5 bg-slate-50 rounded border border-slate-200 text-xs flex items-center justify-between"
+													className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs flex items-center justify-between gap-3"
 												>
 													<div>
-														<span className="font-semibold text-slate-700 capitalize">
-															Stage: {stage.stage}
-														</span>
-														<div className="text-slate-500 mt-0.5">
+														<div className="flex items-center gap-2">
+															<span className="font-bold text-slate-800">
+																{formatStageName(stage.stage)}
+															</span>
+															<span className="text-[10px] text-slate-400 font-mono">
+																({stage.stage})
+															</span>
+														</div>
+														<div className="text-slate-500 mt-1 font-mono text-[11px]">
 															Progress: {stage.completed} / {stage.expected} jobs
 														</div>
 													</div>
-													<span className="font-mono text-slate-600 capitalize">
+													<span
+														className={`font-mono text-xs px-2 py-0.5 rounded font-semibold capitalize ${
+															stage.status === "complete"
+																? "bg-emerald-100 text-emerald-800"
+																: stage.status === "running"
+																? "bg-blue-100 text-blue-800 animate-pulse"
+																: "bg-red-100 text-red-800"
+														}`}
+													>
 														{stage.status}
 													</span>
 												</div>

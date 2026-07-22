@@ -23,6 +23,7 @@ export const settingsRouter = router({
 				ntfy_base_url: z.string().optional(),
 				cron_schedule: z.string().optional(),
 				app_base_url: z.string().optional(),
+				worker_concurrency: z.union([z.string(), z.number()]).optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {

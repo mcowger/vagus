@@ -25,6 +25,7 @@ export const AdminSettings: React.FC = () => {
 	const [cronSchedule, setCronSchedule] = useState("0 * * * *");
 	const [ntfyBaseUrl, setNtfyBaseUrl] = useState("https://ntfy.sh");
 	const [appBaseUrl, setAppBaseUrl] = useState("http://localhost:5173");
+	const [workerConcurrency, setWorkerConcurrency] = useState("5");
 
 	const [successMessage, setSuccessMessage] = useState("");
 	const [errorMessage, setErrorMessage] = useState("");
@@ -37,6 +38,7 @@ export const AdminSettings: React.FC = () => {
 			if (s.cron_schedule !== undefined) setCronSchedule(s.cron_schedule);
 			if (s.ntfy_base_url !== undefined) setNtfyBaseUrl(s.ntfy_base_url);
 			if (s.app_base_url !== undefined) setAppBaseUrl(s.app_base_url);
+			if (s.worker_concurrency !== undefined) setWorkerConcurrency(s.worker_concurrency);
 		}
 	}, [settingsQuery.data]);
 
@@ -51,6 +53,7 @@ export const AdminSettings: React.FC = () => {
 			cron_schedule: cronSchedule,
 			ntfy_base_url: ntfyBaseUrl,
 			app_base_url: appBaseUrl,
+			worker_concurrency: workerConcurrency,
 		});
 	};
 
@@ -161,6 +164,22 @@ export const AdminSettings: React.FC = () => {
 								/>
 								<p className="text-xs text-slate-500">
 									Public URL used for links embedded in push notifications.
+								</p>
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="workerConcurrency">Worker Parallel Concurrency</Label>
+								<Input
+									id="workerConcurrency"
+									type="number"
+									min="1"
+									max="50"
+									value={workerConcurrency}
+									onChange={(e) => setWorkerConcurrency(e.target.value)}
+									required
+								/>
+								<p className="text-xs text-slate-500">
+									Number of parallel plainjob worker instances processing extraction, embedding, and synthesis jobs concurrently.
 								</p>
 							</div>
 

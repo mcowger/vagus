@@ -139,10 +139,19 @@ export const Profiles: React.FC = () => {
 					<CardHeader>
 						<CardTitle className="text-lg">Interest Criteria</CardTitle>
 						<CardDescription>
-							Enter comma-separated values to construct your profile vector and lexical match filters.
+							Optional vector embedding and lexical search criteria to prioritize stories matching your focus.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
+						<div className="p-3.5 rounded-lg bg-emerald-50/70 border border-emerald-100 text-xs text-emerald-950 space-y-1.5">
+							<div className="font-semibold text-emerald-900 flex items-center gap-1.5">
+								<span>💡 What happens if left blank? (Broad Curator Mode)</span>
+							</div>
+							<p className="leading-relaxed">
+								You don't need to know what you want to read in advance! If you leave these fields empty, Vagus operates in <strong>Broad Curator Mode</strong> — digesting and summarizing the top story clusters across all your configured sources without filtering out topics.
+							</p>
+						</div>
+
 						<div className="space-y-2">
 							<Label htmlFor="keywords">Keywords</Label>
 							<Input
@@ -151,6 +160,9 @@ export const Profiles: React.FC = () => {
 								value={keywords}
 								onChange={(e) => setKeywords(e.target.value)}
 							/>
+							<p className="text-xs text-slate-500 leading-relaxed">
+								<strong>Specific Terms:</strong> Comma-separated technical terms or jargon. Matching terms boost story cluster scores (+0.1 bonus per match) and shape vector similarity.
+							</p>
 						</div>
 
 						<div className="space-y-2">
@@ -161,6 +173,9 @@ export const Profiles: React.FC = () => {
 								value={topics}
 								onChange={(e) => setTopics(e.target.value)}
 							/>
+							<p className="text-xs text-slate-500 leading-relaxed">
+								<strong>High-Level Domains:</strong> Comma-separated thematic categories to guide semantic vector matching for broad story selection.
+							</p>
 						</div>
 
 						<div className="space-y-2">
@@ -171,6 +186,9 @@ export const Profiles: React.FC = () => {
 								value={entities}
 								onChange={(e) => setEntities(e.target.value)}
 							/>
+							<p className="text-xs text-slate-500 leading-relaxed">
+								<strong>Organizations & Brands:</strong> Comma-separated names of specific companies, products, or people to highlight when mentioned in articles.
+							</p>
 						</div>
 					</CardContent>
 				</Card>
@@ -180,10 +198,19 @@ export const Profiles: React.FC = () => {
 					<CardHeader>
 						<CardTitle className="text-lg">Include & Exclude Rules</CardTitle>
 						<CardDescription>
-							Hard rules for forcing or filtering out clusters during relevance scoring.
+							Deterministic keyword filters that force or block story cluster selection regardless of vector similarity scores.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
+						<div className="p-3.5 rounded-lg bg-blue-50/60 border border-blue-100 text-xs text-blue-950 space-y-1.5">
+							<div className="font-semibold text-blue-900 flex items-center gap-1.5">
+								<span>💡 How Rule Filtering Works</span>
+							</div>
+							<p className="leading-relaxed">
+								Rules are evaluated against the synthesized title and content of each story cluster during the scoring phase of a pipeline run.
+							</p>
+						</div>
+
 						<div className="space-y-2">
 							<Label htmlFor="includeRules">Include Rules (Force Match)</Label>
 							<Input
@@ -192,6 +219,9 @@ export const Profiles: React.FC = () => {
 								value={includeRules}
 								onChange={(e) => setIncludeRules(e.target.value)}
 							/>
+							<p className="text-xs text-slate-500 leading-relaxed">
+								<strong>Force Include:</strong> Comma-separated terms. Any story cluster containing these words/phrases will be automatically selected for your digest, bypassing vector similarity checks (unless blocked by an exclude rule).
+							</p>
 						</div>
 
 						<div className="space-y-2">
@@ -202,6 +232,9 @@ export const Profiles: React.FC = () => {
 								value={excludeRules}
 								onChange={(e) => setExcludeRules(e.target.value)}
 							/>
+							<p className="text-xs text-slate-500 leading-relaxed">
+								<strong>Hard Block:</strong> Comma-separated terms. Any story cluster containing these words/phrases is immediately discarded and will never appear in your digest, regardless of its vector relevance score.
+							</p>
 						</div>
 					</CardContent>
 				</Card>
@@ -211,17 +244,26 @@ export const Profiles: React.FC = () => {
 					<CardHeader>
 						<CardTitle className="text-lg">Scoring & Clustering Settings</CardTitle>
 						<CardDescription>
-							Adjust vector similarity thresholds and cluster limits for digest selection.
+							Adjust vector embedding cosine similarity thresholds and cluster limits for digest synthesis.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
+						<div className="p-3.5 rounded-lg bg-indigo-50/60 border border-indigo-100 text-xs text-indigo-950 space-y-1.5">
+							<div className="font-semibold text-indigo-900 flex items-center gap-1.5">
+								<span>🧠 Vector Scoring & Threshold Tuning</span>
+							</div>
+							<p className="leading-relaxed">
+								Your Interest Criteria (keywords, topics, entities) are compiled into a dense vector embedding representation. During each pipeline run, story cluster embeddings are compared against your profile using cosine similarity (0.00 to 1.00).
+							</p>
+						</div>
+
 						<div className="space-y-2">
 							<div className="flex items-center justify-between">
 								<Label htmlFor="similarityThreshold">
 									Similarity Threshold ({similarityThreshold.toFixed(2)})
 								</Label>
-								<span className="text-xs text-slate-500 font-mono">
-									{similarityThreshold < 0.5 ? "Low (More Clusters)" : similarityThreshold > 0.8 ? "High (Strict Match)" : "Balanced"}
+								<span className="text-xs text-slate-600 font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
+									{similarityThreshold < 0.5 ? "Low (Broader Matching)" : similarityThreshold > 0.8 ? "High (Strict Direct Match)" : "Balanced Relevance"}
 								</span>
 							</div>
 							<input
@@ -234,11 +276,14 @@ export const Profiles: React.FC = () => {
 								onChange={(e) => setSimilarityThreshold(parseFloat(e.target.value))}
 								className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-900"
 							/>
-							<div className="flex justify-between text-xs text-slate-400 font-mono">
-								<span>0.00</span>
-								<span>0.50</span>
-								<span>1.00</span>
+							<div className="flex justify-between text-xs text-slate-400 font-mono pt-0.5">
+								<span>0.00 (Loose / Broad)</span>
+								<span>0.50 (Default)</span>
+								<span>1.00 (Exact Semantic)</span>
 							</div>
+							<p className="text-xs text-slate-500 leading-relaxed pt-1">
+								<strong>Threshold Controls:</strong> Sets the minimum similarity score required for a story cluster to qualify for your digest. Lower values (e.g. <code>0.40 - 0.60</code>) capture broader industry context; higher values (e.g. <code>0.75 - 0.90</code>) require strict topical alignment.
+							</p>
 						</div>
 
 						<div className="space-y-2">
@@ -252,8 +297,8 @@ export const Profiles: React.FC = () => {
 								onChange={(e) => setMaxClusterCap(parseInt(e.target.value, 10) || 1)}
 								required
 							/>
-							<p className="text-xs text-slate-500">
-								Maximum number of top-scoring clusters included in a single digest cycle.
+							<p className="text-xs text-slate-500 leading-relaxed">
+								<strong>Digest Size Limit:</strong> Maximum number of top-scoring story clusters included in a single briefing digest cycle (e.g. top 10 stories), keeping daily reports concise and focused.
 							</p>
 						</div>
 					</CardContent>

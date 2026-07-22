@@ -86,7 +86,7 @@ describe("Ingestion Core & Idempotency", () => {
 				.executeTakeFirstOrThrow();
 
 			// Start run
-			const startRes = await startRun(db, queue, "manual");
+			const startRes = await startRun(db, queue, "manual", { stageName: "ingest" });
 			expect(startRes.started).toBe(true);
 
 			if (startRes.started) {
@@ -117,7 +117,7 @@ describe("Ingestion Core & Idempotency", () => {
 			expect(keys[0].identity_key).toBe("item-1");
 
 			// Re-run immediately: verify idempotency (0 new articles inserted)
-			const reRunRes = await startRun(db, queue, "manual");
+			const reRunRes = await startRun(db, queue, "manual", { stageName: "ingest" });
 			expect(reRunRes.started).toBe(true);
 
 			if (reRunRes.started) {

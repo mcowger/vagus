@@ -53,14 +53,12 @@ export async function processFetchSourceJob(
 
 		if (!source || source.enabled !== 1) {
 			log.warn("Source not found or disabled, skipping fetch", { sourceId });
-			await advanceStage(db, stageId, job.id);
 			return;
 		}
 
 		const adapter = adapters[source.type];
 		if (!adapter) {
 			log.error(`No adapter found for source type: ${source.type}`, { sourceId });
-			await advanceStage(db, stageId, job.id);
 			return;
 		}
 
@@ -147,5 +145,7 @@ export async function processFetchSourceJob(
 	} catch (err) {
 		// FR-8: One failing source doesn't fail the entire run. Log error and continue.
 		log.error("Failed to fetch source", { sourceId, error: String(err) });
+	} finally {
+		await advanceStage(db, stageId, job.id);
 	}
 }

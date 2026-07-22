@@ -46,7 +46,6 @@ export async function processExtractArticleJob(
 
 		if (!article) {
 			log.warn("Article not found, skipping extraction", { articleId });
-			await advanceStage(db, stageId, job.id);
 			return;
 		}
 

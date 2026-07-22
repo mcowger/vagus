@@ -14,20 +14,46 @@ import {
 export async function getEmbedder(db?: Kysely<Database>): Promise<Embedder> {
 	if (db) {
 		try {
+			const taskModel = await db
+				.selectFrom("task_model")
+				.selectAll()
+				.where((eb) =>
+					eb.or([
+						eb("task_name", "=", "article_embedding"),
+						eb("task_name", "=", "embedding"),
+					]),
+				)
+				.executeTakeFirst();
+
+			const providerName = taskModel?.provider || "openai";
+			const modelName = taskModel?.model_name || "text-embedding-3-small";
+
 			const pConfig = await db
 				.selectFrom("provider_config")
 				.selectAll()
-				.where("provider", "=", "openai")
+				.where("provider", "=", providerName)
 				.executeTakeFirst();
 
-			if (pConfig?.api_key) {
-				return new OpenAiEmbedder({ apiKey: pConfig.api_key });
+			let baseUrl: string | undefined;
+			let apiKey: string | undefined = pConfig?.api_key ?? undefined;
+
+			if (pConfig?.config) {
+				try {
+					const parsed = JSON.parse(pConfig.config);
+					baseUrl = parsed.baseUrl;
+				} catch {}
 			}
+
+			return new OpenAiEmbedder({
+				apiKey: apiKey || process.env.OPENAI_API_KEY,
+				modelName,
+				baseUrl,
+			});
 		} catch (err) {
-			log.warn("Failed to check provider_config for embedder", { error: String(err) });
+			log.warn("Failed to check provider_config or task_model for embedder", { error: String(err) });
 		}
 	}
-	return new OpenAiEmbedder({ apiKey: process.env.OPENAI_API_KEY });
+	return new OpenAiEmbedder({ apiKey: process.env.OPENAI_API_KEY, modelName: "text-embedding-3-small" });
 }
 
 export async function processEmbedArticleJob(

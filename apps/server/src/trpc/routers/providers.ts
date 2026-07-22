@@ -63,4 +63,57 @@ export const providersRouter = router({
 				.execute();
 			return { success: true };
 		}),
+
+	getModels: adminProcedure
+		.input(z.object({ provider: z.string() }))
+		.query(async ({ ctx, input }) => {
+			const pConfig = await ctx.db
+				.selectFrom("provider_config")
+				.selectAll()
+				.where("provider", "=", input.provider)
+				.executeTakeFirst();
+
+			if (!pConfig) {
+				return [];
+			}
+
+			let baseUrl = "https://api.openai.com/v1";
+			if (pConfig.config) {
+				try {
+					const parsed = JSON.parse(pConfig.config);
+					if (parsed.baseUrl) baseUrl = parsed.baseUrl;
+				} catch {}
+			}
+
+			const apiKey = pConfig.api_key;
+			const base = baseUrl.replace(/\/+$/, "");
+			const endpoint = base.endsWith("/models") ? base : `${base}/models`;
+
+			try {
+				const headers: Record<string, string> = {
+					"Content-Type": "application/json",
+				};
+				if (apiKey) {
+					headers["Authorization"] = `Bearer ${apiKey}`;
+				}
+
+				const res = await fetch(endpoint, { headers });
+				if (!res.ok) {
+					return [];
+				}
+
+				const data = (await res.json()) as any;
+				const list = Array.isArray(data) ? data : data?.data || [];
+
+				return list.map((item: any) => ({
+					id: String(item.id || item.name),
+					name: item.name || item.id,
+					modality: item.architecture?.modality || item.modality || null,
+					inputModalities: item.architecture?.input_modalities || item.input_modalities || [],
+					outputModalities: item.architecture?.output_modalities || item.output_modalities || [],
+				}));
+			} catch {
+				return [];
+			}
+		}),
 });

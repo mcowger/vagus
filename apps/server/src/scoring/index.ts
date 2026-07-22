@@ -154,6 +154,10 @@ export async function scoreClustersForUser(
 					lowerTitle.includes(term.toLowerCase()),
 				).length;
 				baseScore = matches / terms.length;
+			} else if (!profileVector) {
+				// No interest criteria specified at all (neither vector nor terms):
+				// Default baseline score (0.5) so all clusters qualify in broad curator mode
+				baseScore = 0.5;
 			} else {
 				baseScore = 0;
 			}

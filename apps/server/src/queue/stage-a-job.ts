@@ -35,14 +35,12 @@ export async function processStageABulletJob(
 
 		if (!article) {
 			log.warn("Article not found for stage-a-bullet job", { articleId, jobId: job.id });
-			await advanceStage(database, stageId, job.id);
 			return;
 		}
 
 		// Idempotency check: if stage_a_bullet is already set, skip calling LLM
 		if (article.stage_a_bullet) {
 			log.info("stage_a_bullet already set for article, skipping LLM call", { articleId });
-			await advanceStage(database, stageId, job.id);
 			return;
 		}
 
