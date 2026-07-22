@@ -402,4 +402,85 @@ describe("Scoring Module & Score User Job", () => {
 		expect(updatedStage.completed).toBe(1);
 		expect(updatedStage.status).toBe("complete");
 	});
+
+	test("skips clusters whose articles were already delivered in a prior digest for the user", async () => {
+		const { run, article1, cluster1 } = await setupTestRunAndArticles();
+		const userId = "user-dedup";
+		const now = new Date().toISOString();
+
+		// Link cluster1 to article1 in cluster_article table
+		await db
+			.insertInto("cluster_article")
+			.values({ cluster_id: cluster1.id, article_id: article1.id, is_primary: 1, created_at: now })
+			.execute();
+
+		// Create interest profile matching article1
+		await db
+			.insertInto("interest_profile")
+			.values({
+				user_id: userId,
+				name: "Dev Profile",
+				keywords: JSON.stringify(["TypeScript"]),
+				topics: JSON.stringify([]),
+				entities: JSON.stringify([]),
+				include_rules: JSON.stringify([]),
+				exclude_rules: JSON.stringify([]),
+				similarity_threshold: 0.5,
+				max_cluster_cap: 10,
+				created_at: now,
+				updated_at: now,
+			})
+			.execute();
+
+		// Score run 1
+		const run1Scores = await scoreClustersForUser(db, run.id, userId);
+		expect(run1Scores.length).toBeGreaterThan(0);
+		expect(run1Scores[0].clusterId).toBe(cluster1.id);
+
+		// Simulate Digest #1 creation containing article1
+		const digest = await db
+			.insertInto("digest")
+			.values({
+				user_id: userId,
+				run_id: run.id,
+				executive_summary: "Digest 1",
+				why_it_matters: "Test",
+				created_at: now,
+			})
+			.returningAll()
+			.executeTakeFirstOrThrow();
+
+		await db
+			.insertInto("citation")
+			.values({
+				digest_id: digest.id,
+				article_id: article1.id,
+				citation_key: `art_${article1.id}`,
+			})
+			.execute();
+
+		// Create run 2 with the same cluster and articles
+		const run2 = await db
+			.insertInto("run")
+			.values({ trigger: "manual", status: "running", started_at: now })
+			.returningAll()
+			.executeTakeFirstOrThrow();
+
+		const clusterRun2 = await db
+			.insertInto("cluster")
+			.values({ run_id: run2.id, primary_article_id: article1.id, created_at: now })
+			.returningAll()
+			.executeTakeFirstOrThrow();
+
+		await db
+			.insertInto("cluster_article")
+			.values({ cluster_id: clusterRun2.id, article_id: article1.id, is_primary: 1, created_at: now })
+			.execute();
+
+		// Score run 2 for user - cluster containing article1 should now be skipped as already delivered
+		const run2Scores = await scoreClustersForUser(db, run2.id, userId);
+		const clusterRun2Result = run2Scores.find((s) => s.clusterId === clusterRun2.id);
+
+		expect(clusterRun2Result).toBeUndefined();
+	});
 });

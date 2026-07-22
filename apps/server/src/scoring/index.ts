@@ -114,10 +114,61 @@ export async function scoreClustersForUser(
 		return [];
 	}
 
+	// Fetch articles previously delivered in prior digests for this user
+	const previousDigestCitations = await database
+		.selectFrom("citation")
+		.innerJoin("digest", "digest.id", "citation.digest_id")
+		.select("citation.article_id")
+		.where("digest.user_id", "=", userId)
+		.execute();
+
+	const previousDigestClusterArticles = await database
+		.selectFrom("digest")
+		.innerJoin("digest_cluster", "digest_cluster.digest_id", "digest.id")
+		.innerJoin("cluster_article", "cluster_article.cluster_id", "digest_cluster.cluster_id")
+		.select("cluster_article.article_id")
+		.where("digest.user_id", "=", userId)
+		.execute();
+
+	const seenArticleIds = new Set<number>();
+	for (const r of previousDigestCitations) {
+		if (r.article_id) seenArticleIds.add(r.article_id);
+	}
+	for (const r of previousDigestClusterArticles) {
+		if (r.article_id) seenArticleIds.add(r.article_id);
+	}
+
+	// Fetch cluster_article mappings for current run clusters
+	const clusterIds = clusterRows.map((r) => r.cluster_id);
+	const clusterArticleRows = await database
+		.selectFrom("cluster_article")
+		.select(["cluster_id", "article_id"])
+		.where("cluster_id", "in", clusterIds)
+		.execute();
+
+	const clusterArticlesMap = new Map<number, number[]>();
+	for (const row of clusterArticleRows) {
+		const list = clusterArticlesMap.get(row.cluster_id) ?? [];
+		list.push(row.article_id);
+		clusterArticlesMap.set(row.cluster_id, list);
+	}
+
 	const scoredClusters: ScoreClusterResult[] = [];
 
 	// 3. Score each cluster
 	for (const row of clusterRows) {
+		const articleIdsInCluster = clusterArticlesMap.get(row.cluster_id) ?? [row.article_id];
+		const newArticlesInCluster = articleIdsInCluster.filter((id) => !seenArticleIds.has(id));
+
+		// Recency / History Deduplication: Skip cluster if all articles were already delivered in a previous digest
+		if (seenArticleIds.size > 0 && newArticlesInCluster.length === 0) {
+			scoredClusters.push({
+				clusterId: row.cluster_id,
+				score: 0,
+				reason: "Already delivered in previous digest for user",
+			});
+			continue;
+		}
 		const title = row.title || "";
 		const content = row.content || row.stage_a_bullet || "";
 		const summaryTitle = row.summary_title || "";
