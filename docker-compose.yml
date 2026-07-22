@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  vagus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vagus-news-digest
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - PORT=3000
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-a_very_secret_key_that_is_at_least_32_chars_long}
+      - DATABASE_PATH=/app/data/vagus.sqlite
+      # Optional provider & testing credentials
+      - TESTING_EMBEDDING_BASE_URL=${TESTING_EMBEDDING_BASE_URL:-}
+      - TESTING_EMBEDDING_KEY=${TESTING_EMBEDDING_KEY:-}
+      - TESTING_EMBEDDING_MODEL=${TESTING_EMBEDDING_MODEL:-text-embedding-3-small}
+      - TESTING_LLM_BASE_URL=${TESTING_LLM_BASE_URL:-}
+      - TESTING_LLM_KEY=${TESTING_LLM_KEY:-}
+      - TESTING_LLM_MODEL=${TESTING_LLM_MODEL:-gpt-4o-mini}
+      - TESTING_BRAVE_API_KEY=${TESTING_BRAVE_API_KEY:-}
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "bun -e 'fetch(\"http://localhost:3000/healthz\").then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped

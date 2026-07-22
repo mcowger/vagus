@@ -20,6 +20,34 @@ export const Layout: React.FC = () => {
 						<Link to="/" className="text-xl font-bold tracking-tight text-slate-900 hover:text-slate-700">
 							vagus
 						</Link>
+						{session?.user && (
+							<nav className="flex items-center gap-4 text-sm font-medium">
+								<Link to="/sources" className="text-slate-600 hover:text-slate-900">
+									Sources
+								</Link>
+								<Link to="/profiles" className="text-slate-600 hover:text-slate-900">
+									Profiles
+								</Link>
+								<Link to="/providers" className="text-slate-600 hover:text-slate-900">
+									Providers
+								</Link>
+								<Link to="/task-models" className="text-slate-600 hover:text-slate-900">
+									Task Models
+								</Link>
+								<Link to="/usage" className="text-slate-600 hover:text-slate-900">
+									Usage & Costs
+								</Link>
+								<Link to="/runs" className="text-slate-600 hover:text-slate-900">
+									Runs
+								</Link>
+								<Link to="/digests" className="text-slate-600 hover:text-slate-900">
+									Digest Reader
+								</Link>
+								<Link to="/admin/settings" className="text-slate-600 hover:text-slate-900">
+									Admin Settings
+								</Link>
+							</nav>
+						)}
 					</div>
 					<div className="flex items-center gap-4">
 						{session?.user ? (

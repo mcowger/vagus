@@ -6,8 +6,16 @@ import { trpc } from "./trpc";
 import { useSession } from "./lib/auth-client";
 import { Layout } from "./components/Layout";
 import { Login } from "./pages/Login";
+import { Profiles } from "./pages/Profiles";
 import { Signup } from "./pages/Signup";
 import { Dashboard } from "./pages/Dashboard";
+import { Providers } from "./pages/Providers";
+import { Runs } from "./pages/Runs";
+import { Sources } from "./pages/Sources";
+import { TaskModels } from "./pages/TaskModels";
+import { DigestReader } from "./pages/DigestReader";
+import { AdminSettings } from "./pages/AdminSettings";
+import { UsageDashboard } from "./pages/UsageDashboard";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
 	const { data: session, isPending } = useSession();
@@ -76,6 +84,78 @@ export function App() {
 								element={
 									<ProtectedRoute>
 										<Dashboard />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="sources"
+								element={
+									<ProtectedRoute>
+										<Sources />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="providers"
+								element={
+									<ProtectedRoute>
+										<Providers />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="task-models"
+								element={
+									<ProtectedRoute>
+										<TaskModels />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="usage"
+								element={
+									<ProtectedRoute>
+										<UsageDashboard />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="profiles"
+								element={
+									<ProtectedRoute>
+										<Profiles />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="runs"
+								element={
+									<ProtectedRoute>
+										<Runs />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="digests"
+								element={
+									<ProtectedRoute>
+										<DigestReader />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="digests/:id"
+								element={
+									<ProtectedRoute>
+										<DigestReader />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="admin/settings"
+								element={
+									<ProtectedRoute>
+										<AdminSettings />
 									</ProtectedRoute>
 								}
 							/>

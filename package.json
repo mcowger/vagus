@@ -12,9 +12,12 @@
 		"dev:stop": "scripts/dev-server.sh stop",
 		"port": "bun run scripts/port-allocator.ts",
 		"test": "bun test",
+		"test:live": "RUN_LIVE_TESTS=1 bun test apps/server/src/embeddings/live.test.ts apps/server/src/llm/live.test.ts apps/server/src/adapters/rss.live.test.ts apps/server/src/adapters/brave-news.live.test.ts apps/server/src/extractor/live.test.ts apps/server/src/synthesis/live.test.ts apps/server/src/notifications/live.test.ts apps/server/src/adapters/hackernews.live.test.ts apps/server/src/adapters/github-trending.live.test.ts apps/server/src/adapters/scrape.live.test.ts",
+		"deploy:staging": "bun run scripts/deploy-staging.ts",
 		"typecheck": "tsc --noEmit -p apps/server/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json"
 	},
 	"devDependencies": {
+		"agent-browser": "^0.32.3",
 		"bun-plugin-tailwind": "^0.1.2",
 		"typescript": "^7.0.2"
 	}

@@ -1,0 +1,42 @@
+{
+	"1001": {
+		"id": 1001,
+		"title": "Bun 1.3 Released",
+		"url": "https://bun.sh/blog/bun-v1.3",
+		"by": "jarred",
+		"score": 150,
+		"time": 1700000000,
+		"type": "story"
+	},
+	"1002": {
+		"id": 1002,
+		"title": "Low Score Post",
+		"url": "https://example.com/low-score",
+		"by": "someuser",
+		"score": 20,
+		"time": 1700000000,
+		"type": "story"
+	},
+	"1003": {
+		"id": 1003,
+		"title": "Very Old Post",
+		"url": "https://example.com/old-post",
+		"by": "oldtimer",
+		"score": 200,
+		"time": 1000000000,
+		"type": "story"
+	},
+	"1004": {
+		"id": 1004,
+		"title": "Ask HN: Favorite developer tools?",
+		"by": "curious_dev",
+		"text": "What tools do you use daily?",
+		"score": 85,
+		"time": 1700000000,
+		"type": "story"
+	},
+	"1005": {
+		"id": 1005,
+		"deleted": true
+	}
+}

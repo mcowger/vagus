@@ -1,11 +1,12 @@
 import type { Kysely, Selectable } from "kysely";
 import type { Queue } from "plainjob";
 import type { Database, RunStageTable, RunTable, RunTrigger, StageStatus } from "../db/schema";
+import { FETCH_SOURCE_JOB_TYPE, type FetchSourceJobData } from "./ingestion";
 import { NOOP_JOB_TYPE, type NoopJobData } from "./jobs";
 
 export type StartRunResult =
 	| { started: true; runId: number; stageId: number }
-	| { started: false; reason: "overlap" };
+	| { started: false; reason: "overlap" | "no_enabled_sources" };
 
 export async function startRun(
 	db: Kysely<Database>,
@@ -13,9 +14,6 @@ export async function startRun(
 	trigger: RunTrigger,
 	options?: { expectedJobs?: number; stageName?: string },
 ): Promise<StartRunResult> {
-	const expectedJobs = options?.expectedJobs ?? 1;
-	const stageName = options?.stageName ?? "noop";
-
 	const existingRunning = await db
 		.selectFrom("run")
 		.select("id")
@@ -24,6 +22,20 @@ export async function startRun(
 
 	if (existingRunning) {
 		return { started: false, reason: "overlap" };
+	}
+
+	// Fetch enabled sources
+	const sources = await db
+		.selectFrom("source")
+		.select("id")
+		.where("enabled", "=", 1)
+		.execute();
+
+	const isExplicitStage = options?.stageName !== undefined || options?.expectedJobs !== undefined;
+
+	if (sources.length === 0 && !isExplicitStage) {
+		// Default to noop if no sources exist
+		options = { stageName: "noop", expectedJobs: 1, ...options };
 	}
 
 	return await db.transaction().execute(async (trx) => {
@@ -50,6 +62,10 @@ export async function startRun(
 			.returning(["id"])
 			.executeTakeFirstOrThrow();
 
+		const isNoop = isExplicitStage;
+		const stageName = options?.stageName ?? "ingest";
+		const expectedJobs = isNoop ? (options?.expectedJobs ?? 1) : sources.length;
+
 		const stageRow = await trx
 			.insertInto("run_stage")
 			.values({
@@ -62,16 +78,27 @@ export async function startRun(
 			.returning(["id"])
 			.executeTakeFirstOrThrow();
 
-		const jobData: NoopJobData = {
-			runId: runRow.id,
-			stageId: stageRow.id,
-		};
-
-		if (expectedJobs === 1) {
-			queue.add(NOOP_JOB_TYPE, jobData);
-		} else if (expectedJobs > 1) {
-			const items = Array.from({ length: expectedJobs }, () => jobData);
-			queue.addMany(NOOP_JOB_TYPE, items);
+		if (isNoop) {
+			const jobData: NoopJobData = {
+				runId: runRow.id,
+				stageId: stageRow.id,
+			};
+			if (expectedJobs === 1) {
+				queue.add(NOOP_JOB_TYPE, jobData);
+			} else {
+				for (let i = 0; i < expectedJobs; i++) {
+					queue.add(NOOP_JOB_TYPE, jobData);
+				}
+			}
+		} else {
+			for (const s of sources) {
+				const fetchJob: FetchSourceJobData = {
+					runId: runRow.id,
+					stageId: stageRow.id,
+					sourceId: s.id,
+				};
+				queue.add(FETCH_SOURCE_JOB_TYPE, fetchJob);
+			}
 		}
 
 		return {

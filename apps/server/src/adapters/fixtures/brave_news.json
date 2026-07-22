@@ -1,0 +1,30 @@
+{
+  "query": {
+    "original": "technology news"
+  },
+  "results": [
+    {
+      "id": "brave-news-1",
+      "title": "AI Breakthrough in Autonomous Agents",
+      "url": "https://example.com/news/ai-breakthrough",
+      "description": "Researchers announce a major milestone in multi-agent orchestration systems.",
+      "published": "2026-07-22T08:00:00Z",
+      "extra_snippets": [
+        "The new approach significantly reduces latency."
+      ],
+      "meta_url": {
+        "hostname": "example.com"
+      }
+    },
+    {
+      "id": "brave-news-2",
+      "title": "Global Tech Summit 2026 Keynote Summary",
+      "url": "https://example.com/news/tech-summit-2026",
+      "description": "Highlights from today's opening keynotes on cloud infrastructure and web runtimes.",
+      "published": "2026-07-22T09:15:00Z",
+      "meta_url": {
+        "hostname": "example.com"
+      }
+    }
+  ]
+}
