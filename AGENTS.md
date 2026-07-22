@@ -33,6 +33,31 @@ bun run dev:stop          # stop server process group and clean up pidfile
   ```
 - `apps/web/index.html` references `<link rel="stylesheet" href="./src/index.css" />`. Bun automatically compiles Tailwind CSS utility classes dynamically when serving static assets.
 
+## UI & Design Conventions
+
+- **Theme & Palette**: Dark-mode primary design leveraging Tailwind CSS v4 slate tones (`bg-slate-950`, `bg-slate-900/60`, `border-slate-800/80`) with emerald/amber/sky accent highlights.
+- **Interactive Citations (`CitationPill`)**:
+  - Never display raw internal article IDs (e.g., `art_123`) in reader UI.
+  - Render source citations as interactive badges (`CitationPill`) containing:
+    - Publisher domain favicon via `https://www.google.com/s2/favicons?domain=<hostname>&sz=32`
+    - Clean domain name (e.g., `techcrunch.com`)
+    - External hyperlink opening in a new tab (`target="_blank" rel="noopener noreferrer"`)
+    - Full article title on hover.
+  - Parse citation tags smoothly in continuous text blocks via `TextWithCitations`.
+- **Task Model Matrix UI**:
+  - Model assignment uses a unified 1-row-per-task mapping table (`TaskModels.tsx`) connecting task capabilities (Extraction, Embedding, Synthesis, Scoring, Formatting) to assigned providers and models.
+  - Model dropdowns pull live dynamically from `/v1/models` and filter choices by required task modality (`text` vs `embedding`).
+
+## Pipeline & Backend Conventions
+
+- **DB-Driven Settings**: Provider credentials, API endpoints, system parameters, and model routing choices are strictly database-backed (`provider_config`, `system_setting`, `task_model`).
+- **Pipeline Stage Cascade (`coordinator.ts`)**:
+  - Pipeline execution auto-cascades through all 8 stages (`fetch` → `dedup` → `embed` → `cluster` → `score` → `synthesize` → `format` → `notify`).
+  - Stage execution queries all active users from the `user` table and auto-provisions default user profiles when missing.
+- **Broad Curator Mode & Dynamic Embeddings**:
+  - Leaving user interest criteria empty defaults scoring to **Broad Curator Mode** (baseline score `0.50`), ensuring items qualify for downstream synthesis.
+  - Profile vectors automatically re-embed using `getEmbedder(db)` whenever vector dimension mismatches (e.g., 128d mock vs 1536d OpenAI) are detected.
+
 ## Root Scripts (`package.json`)
 
 | Command | What it does |
