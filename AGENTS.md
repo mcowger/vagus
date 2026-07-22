@@ -35,8 +35,15 @@ bun run dev:stop          # stop server process group and clean up pidfile
 
 ## UI & Design Conventions
 
-- **Theme & Palette**: Dark-mode primary design leveraging Tailwind CSS v4 slate tones (`bg-slate-950`, `bg-slate-900/60`, `border-slate-800/80`) with emerald/amber/sky accent highlights.
-- **Interactive Citations (`CitationPill`)**:
+- **Canvas & Palette**: High-readability clean slate light design (`bg-slate-50`, `bg-white`, `text-slate-900`) with high contrast typography and semantic color-coded cards.
+- **Top Header Banner**: Dark slate-to-indigo gradient banner (`bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-xl`) featuring semi-transparent pill badges (`bg-indigo-500/30 text-indigo-200`) and timestamp chips (`bg-white/10`).
+- **Semantic Card Color Accents**:
+  - **Executive Summary**: Indigo gradient header (`from-indigo-50/50 to-white`), `Sparkles` icon (`text-indigo-600`), `border-indigo-100`.
+  - **Why It Matters**: Warm Amber card header (`bg-amber-50/50`), `Lightbulb` icon (`text-amber-600`), `border-amber-100`, `text-amber-900`.
+  - **Key Takeaways**: Fresh Emerald card header (`bg-emerald-50/50`), `ListChecks` icon (`text-emerald-600`), `border-emerald-100`, `text-emerald-900`, with circular numbered step pills (`bg-emerald-100 text-emerald-700`).
+  - **Key Quotes**: Slate card header (`bg-slate-50`), `Quote` icon (`text-indigo-600`), left-accented blockquote cards (`border-l-4 border-indigo-500 bg-slate-50/80`).
+  - **Story Clusters**: Slate cards with cluster badge tags (`bg-indigo-100 text-indigo-800`), collapsible deep dives, and timeline step badges.
+- **Interactive Favicon Citations (`CitationPill`)**:
   - Never display raw internal article IDs (e.g., `art_123`) in reader UI.
   - Render source citations as interactive badges (`CitationPill`) containing:
     - Publisher domain favicon via `https://www.google.com/s2/favicons?domain=<hostname>&sz=32`
