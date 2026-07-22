@@ -4,6 +4,7 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { Sliders, ThumbsUp, ThumbsDown, RotateCcw } from "lucide-react";
 
 function arrayToString(val: string | string[] | null | undefined): string {
 	if (!val) return "";
@@ -27,6 +28,13 @@ function stringToArray(val: string): string[] {
 export const Profiles: React.FC = () => {
 	const utils = trpc.useUtils();
 	const profileQuery = trpc.profiles.getProfile.useQuery();
+	const feedbackQuery = trpc.feedback.getFeedbackStats.useQuery();
+
+	const voteSourceMutation = trpc.feedback.voteSource.useMutation({
+		onSuccess: () => {
+			utils.feedback.getFeedbackStats.invalidate();
+		},
+	});
 
 	const [name, setName] = useState("Default Profile");
 	const [keywords, setKeywords] = useState("");
@@ -301,6 +309,71 @@ export const Profiles: React.FC = () => {
 								<strong>Digest Size Limit:</strong> Maximum number of top-scoring story clusters included in a single briefing digest cycle (e.g. top 10 stories), keeping daily reports concise and focused.
 							</p>
 						</div>
+					</CardContent>
+				</Card>
+
+				{/* Source Weightings & Feedback Adaptation Card */}
+				<Card>
+					<CardHeader>
+						<CardTitle className="text-lg flex items-center gap-2">
+							<Sliders className="h-5 w-5 text-indigo-600" />
+							Source Weightings & Preference Adaptation
+						</CardTitle>
+						<CardDescription>
+							Active source score multipliers and topic preferences learned from your thumbs up/down votes.
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						{feedbackQuery.isLoading ? (
+							<p className="text-xs text-slate-500">Loading source weightings...</p>
+						) : !feedbackQuery.data?.sourceWeights || feedbackQuery.data.sourceWeights.length === 0 ? (
+							<div className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-500 text-center">
+								No custom source weightings configured yet. Use the thumbs up/down buttons on story clusters or in the Sources page to tune source multipliers.
+							</div>
+						) : (
+							<div className="space-y-2">
+								{feedbackQuery.data.sourceWeights.map((sw) => {
+									let statusPill = `${sw.weight.toFixed(1)}x`;
+									let statusClass = "bg-slate-100 text-slate-700 border-slate-200";
+
+									if (sw.weight <= 0.1) {
+										statusPill = "0.0x (Muted)";
+										statusClass = "bg-rose-100 text-rose-800 border-rose-200 font-bold";
+									} else if (sw.weight > 1.0) {
+										statusPill = `${sw.weight.toFixed(1)}x (Boosted)`;
+										statusClass = "bg-emerald-100 text-emerald-800 border-emerald-200 font-bold";
+									} else if (sw.weight < 1.0) {
+										statusPill = `${sw.weight.toFixed(1)}x (Lowered)`;
+										statusClass = "bg-amber-100 text-amber-800 border-amber-200 font-bold";
+									}
+
+									return (
+										<div
+											key={sw.source_id}
+											className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-white text-xs"
+										>
+											<div className="flex items-center gap-2">
+												<span className="font-semibold text-slate-800">{sw.source_name}</span>
+												<span className={`px-2 py-0.5 rounded-full border text-[11px] ${statusClass}`}>
+													{statusPill}
+												</span>
+											</div>
+
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												onClick={() => voteSourceMutation.mutate({ sourceId: sw.source_id, vote: 0 })}
+												className="text-[11px] text-slate-500 hover:text-slate-800 h-7 px-2 gap-1"
+											>
+												<RotateCcw className="h-3 w-3" />
+												Reset Weight
+											</Button>
+										</div>
+									);
+								})}
+							</div>
+						)}
 					</CardContent>
 				</Card>
 

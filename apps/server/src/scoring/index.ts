@@ -87,6 +87,32 @@ export async function scoreClustersForUser(
 		}
 	}
 
+	let positiveVector: Float32Array | null = null;
+	if (profile.positive_embedding && profile.positive_embedding.length > 0) {
+		try {
+			positiveVector = deserializeFloat32(profile.positive_embedding);
+		} catch {}
+	}
+
+	let negativeVector: Float32Array | null = null;
+	if (profile.negative_embedding && profile.negative_embedding.length > 0) {
+		try {
+			negativeVector = deserializeFloat32(profile.negative_embedding);
+		} catch {}
+	}
+
+	// Fetch user source weight overrides
+	const userSourceWeightRows = await database
+		.selectFrom("user_source_weight")
+		.select(["source_id", "weight"])
+		.where("user_id", "=", userId)
+		.execute();
+
+	const sourceWeightMap = new Map<number, number>();
+	for (const row of userSourceWeightRows) {
+		sourceWeightMap.set(row.source_id, row.weight);
+	}
+
 	// 2. Fetch all clusters and primary articles for runId
 	const clusterRows = await database
 		.selectFrom("cluster as c")
@@ -96,6 +122,7 @@ export async function scoreClustersForUser(
 			"c.id as cluster_id",
 			"c.summary_title as summary_title",
 			"a.id as article_id",
+			"a.source_id as source_id",
 			"a.title as title",
 			"a.content as content",
 			"a.stage_a_bullet as stage_a_bullet",
@@ -279,7 +306,35 @@ export async function scoreClustersForUser(
 			}
 		}
 
-		let prelimScore = baseScore + boost;
+		// Source Weighting Check
+		const sourceWeight = row.source_id ? (sourceWeightMap.get(row.source_id) ?? 1.0) : 1.0;
+		if (sourceWeight <= 0.1) {
+			scoredClusters.push({
+				clusterId: row.cluster_id,
+				score: 0,
+				reason: "Source muted by user preference",
+			});
+			continue;
+		}
+
+		// Vector Preference Adjustments (Positive/Negative Feedback Vectors)
+		let feedbackBoost = 0;
+		if (articleVector && positiveVector && articleVector.length === positiveVector.length) {
+			const posSim = cosineSimilarity(positiveVector, articleVector);
+			if (posSim > 0.5) {
+				feedbackBoost += posSim * 0.20;
+			}
+		}
+
+		let feedbackPenalty = 0;
+		if (articleVector && negativeVector && articleVector.length === negativeVector.length) {
+			const negSim = cosineSimilarity(negativeVector, articleVector);
+			if (negSim > 0.5) {
+				feedbackPenalty += negSim * 0.30;
+			}
+		}
+
+		let prelimScore = (baseScore + boost + feedbackBoost - feedbackPenalty) * sourceWeight;
 		prelimScore = Math.min(1.0, Math.max(0.0, prelimScore));
 
 		let finalScore = prelimScore;

@@ -5,6 +5,7 @@ import * as m0003 from "./migrations/0003_m3_extraction";
 import * as m0004 from "./migrations/0004_m4_clustering";
 import * as m0005 from "./migrations/0005_m5_synthesis";
 import * as m0006 from "./migrations/0006_m6_scheduling";
+import * as m0007 from "./migrations/0007_m8_feedback";
 
 // Explicit in-code migration registry. We deliberately avoid filesystem
 // globbing so migrations resolve deterministically under Bun bundling. Add new
@@ -16,6 +17,7 @@ const migrations: Record<string, Migration> = {
 	"0004_m4_clustering": m0004,
 	"0005_m5_synthesis": m0005,
 	"0006_m6_scheduling": m0006,
+	"0007_m8_feedback": m0007,
 };
 
 class StaticMigrationProvider implements MigrationProvider {

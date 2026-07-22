@@ -149,10 +149,30 @@ export interface InterestProfileTable {
 	include_rules: string; // JSON array string
 	exclude_rules: string; // JSON array string
 	profile_embedding: Uint8Array | null;
+	positive_embedding: Uint8Array | null;
+	negative_embedding: Uint8Array | null;
 	similarity_threshold: number;
 	max_cluster_cap: number;
 	ntfy_topic: string | null;
 	created_at: Timestamp;
+	updated_at: Timestamp;
+}
+
+export interface UserFeedbackTable {
+	id: Generated<number>;
+	user_id: string;
+	target_type: "source" | "cluster";
+	target_id: string;
+	vote: number; // 1 = thumbs_up, -1 = thumbs_down, 0 = neutral
+	created_at: Timestamp;
+	updated_at: Timestamp;
+}
+
+export interface UserSourceWeightTable {
+	id: Generated<number>;
+	user_id: string;
+	source_id: number;
+	weight: number; // 0.0 to 2.0 multiplier
 	updated_at: Timestamp;
 }
 
@@ -249,4 +269,6 @@ export interface Database {
 	citation: CitationTable;
 	system_setting: SystemSettingTable;
 	notification_log: NotificationLogTable;
+	user_feedback: UserFeedbackTable;
+	user_source_weight: UserSourceWeightTable;
 }

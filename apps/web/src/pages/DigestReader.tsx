@@ -22,6 +22,8 @@ import {
 	X,
 	ChevronRight,
 	Share2,
+	ThumbsUp,
+	ThumbsDown,
 } from "lucide-react";
 
 function getDomainFromUrl(url?: string | null): string {
@@ -223,6 +225,14 @@ export const DigestReader: React.FC = () => {
 	const [verbosityMode, setVerbosityMode] = useState<"tldr" | "deep">("deep");
 	const [showJsonModal, setShowJsonModal] = useState(false);
 	const [copied, setCopied] = useState(false);
+
+	const utils = trpc.useUtils();
+	const feedbackQuery = trpc.feedback.getFeedbackStats.useQuery();
+	const voteClusterMutation = trpc.feedback.voteCluster.useMutation({
+		onSuccess: () => {
+			utils.feedback.getFeedbackStats.invalidate();
+		},
+	});
 
 	// Fetch list of user digests
 	const { data: digestsList, isLoading: isLoadingList } = trpc.digest.listForUser.useQuery();
@@ -569,6 +579,8 @@ export const DigestReader: React.FC = () => {
 											? cluster.timeline
 											: [];
 
+										const clusterVote = feedbackQuery.data?.feedback?.[`cluster:${cluster.id}`] ?? 0;
+
 										return (
 											<Card key={cluster.id} className="border-slate-200 shadow-sm overflow-hidden">
 												{/* Cluster Header */}
@@ -585,6 +597,44 @@ export const DigestReader: React.FC = () => {
 															<CardTitle className="text-base font-bold text-slate-900">
 																{cluster.title}
 															</CardTitle>
+														</div>
+
+														{/* Thumbs Up / Down Feedback Controls */}
+														<div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1 shadow-2xs">
+															<button
+																type="button"
+																title="Boost stories like this"
+																onClick={() =>
+																	voteClusterMutation.mutate({
+																		clusterId: cluster.id,
+																		vote: clusterVote === 1 ? 0 : 1,
+																	})
+																}
+																className={`p-1.5 rounded-md transition-all ${
+																	clusterVote === 1
+																		? "bg-emerald-100 text-emerald-700 shadow-2xs font-bold"
+																		: "text-slate-400 hover:text-emerald-600 hover:bg-slate-50"
+																}`}
+															>
+																<ThumbsUp className="h-4 w-4" />
+															</button>
+															<button
+																type="button"
+																title="Deprioritize stories like this"
+																onClick={() =>
+																	voteClusterMutation.mutate({
+																		clusterId: cluster.id,
+																		vote: clusterVote === -1 ? 0 : -1,
+																	})
+																}
+																className={`p-1.5 rounded-md transition-all ${
+																	clusterVote === -1
+																		? "bg-rose-100 text-rose-700 shadow-2xs font-bold"
+																		: "text-slate-400 hover:text-rose-600 hover:bg-slate-50"
+																}`}
+															>
+																<ThumbsDown className="h-4 w-4" />
+															</button>
 														</div>
 													</div>
 												</CardHeader>
