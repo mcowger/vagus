@@ -201,6 +201,26 @@ export interface CitationTable {
 	created_at: Timestamp;
 }
 
+// ---------------------------------------------------------------------------
+// Scheduling, Notifications & System Settings (M6)
+// ---------------------------------------------------------------------------
+
+export interface SystemSettingTable {
+	key: string; // Primary key e.g. "article_retention_days", "ntfy_base_url"
+	value: string;
+	updated_at: Timestamp;
+}
+
+export interface NotificationLogTable {
+	id: Generated<number>;
+	user_id: string;
+	digest_id: number;
+	topic: string;
+	status: "sent" | "failed";
+	error: string | null;
+	sent_at: Timestamp;
+}
+
 export interface Database {
 	run: RunTable;
 	run_stage: RunStageTable;
@@ -218,4 +238,6 @@ export interface Database {
 	digest: DigestTable;
 	digest_cluster: DigestClusterTable;
 	citation: CitationTable;
+	system_setting: SystemSettingTable;
+	notification_log: NotificationLogTable;
 }
