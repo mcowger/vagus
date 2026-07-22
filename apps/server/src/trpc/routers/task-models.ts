@@ -55,6 +55,16 @@ export const taskModelsRouter = router({
 			return { success: true, id: inserted.id };
 		}),
 
+	deleteTaskModel: adminProcedure
+		.input(z.object({ id: z.number() }))
+		.mutation(async ({ ctx, input }) => {
+			await ctx.db
+				.deleteFrom("task_model")
+				.where("id", "=", input.id)
+				.execute();
+			return { success: true };
+		}),
+
 	getLlmUsage: adminProcedure
 		.input(
 			z

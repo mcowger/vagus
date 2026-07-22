@@ -162,7 +162,7 @@ export async function generateCompletion(
 				cost: (promptTokens + completionTokens) * 0.000001,
 			},
 		};
-	} else if (config.provider === "openai" || config.provider === "groq") {
+	} else {
 		const pConfig = await db
 			.selectFrom("provider_config")
 			.selectAll()
@@ -172,8 +172,8 @@ export async function generateCompletion(
 		let baseUrl: string | undefined;
 		let apiKey: string | undefined;
 
-		if (pConfig && pConfig.api_key) {
-			apiKey = pConfig.api_key;
+		if (pConfig) {
+			apiKey = pConfig.api_key ?? undefined;
 			if (pConfig.config) {
 				try {
 					const parsed = JSON.parse(pConfig.config);
@@ -189,16 +189,6 @@ export async function generateCompletion(
 			prompt,
 			systemPrompt: options?.systemPrompt,
 		});
-	} else {
-		const text = `Summary: ${prompt.slice(0, 100).trim()}...`;
-		result = {
-			text,
-			usage: {
-				promptTokens: Math.ceil(prompt.length / 4),
-				completionTokens: Math.ceil(text.length / 4),
-				cost: 0,
-			},
-		};
 	}
 
 	// Capture LLM Usage in DB

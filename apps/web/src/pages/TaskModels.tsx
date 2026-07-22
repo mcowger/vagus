@@ -11,14 +11,22 @@ const SUGGESTED_TASKS = [
 	"stage_c_digest",
 ];
 
-const SUGGESTED_PROVIDERS = ["openai", "anthropic", "groq", "faux"];
+const DEFAULT_PROVIDERS = ["openai", "anthropic", "groq", "ollama", "faux"];
 
 export const TaskModels: React.FC = () => {
 	const utils = trpc.useUtils();
 	const taskModelsQuery = trpc.taskModels.getTaskModels.useQuery();
 	const llmUsageQuery = trpc.taskModels.getLlmUsage.useQuery();
+	const providersQuery = trpc.providers.list.useQuery();
 
 	const setTaskModelMutation = trpc.taskModels.setTaskModel.useMutation({
+		onSuccess: () => {
+			utils.taskModels.getTaskModels.invalidate();
+			resetForm();
+		},
+	});
+
+	const deleteTaskModelMutation = trpc.taskModels.deleteTaskModel.useMutation({
 		onSuccess: () => {
 			utils.taskModels.getTaskModels.invalidate();
 		},
@@ -29,8 +37,27 @@ export const TaskModels: React.FC = () => {
 	const [provider, setProvider] = useState("faux");
 	const [modelName, setModelName] = useState("faux-cheap");
 	const [isCustomTask, setIsCustomTask] = useState(false);
+	const [editingTaskName, setEditingTaskName] = useState<string | null>(null);
 
-	const activeTaskName = isCustomTask ? customTask : taskName;
+	// Combine default providers with any custom configured providers from backend
+	const configuredProviderNames = (providersQuery.data || [])
+		.filter((p) => p.provider !== "brave-news")
+		.map((p) => p.provider);
+
+	const availableProviders = Array.from(
+		new Set([...DEFAULT_PROVIDERS, ...configuredProviderNames]),
+	);
+
+	const activeTaskName = isCustomTask ? customTask.trim() : taskName;
+
+	const resetForm = () => {
+		setEditingTaskName(null);
+		setIsCustomTask(false);
+		setTaskName("stage_a_bullet");
+		setCustomTask("");
+		setProvider("faux");
+		setModelName("faux-cheap");
+	};
 
 	const handleSaveModel = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -39,11 +66,12 @@ export const TaskModels: React.FC = () => {
 		setTaskModelMutation.mutate({
 			taskName: activeTaskName,
 			provider,
-			modelName,
+			modelName: modelName.trim(),
 		});
 	};
 
 	const handleEditModel = (model: { task_name: string; provider: string; model_name: string }) => {
+		setEditingTaskName(model.task_name);
 		if (SUGGESTED_TASKS.includes(model.task_name)) {
 			setIsCustomTask(false);
 			setTaskName(model.task_name);
@@ -65,7 +93,7 @@ export const TaskModels: React.FC = () => {
 					Per-Task Model Configuration
 				</h1>
 				<p className="text-slate-500 mt-1">
-					Configure AI model choices for pipeline stages and monitor LLM token usage and costs.
+					Route pipeline stage tasks to specific AI models, edit task model associations, and monitor usage.
 				</p>
 			</div>
 
@@ -109,21 +137,25 @@ export const TaskModels: React.FC = () => {
 			<div className="grid gap-6 md:grid-cols-3">
 				<Card className="md:col-span-1">
 					<CardHeader>
-						<CardTitle className="text-lg">Set Task Model</CardTitle>
-						<CardDescription>Assign provider and model to a task</CardDescription>
+						<CardTitle className="text-lg">
+							{editingTaskName ? "Edit Task Model" : "Set Task Model"}
+						</CardTitle>
+						<CardDescription>Assign provider and model routing to a pipeline task</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<form onSubmit={handleSaveModel} className="space-y-4">
 							<div className="space-y-2">
 								<div className="flex items-center justify-between">
 									<Label htmlFor="taskSelect">Task Name</Label>
-									<button
-										type="button"
-										onClick={() => setIsCustomTask(!isCustomTask)}
-										className="text-xs text-slate-500 hover:text-slate-900 underline"
-									>
-										{isCustomTask ? "Select standard" : "Custom task"}
-									</button>
+									{!editingTaskName && (
+										<button
+											type="button"
+											onClick={() => setIsCustomTask(!isCustomTask)}
+											className="text-xs text-slate-500 hover:text-slate-900 underline"
+										>
+											{isCustomTask ? "Select standard" : "Custom task"}
+										</button>
+									)}
 								</div>
 
 								{isCustomTask ? (
@@ -133,13 +165,15 @@ export const TaskModels: React.FC = () => {
 										value={customTask}
 										onChange={(e) => setCustomTask(e.target.value)}
 										required
+										disabled={!!editingTaskName}
 									/>
 								) : (
 									<select
 										id="taskSelect"
 										value={taskName}
 										onChange={(e) => setTaskName(e.target.value)}
-										className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors"
+										disabled={!!editingTaskName}
+										className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors disabled:opacity-75"
 									>
 										{SUGGESTED_TASKS.map((t) => (
 											<option key={t} value={t}>
@@ -162,10 +196,11 @@ export const TaskModels: React.FC = () => {
 										else if (p === "openai") setModelName("gpt-4o-mini");
 										else if (p === "anthropic") setModelName("claude-3-5-sonnet");
 										else if (p === "groq") setModelName("llama-3.3-70b");
+										else if (p === "ollama") setModelName("llama3");
 									}}
-									className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors"
+									className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors capitalize"
 								>
-									{SUGGESTED_PROVIDERS.map((p) => (
+									{availableProviders.map((p) => (
 										<option key={p} value={p}>
 											{p}
 										</option>
@@ -177,16 +212,31 @@ export const TaskModels: React.FC = () => {
 								<Label htmlFor="modelName">Model Name</Label>
 								<Input
 									id="modelName"
-									placeholder="e.g. gpt-4o-mini"
+									placeholder="e.g. gpt-4o-mini, llama3, custom-model"
 									value={modelName}
 									onChange={(e) => setModelName(e.target.value)}
 									required
 								/>
 							</div>
 
-							<Button type="submit" className="w-full" disabled={setTaskModelMutation.isPending}>
-								{setTaskModelMutation.isPending ? "Saving..." : "Save Model Config"}
-							</Button>
+							<div className="flex items-center gap-2 pt-2">
+								<Button
+									type="submit"
+									className="flex-1"
+									disabled={setTaskModelMutation.isPending || !activeTaskName}
+								>
+									{setTaskModelMutation.isPending
+										? "Saving..."
+										: editingTaskName
+										? "Update Task Model"
+										: "Save Model Config"}
+								</Button>
+								{editingTaskName && (
+									<Button type="button" variant="outline" onClick={resetForm}>
+										Cancel
+									</Button>
+								)}
+							</div>
 						</form>
 					</CardContent>
 				</Card>
@@ -194,7 +244,7 @@ export const TaskModels: React.FC = () => {
 				<Card className="md:col-span-2">
 					<CardHeader>
 						<CardTitle className="text-lg">Configured Task Models</CardTitle>
-						<CardDescription>Active model routing table per stage/task</CardDescription>
+						<CardDescription>Active model routing table per pipeline stage</CardDescription>
 					</CardHeader>
 					<CardContent>
 						{taskModelsQuery.isLoading ? (
@@ -208,24 +258,34 @@ export const TaskModels: React.FC = () => {
 								{taskModelsQuery.data?.map((m) => (
 									<div
 										key={m.id}
-										className="flex items-center justify-between p-3 border border-slate-200 rounded-lg bg-white"
+										className="flex items-center justify-between p-3.5 border border-slate-200 rounded-lg bg-white shadow-sm"
 									>
 										<div>
 											<div className="flex items-center gap-2">
-												<span className="font-semibold text-slate-800 font-mono text-sm">
+												<span className="font-bold text-slate-900 font-mono text-sm">
 													{m.task_name}
 												</span>
-												<span className="text-xs px-2 py-0.5 rounded bg-slate-100 font-mono text-slate-600">
+												<span className="text-xs px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono font-semibold capitalize">
 													{m.provider}
 												</span>
 											</div>
 											<div className="text-xs text-slate-500 mt-1 font-mono">
-												Model: {m.model_name}
+												Model: <span className="text-slate-800 font-medium">{m.model_name}</span>
 											</div>
 										</div>
-										<Button variant="outline" size="sm" onClick={() => handleEditModel(m)}>
-											Edit
-										</Button>
+										<div className="flex items-center gap-2">
+											<Button variant="outline" size="sm" onClick={() => handleEditModel(m)}>
+												Edit
+											</Button>
+											<Button
+												variant="destructive"
+												size="sm"
+												onClick={() => deleteTaskModelMutation.mutate({ id: m.id })}
+												disabled={deleteTaskModelMutation.isPending}
+											>
+												Delete
+											</Button>
+										</div>
 									</div>
 								))}
 							</div>
@@ -267,7 +327,7 @@ export const TaskModels: React.FC = () => {
 											<td className="px-4 py-3 font-mono font-medium text-slate-800">
 												{u.task_name}
 											</td>
-											<td className="px-4 py-3 text-slate-600">{u.provider}</td>
+											<td className="px-4 py-3 text-slate-600 capitalize">{u.provider}</td>
 											<td className="px-4 py-3 font-mono text-xs text-slate-600">
 												{u.model_name}
 											</td>

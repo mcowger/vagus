@@ -53,4 +53,14 @@ export const providersRouter = router({
 
 			return { success: true, id: inserted.id };
 		}),
+
+	delete: adminProcedure
+		.input(z.object({ id: z.number() }))
+		.mutation(async ({ ctx, input }) => {
+			await ctx.db
+				.deleteFrom("provider_config")
+				.where("id", "=", input.id)
+				.execute();
+			return { success: true };
+		}),
 });

@@ -239,14 +239,18 @@ export const DigestReader: React.FC = () => {
 
 				{/* Right Main Panel: Digest Detailed View */}
 				<div className="lg:col-span-3 space-y-6">
-					{isLoadingDigest ? (
+					{isLoadingList || (activeDigestId && isLoadingDigest) ? (
 						<div className="p-12 text-center bg-white rounded-xl border border-slate-200 text-slate-500 space-y-3">
 							<div className="animate-spin text-indigo-600 text-2xl">⏳</div>
 							<p className="font-medium">Loading digest details...</p>
 						</div>
-					) : !digest ? (
-						<div className="p-12 text-center bg-white rounded-xl border border-slate-200 text-slate-500">
-							Select a digest from the left sidebar to view its summary and citations.
+					) : !activeDigestId || !digest ? (
+						<div className="p-12 text-center bg-white rounded-xl border border-slate-200 text-slate-500 space-y-3">
+							<BookOpen className="h-12 w-12 text-slate-300 mx-auto" />
+							<h3 className="text-lg font-semibold text-slate-800">No digests available</h3>
+							<p className="text-sm text-slate-500 max-w-sm mx-auto">
+								You haven't generated any digests yet. Trigger a manual run in the Runs tab or wait for the scheduled pipeline to create your first digest.
+							</p>
 						</div>
 					) : (
 						<>

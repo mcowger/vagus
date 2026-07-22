@@ -54,7 +54,7 @@ case "${1:-}" in
         sleep 0.5
       fi
       cd "$ROOT"
-      exec env PORT="$SERVER_PORT" bun apps/server/src/index.ts
+      exec env PORT="$SERVER_PORT" bun --watch apps/server/src/index.ts
     fi
 
     if is_running; then
@@ -67,7 +67,7 @@ case "${1:-}" in
       exit 0
     fi
     : > "$LOGFILE"
-    PORT="$SERVER_PORT" setsid bash -c 'cd "'"$ROOT"'" && exec bun apps/server/src/index.ts' \
+    PORT="$SERVER_PORT" setsid bash -c 'cd "'"$ROOT"'" && exec bun --watch apps/server/src/index.ts' \
       >> "$LOGFILE" 2>&1 &
     echo $! > "$PIDFILE"
     
