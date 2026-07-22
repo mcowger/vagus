@@ -2,6 +2,7 @@ import { type Kysely, type Migration, type MigrationProvider, Migrator } from "k
 import * as m0001 from "./migrations/0001_init";
 import * as m0002 from "./migrations/0002_m2_sources";
 import * as m0003 from "./migrations/0003_m3_extraction";
+import * as m0004 from "./migrations/0004_m4_clustering";
 
 // Explicit in-code migration registry. We deliberately avoid filesystem
 // globbing so migrations resolve deterministically under Bun bundling. Add new
@@ -10,6 +11,7 @@ const migrations: Record<string, Migration> = {
 	"0001_init": m0001,
 	"0002_m2_sources": m0002,
 	"0003_m3_extraction": m0003,
+	"0004_m4_clustering": m0004,
 };
 
 class StaticMigrationProvider implements MigrationProvider {

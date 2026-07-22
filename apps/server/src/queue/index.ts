@@ -4,11 +4,21 @@ import { db } from "../db/connection";
 import { log } from "../log";
 import { advanceStage } from "./coordinator";
 import {
+	CLUSTER_RUN_JOB_TYPE,
+	EMBED_ARTICLE_JOB_TYPE,
+	SCORE_USER_JOB_TYPE,
+	type ClusterRunJobData,
+	type EmbedArticleJobData,
+	type ScoreUserJobData,
+} from "./clustering-contracts";
+import { processClusterRunJob } from "./cluster-job";
+import {
 	EXTRACT_ARTICLE_JOB_TYPE,
 	STAGE_A_BULLET_JOB_TYPE,
 	type ExtractArticleJobData,
 	type StageABulletJobData,
 } from "./extraction-contracts";
+import { processEmbedArticleJob } from "./embed-job";
 import { processExtractArticleJob } from "./extract-job";
 import { FETCH_SOURCE_JOB_TYPE, processFetchSourceJob } from "./ingestion";
 import { NOOP_JOB_TYPE, noopProcessor, type NoopJobData } from "./jobs";
@@ -59,6 +69,9 @@ let noopWorker: Worker | null = null;
 let fetchWorker: Worker | null = null;
 let extractWorker: Worker | null = null;
 let stageABulletWorker: Worker | null = null;
+let embedWorker: Worker | null = null;
+let clusterWorker: Worker | null = null;
+let scoreUserWorker: Worker | null = null;
 
 export async function startWorker(): Promise<void> {
 	if (noopWorker) return;
@@ -150,6 +163,75 @@ export async function startWorker(): Promise<void> {
 		},
 	);
 
+	scoreUserWorker = defineWorker(
+		SCORE_USER_JOB_TYPE,
+		(job) => processScoreUserJob(db.kysely, job),
+		{
+			queue,
+			logger: log,
+			concurrency: 5,
+			onCompleted: (job) => {
+				try {
+					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as ScoreUserJobData;
+					if (data?.stageId) {
+						void advanceStage(db.kysely, data.stageId, job.id);
+					}
+				} catch (err) {
+					log.error("Failed to advance stage on score-user job completion", {
+						error: String(err),
+						jobId: job.id,
+					});
+				}
+			},
+		},
+	);
+
+	embedWorker = defineWorker(
+		EMBED_ARTICLE_JOB_TYPE,
+		(job) => processEmbedArticleJob(db.kysely, job),
+		{
+			queue,
+			logger: log,
+			concurrency: 5,
+			onCompleted: (job) => {
+				try {
+					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as EmbedArticleJobData;
+					if (data?.stageId) {
+						void advanceStage(db.kysely, data.stageId, job.id);
+					}
+				} catch (err) {
+					log.error("Failed to advance stage on embed job completion", {
+						error: String(err),
+						jobId: job.id,
+					});
+				}
+			},
+		},
+	);
+
+	clusterWorker = defineWorker(
+		CLUSTER_RUN_JOB_TYPE,
+		(job) => processClusterRunJob(db.kysely, job),
+		{
+			queue,
+			logger: log,
+			concurrency: 1,
+			onCompleted: (job) => {
+				try {
+					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as ClusterRunJobData;
+					if (data?.stageId) {
+						void advanceStage(db.kysely, data.stageId, job.id);
+					}
+				} catch (err) {
+					log.error("Failed to advance stage on cluster job completion", {
+						error: String(err),
+						jobId: job.id,
+					});
+				}
+			},
+		},
+	);
+
 	void noopWorker.start().catch((err) => {
 		log.error("Noop worker crashed", { error: String(err) });
 	});
@@ -164,6 +246,18 @@ export async function startWorker(): Promise<void> {
 
 	void stageABulletWorker.start().catch((err) => {
 		log.error("Stage A Bullet worker crashed", { error: String(err) });
+	});
+
+	void scoreUserWorker.start().catch((err) => {
+		log.error("Score User worker crashed", { error: String(err) });
+	});
+
+	void embedWorker.start().catch((err) => {
+		log.error("Embed worker crashed", { error: String(err) });
+	});
+
+	void clusterWorker.start().catch((err) => {
+		log.error("Cluster worker crashed", { error: String(err) });
 	});
 }
 
@@ -183,6 +277,18 @@ export async function stopWorker(): Promise<void> {
 	if (stageABulletWorker) {
 		await stageABulletWorker.stop();
 		stageABulletWorker = null;
+	}
+	if (clusterWorker) {
+		await clusterWorker.stop();
+		clusterWorker = null;
+	}
+	if (embedWorker) {
+		await embedWorker.stop();
+		embedWorker = null;
+	}
+	if (scoreUserWorker) {
+		await scoreUserWorker.stop();
+		scoreUserWorker = null;
 	}
 	queue.close();
 }

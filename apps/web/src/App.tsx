@@ -6,6 +6,7 @@ import { trpc } from "./trpc";
 import { useSession } from "./lib/auth-client";
 import { Layout } from "./components/Layout";
 import { Login } from "./pages/Login";
+import { Profiles } from "./pages/Profiles";
 import { Signup } from "./pages/Signup";
 import { Dashboard } from "./pages/Dashboard";
 import { Providers } from "./pages/Providers";
@@ -104,6 +105,14 @@ export function App() {
 								element={
 									<ProtectedRoute>
 										<TaskModels />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="profiles"
+								element={
+									<ProtectedRoute>
+										<Profiles />
 									</ProtectedRoute>
 								}
 							/>

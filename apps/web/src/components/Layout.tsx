@@ -25,6 +25,9 @@ export const Layout: React.FC = () => {
 								<Link to="/sources" className="text-slate-600 hover:text-slate-900">
 									Sources
 								</Link>
+								<Link to="/profiles" className="text-slate-600 hover:text-slate-900">
+									Profiles
+								</Link>
 								<Link to="/providers" className="text-slate-600 hover:text-slate-900">
 									Providers
 								</Link>

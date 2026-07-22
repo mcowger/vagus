@@ -109,6 +109,61 @@ export interface LlmUsageTable {
 	created_at: string;
 }
 
+// ---------------------------------------------------------------------------
+// Embeddings, Clustering & Interest Profiles (M4)
+// ---------------------------------------------------------------------------
+
+export interface ArticleEmbeddingTable {
+	id: Generated<number>;
+	article_id: number;
+	embedding: Uint8Array; // Float32Array serialized as Uint8Array bytes
+	model_name: string;
+	created_at: string;
+}
+
+export interface ClusterTable {
+	id: Generated<number>;
+	run_id: number;
+	primary_article_id: number;
+	summary_title: string | null;
+	created_at: string;
+}
+
+export interface ClusterArticleTable {
+	id: Generated<number>;
+	cluster_id: number;
+	article_id: number;
+	is_primary: number; // 1 = primary, 0 = syndication/related
+	created_at: string;
+}
+
+export interface InterestProfileTable {
+	id: Generated<number>;
+	user_id: string; // foreign key to BetterAuth user
+	name: string;
+	keywords: string; // JSON array string
+	topics: string; // JSON array string
+	entities: string; // JSON array string
+	include_rules: string; // JSON array string
+	exclude_rules: string; // JSON array string
+	profile_embedding: Uint8Array | null;
+	similarity_threshold: number;
+	max_cluster_cap: number;
+	ntfy_topic: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface UserSelectedClusterTable {
+	id: Generated<number>;
+	run_id: number;
+	user_id: string;
+	cluster_id: number;
+	score: number;
+	reason: string | null;
+	created_at: string;
+}
+
 export interface Database {
 	run: RunTable;
 	run_stage: RunStageTable;
@@ -118,4 +173,9 @@ export interface Database {
 	article: ArticleTable;
 	task_model: TaskModelTable;
 	llm_usage: LlmUsageTable;
+	article_embedding: ArticleEmbeddingTable;
+	cluster: ClusterTable;
+	cluster_article: ClusterArticleTable;
+	interest_profile: InterestProfileTable;
+	user_selected_cluster: UserSelectedClusterTable;
 }
