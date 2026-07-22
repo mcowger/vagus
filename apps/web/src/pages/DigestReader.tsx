@@ -96,8 +96,8 @@ function CitationPill({
 	);
 }
 
-/** Helper to render inline text with interactive favicon citation pills */
-function TextWithCitations({
+/** Helper to render inline text with markdown bold, colons, and interactive favicon citation pills */
+function InlineFormattedText({
 	text,
 	citationMap,
 }: {
@@ -105,14 +105,42 @@ function TextWithCitations({
 	citationMap?: Map<string, CitationItem>;
 }) {
 	if (!text) return null;
-	// Match [art_X] or art_X pattern
-	const parts = text.split(/(\[art_\d+\]|art_\d+)/g);
+
+	let titlePrefix = "";
+	let bodyText = text;
+
+	// Check if line has a title colon near start without ** markdown
+	if (!text.startsWith("**")) {
+		const colonMatch = text.match(/^([A-Z][^:.]{2,45}):\s*(.*)$/s);
+		if (colonMatch) {
+			titlePrefix = colonMatch[1];
+			bodyText = colonMatch[2];
+		}
+	}
+
+	const tokenRegex = /(\*\*[^*]+\*\*|\[?art_\d+\]?)/g;
+	const parts = bodyText.split(tokenRegex);
 
 	return (
 		<span>
+			{titlePrefix && (
+				<strong className="font-bold text-slate-900 mr-1.5">
+					{titlePrefix}:
+				</strong>
+			)}
 			{parts.map((part, idx) => {
-				const isCitation = /^\[?art_\d+\]?$/.test(part);
-				if (isCitation) {
+				if (!part) return null;
+
+				if (part.startsWith("**") && part.endsWith("**")) {
+					const boldText = part.slice(2, -2);
+					return (
+						<strong key={idx} className="font-bold text-indigo-950 mr-0.5">
+							{boldText}
+						</strong>
+					);
+				}
+
+				if (/^\[?art_\d+\]?$/.test(part)) {
 					return (
 						<CitationPill
 							key={idx}
@@ -121,9 +149,70 @@ function TextWithCitations({
 						/>
 					);
 				}
+
 				return <React.Fragment key={idx}>{part}</React.Fragment>;
 			})}
 		</span>
+	);
+}
+
+/** Helper to render text with interactive favicon citation pills */
+function TextWithCitations({
+	text,
+	citationMap,
+}: {
+	text: string;
+	citationMap?: Map<string, CitationItem>;
+}) {
+	return <InlineFormattedText text={text} citationMap={citationMap} />;
+}
+
+/** Renders Executive Summary as structured trend bullet cards */
+function ExecutiveSummaryContent({
+	text,
+	citationMap,
+}: {
+	text: string;
+	citationMap?: Map<string, CitationItem>;
+}) {
+	if (!text) return null;
+
+	let lines: string[] = [];
+
+	if (text.includes("\n") || /[•\-\*]\s+/.test(text)) {
+		lines = text
+			.split(/\n+|\s*(?=[•\-\*]\s+)/)
+			.map((l) => l.trim())
+			.filter((l) => l.length > 0);
+	} else {
+		// Split multi-sentence summary into trend bullet cards
+		const introAndSentences = text.split(/(?<=\.)\s+(?=[A-Z])/);
+		lines = introAndSentences.map((s) => s.trim()).filter((s) => s.length > 0);
+	}
+
+	if (lines.length === 0) return null;
+
+	return (
+		<div className="space-y-2.5">
+			{lines.map((line, idx) => {
+				const cleanLine = line.replace(/^[•\-\*]\s*|^\d+\.\s*/, "").trim();
+				if (!cleanLine) return null;
+
+				return (
+					<div
+						key={idx}
+						className="flex items-start gap-3 p-3 rounded-lg bg-indigo-50/25 border border-indigo-100/80 hover:bg-indigo-50/50 hover:border-indigo-200 transition-all shadow-2xs"
+					>
+						<div className="flex-shrink-0 mt-0.5 h-5 w-5 rounded-md bg-indigo-100 border border-indigo-200 text-indigo-700 flex items-center justify-center font-bold text-xs shadow-2xs">
+							{idx + 1}
+						</div>
+						<div className="leading-relaxed text-sm text-slate-800 flex-1">
+							<InlineFormattedText text={cleanLine} citationMap={citationMap} />
+						</div>
+					</div>
+				);
+			})}
+		</div>
 	);
 }
 
@@ -374,7 +463,7 @@ export const DigestReader: React.FC = () => {
 									</CardTitle>
 								</CardHeader>
 								<CardContent className="pt-4 text-slate-800 leading-relaxed text-sm">
-									<TextWithCitations text={digest.executive_summary} citationMap={citationMap} />
+									<ExecutiveSummaryContent text={digest.executive_summary} citationMap={citationMap} />
 								</CardContent>
 							</Card>
 

@@ -161,7 +161,7 @@ ${clustersText}${quotesText}
 
 Please provide a structured JSON response matching:
 {
-  "executive_summary": "High-level summary overview of all selected topics in this digest",
+  "executive_summary": "Formatted bullet points for each identified key trend or major development (e.g., '- **Trend Title**: Clear synthesis of this trend with relevant citations [art_1]')",
   "key_takeaways": ["3-5 key actionable takeaways across all selected news stories"],
   "why_it_matters": "Broad significance and impact for the user's domain/interests",
   "key_quotes": [
