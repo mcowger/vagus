@@ -34,6 +34,7 @@ export function createAuth(
 		options.allowedDomains ?? process.env.SIGNUP_ALLOWED_DOMAINS ?? "";
 
 	const authInstance = betterAuth({
+		trustedOrigins: ["*"],
 		database: {
 			dialect: new BunSqliteDialect({ database: sqlite }),
 			type: "sqlite",

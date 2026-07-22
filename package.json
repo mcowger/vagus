@@ -6,7 +6,6 @@
 		"apps/*"
 	],
 	"scripts": {
-		"dev": "scripts/dev-server.sh start",
 		"dev:foreground": "scripts/dev-server.sh start --foreground",
 		"dev:agent": "scripts/dev-server.sh start",
 		"dev:status": "scripts/dev-server.sh status",

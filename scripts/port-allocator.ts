@@ -10,11 +10,8 @@
  * Paseo independently compute the identical port for a branch.
  *
  * The **server itself just accepts `$PORT` (or `--port`)** like any other
- * server. Port selection lives in the `bun run dev` target, which inlines this
- * CLI, e.g.:
- *
- *     "dev": "PORT=${PASEO_PORT:-$(bun scripts/port-allocator.ts)} bun apps/server/src/index.ts"
- *     # or:  "dev": "bun apps/server/src/index.ts --port ${PASEO_PORT:-$(scripts/port-allocator.ts)}"
+ * server. Port selection lives in `scripts/dev-server.sh`, which inlines this
+ * CLI.
  *
  * Range is `PASEO_PORT_RANGE` (e.g. "4300-4399") or DEFAULT_RANGE.
  */

@@ -47,6 +47,16 @@ show_server_info() {
 
 case "${1:-}" in
   start)
+    if [ "${2:-}" = "--foreground" ]; then
+      if is_running || is_server_on_port; then
+        echo "Stopping running dev server before starting foreground server..."
+        "$0" stop
+        sleep 0.5
+      fi
+      cd "$ROOT"
+      exec env PORT="$SERVER_PORT" bun apps/server/src/index.ts
+    fi
+
     if is_running; then
       show_server_info "$(cat "$PIDFILE")"
       exit 0
@@ -55,10 +65,6 @@ case "${1:-}" in
     if is_server_on_port; then
       show_server_info
       exit 0
-    fi
-    if [ "${2:-}" = "--foreground" ]; then
-      cd "$ROOT"
-      exec env PORT="$SERVER_PORT" bun apps/server/src/index.ts
     fi
     : > "$LOGFILE"
     PORT="$SERVER_PORT" setsid bash -c 'cd "'"$ROOT"'" && exec bun apps/server/src/index.ts' \

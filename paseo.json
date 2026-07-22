@@ -8,7 +8,7 @@
 	"scripts": {
 		"web": {
 			"type": "service",
-			"command": "bun run dev"
+			"command": "bun run dev:foreground"
 		},
 		"test": {
 			"command": "bun test"

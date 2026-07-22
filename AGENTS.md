@@ -37,7 +37,7 @@ bun run dev:stop          # stop server process group and clean up pidfile
 
 | Command | What it does |
 | --- | --- |
-| `bun run dev` / `dev:agent` | Managed detached dev server (preferred for background agents) |
+| `bun run dev:agent` | Managed detached dev server (preferred for background agents) |
 | `bun run dev:foreground` | Run server interactively in foreground |
 | `bun run dev:status` | Check dev server running state and port |
 | `bun run dev:stop` | Gracefully stop dev server process group |

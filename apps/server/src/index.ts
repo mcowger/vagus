@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { trpcServer } from "@hono/trpc-server";
 // Bun bundles the web SPA from source (fullstack, no Vite). Track C owns the
 // real app under apps/web; this import is the SPA entry served at /*.
@@ -16,6 +17,13 @@ import { appRouter } from "./trpc/router";
 const app = new Hono();
 
 app.use("*", requestLogger());
+app.use(
+	"*",
+	cors({
+		origin: (origin) => origin ?? "*",
+		credentials: true,
+	}),
+);
 
 app.use(
 	"/trpc/*",
