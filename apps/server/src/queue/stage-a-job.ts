@@ -3,6 +3,7 @@ import type { Job, Queue } from "plainjob";
 import { getDb, type Database } from "../db";
 import { generateCompletion } from "../llm";
 import { log } from "../log";
+import { getPromptTemplates, renderPrompt } from "../prompts/defaults";
 import { advanceStage } from "./coordinator";
 import { STAGE_A_BULLET_JOB_TYPE, type StageABulletJobData } from "./extraction-contracts";
 
@@ -44,14 +45,19 @@ export async function processStageABulletJob(
 			return;
 		}
 
-		// Format prompt: includes article title and content/text snippet
+		// Load editable prompt template
 		const contentSnippet = article.content ? article.content.trim() : "";
-		const prompt = `Title: ${article.title}\n\nContent:\n${contentSnippet}`;
+		const { systemPrompt, userPromptTemplate } = await getPromptTemplates(database, "stage_a_bullet");
+		const prompt = renderPrompt(userPromptTemplate, {
+			title: article.title,
+			content: contentSnippet,
+		});
 
 		// Call LLM completion
 		const completion = await generateCompletion("stage_a_bullet", prompt, {
 			runId,
 			db: database,
+			systemPrompt,
 		});
 
 		// Update article table with stage_a_bullet

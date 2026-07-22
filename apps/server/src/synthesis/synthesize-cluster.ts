@@ -3,6 +3,7 @@ import type { Job, Queue } from "plainjob";
 import { getDb, type Database } from "../db";
 import { generateCompletion } from "../llm";
 import { log } from "../log";
+import { getPromptTemplates, renderPrompt } from "../prompts/defaults";
 import { advanceStage } from "../queue/coordinator";
 import { SYNTHESIZE_CLUSTER_JOB_TYPE, type SynthesizeClusterJobData } from "../queue/synthesis-contracts";
 import { ClusterSummaryResult, validateAndFilterCitations } from "./types";
@@ -145,27 +146,19 @@ export async function processSynthesizeClusterJob(
 			keyToArticleIdMap.set(key, article.id);
 		}
 
-		const systemPrompt = `You are a news synthesis assistant. Your task is to analyze multiple articles in a cluster and generate a synthesized summary in structured JSON format matching ClusterSummaryToolSchema.
-Required JSON fields:
-- title: string (Concise event headline for this cluster)
-- summary: string (Synthesized multi-sentence overview of the cluster)
-- perspectives: array of strings (Key perspectives, consensus, or differing viewpoints across sources)
-- timeline: array of strings (Chronological sequence of key events reported in sources)
-- citations: array of strings (Article citation keys referenced, e.g. ['art_1', 'art_2'])
-
-Important: Only reference article keys that are explicitly provided in the user prompt (e.g. 'art_123'). Do not invent citation keys.`;
-
-		let prompt = `Synthesize the following ${articles.length} articles from cluster ${clusterId}:\n\n`;
+		let articlesText = "";
 		for (const article of articles) {
 			const key = `art_${article.id}`;
-			prompt += `--- Article ${key} ---
+			articlesText += `--- Article ${key} ---
 Title: ${article.title}
 Key Bullet: ${article.stage_a_bullet || "N/A"}
-Content: ${article.content || "N/A"}
-
-`;
+Content: ${article.content || "N/A"}\n\n`;
 		}
-		prompt += `Respond with a JSON object or tool call matching the ClusterSummaryToolSchema structure.`;
+
+		const { systemPrompt, userPromptTemplate } = await getPromptTemplates(database, "stage_b_synthesis");
+		const prompt = renderPrompt(userPromptTemplate, {
+			articlesText,
+		});
 
 		const completion = await generateCompletion("stage_b_synthesis", prompt, {
 			runId,

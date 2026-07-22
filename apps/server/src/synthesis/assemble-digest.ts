@@ -3,6 +3,7 @@ import type { Job } from "plainjob";
 import { getDb, type Database } from "../db";
 import { generateCompletion } from "../llm";
 import { log } from "../log";
+import { getPromptTemplates, renderPrompt } from "../prompts/defaults";
 import { advanceStage } from "../queue/coordinator";
 import type { AssembleDigestJobData } from "../queue/synthesis-contracts";
 import type { DigestResult } from "./types";
@@ -155,24 +156,11 @@ Timeline: ${timeline.join("; ")}`;
 					.join("\n");
 		}
 
-		const prompt = `Synthesize an overall executive digest from the following cluster summaries, perspectives, timeline, and key quotes:
-
-${clustersText}${quotesText}
-
-Please provide a structured JSON response matching:
-{
-  "executive_summary": "Formatted bullet points for each identified key trend or major development (e.g., '- **Trend Title**: Clear synthesis of this trend with relevant citations [art_1]')",
-  "key_takeaways": ["3-5 key actionable takeaways across all selected news stories"],
-  "why_it_matters": "Broad significance and impact for the user's domain/interests",
-  "key_quotes": [
-    {
-      "quote": "Selected verbatim quote from primary sources",
-      "citation": "Citation key like art_1"
-    }
-  ]
-}`;
-
-		const systemPrompt = `You are a professional executive editor assembling a high-level daily briefing digest. Output valid JSON matching the specified schema.`;
+		const { systemPrompt, userPromptTemplate } = await getPromptTemplates(database, "stage_c_assembly");
+		const prompt = renderPrompt(userPromptTemplate, {
+			clustersText,
+			quotesText,
+		});
 
 		// Call LLM completion using task_name: "stage_c_assembly"
 		const completion = await generateCompletion("stage_c_assembly", prompt, {

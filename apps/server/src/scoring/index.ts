@@ -4,6 +4,7 @@ import { deserializeFloat32, serializeFloat32, cosineSimilarity } from "../embed
 import { getEmbedder } from "../queue/embed-job";
 import { generateCompletion } from "../llm";
 import { log } from "../log";
+import { getPromptTemplates, renderPrompt } from "../prompts/defaults";
 
 function parseJsonArray(input: string | null | undefined): string[] {
 	if (!input) return [];
@@ -237,23 +238,22 @@ export async function scoreClustersForUser(
 
 		// LLM Tiebreaker for borderline clusters (score between 0.5 and 0.7)
 		if (prelimScore >= 0.5 && prelimScore <= 0.7) {
-			const tiebreakerPrompt = `User Interest Profile:
-Keywords: ${keywords.join(", ")}
-Topics: ${topics.join(", ")}
-Entities: ${entities.join(", ")}
-
-Cluster Article:
-Title: ${title}
-Summary/Content: ${summaryTitle || content.slice(0, 300)}
-
-Preliminary Score: ${prelimScore.toFixed(2)}
-
-Determine whether this cluster is relevant to the user's interest profile. Reply with "RELEVANT" or "IRRELEVANT" and brief reasoning.`;
+			const profileText = `Keywords: ${keywords.join(", ")}\nTopics: ${topics.join(", ")}\nEntities: ${entities.join(", ")}`;
+			const clusterTitle = title;
+			const clusterSummary = summaryTitle || content.slice(0, 300);
 
 			try {
+				const { systemPrompt, userPromptTemplate } = await getPromptTemplates(database, "scoring_tiebreaker");
+				const tiebreakerPrompt = renderPrompt(userPromptTemplate, {
+					profileText,
+					title: clusterTitle,
+					summary: clusterSummary,
+				});
+
 				const completion = await generateCompletion("scoring_tiebreaker", tiebreakerPrompt, {
 					runId,
 					db: database,
+					systemPrompt,
 				});
 
 				const llmText = completion.text;
