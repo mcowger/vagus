@@ -3,8 +3,8 @@ import {
 	allocatePort,
 	DEFAULT_RANGE,
 	parseRange,
+	resolvePort,
 	resolveRange,
-	resolveServerPort,
 } from "./port-allocator";
 
 describe("parseRange", () => {
@@ -72,39 +72,27 @@ describe("allocatePort", () => {
 	});
 });
 
-describe("resolveServerPort", () => {
-	test("prefers a valid injected PASEO_PORT", () => {
-		expect(resolveServerPort("web", { PASEO_PORT: "4321" })).toBe(4321);
-	});
-
-	test("falls back to the allocator for an invalid PASEO_PORT", () => {
-		const env = { PASEO_PORT: "not-a-port", PASEO_BRANCH_NAME: "main" };
-		const expected = allocatePort({
-			service: "web",
-			branch: "main",
-			range: resolveRange(env),
-		});
-		expect(resolveServerPort("web", env)).toBe(expected);
-	});
-
-	test("uses PASEO_BRANCH_NAME when no port is injected", () => {
+describe("resolvePort", () => {
+	test("uses PASEO_BRANCH_NAME when present", () => {
 		const env = { PASEO_BRANCH_NAME: "feature/x" };
 		const expected = allocatePort({
 			service: "web",
 			branch: "feature/x",
 			range: resolveRange(env),
 		});
-		expect(resolveServerPort("web", env)).toBe(expected);
+		expect(resolvePort("web", env)).toBe(expected);
 	});
 
 	test("agrees with the portScript path for the same branch", () => {
+		// The dev CLI (resolvePort) and Paseo's portScript (allocatePort with the
+		// branch Paseo supplies) must land on the same port.
 		const env = { PASEO_BRANCH_NAME: "release/1.2" };
-		const viaServer = resolveServerPort("web", env);
-		const viaScript = allocatePort({
+		const viaDevCli = resolvePort("web", env);
+		const viaPortScript = allocatePort({
 			service: "web",
 			branch: "release/1.2",
 			range: resolveRange(env),
 		});
-		expect(viaServer).toBe(viaScript);
+		expect(viaDevCli).toBe(viaPortScript);
 	});
 });

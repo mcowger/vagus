@@ -3,7 +3,7 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"port": "bun run scripts/paseo-port.ts",
+		"port": "bun run scripts/port-allocator.ts",
 		"test": "bun test"
 	}
 }

@@ -68,7 +68,10 @@ user-visible digest output yet.
 - **Track C — Web shell** (React + shadcn app shell, router, react-query tRPC client,
   auth screens). Depends on: `AppRouter` type only (can mock procedures until A lands).
 - **Track D — Ops plumbing** (config bootstrap, structured logging + request IDs,
-  `/healthz`). Independent.
+  `/healthz`). Independent. The server binds **`$PORT` / `--port`** only; the `bun run
+  dev` target inlines `scripts/port-allocator.ts` (`${PASEO_PORT:-$(...)}`) for a
+  branch-stable port — the allocator + `paseo.json` portScript already exist (see
+  TECHNICAL_DESIGN §13.1).
 - Tracks A–D run **concurrently** after the sync-first step; integrate at the end.
 
 **DoD**

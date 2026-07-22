@@ -262,6 +262,26 @@ per-user synthesis. Degrades to keyword-only scoring when embeddings are unavail
 - `BETTER_AUTH_SECRET` ≥ 32 chars enforced/warned in production.
 - `/healthz` + structured request logging with request IDs.
 
+### 13.1 Dev ports (Paseo + branch-stable allocator)
+
+- **The server just accepts `$PORT` (or `--port`)** like any conventional server — it
+  does **not** import the allocator. Port *selection* lives in the `bun run dev` target,
+  which inlines the shared allocator CLI:
+  ```jsonc
+  // package.json (M1)
+  "dev": "PORT=${PASEO_PORT:-$(bun scripts/port-allocator.ts)} bun apps/server/src/index.ts"
+  // equivalently: bun apps/server/src/index.ts --port ${PASEO_PORT:-$(scripts/port-allocator.ts)}
+  ```
+- `scripts/port-allocator.ts` is a **pure, deterministic** `(service, branch) → port`
+  mapping over a configurable range (`PASEO_PORT_RANGE`, default `4300-4399`), runnable
+  as a CLI (prints the branch-stable port for the current git branch) and importable as
+  a library. Same branch → same port across restarts; different worktrees → different
+  ports.
+- **Paseo** (beta `worktree.servicePorts.portScript`, PR #2165) calls
+  `scripts/paseo-port.ts` — the same allocator, fed the branch Paseo supplies — and sets
+  `$PASEO_PORT`; the `${PASEO_PORT:-…}` shell fallback makes the two paths agree without
+  shared state. Both live in `scripts/` alongside `port-allocator.test.ts`.
+
 ## 14. Key Dependencies (indicative)
 
 `hono`, `@hono/trpc-server`, `@trpc/server`, `@trpc/client`, `better-auth`,

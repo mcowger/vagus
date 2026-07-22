@@ -1,12 +1,20 @@
+#!/usr/bin/env bun
 /**
- * Deterministic, branch-stable port allocation shared by the dev server and
- * Paseo's `servicePorts.portScript`.
+ * Deterministic, branch-stable port allocation shared by the dev server startup
+ * and Paseo's `servicePorts.portScript`.
  *
  * The same (service, branch) pair always maps to the same port within a fixed
  * range, so a given worktree/branch is stable across restarts while parallel
  * worktrees on different branches land on different ports and never collide.
- * Because it is pure (no socket probing, no shared state), the dev server and
+ * Because it is pure (no socket probing, no shared state), the dev script and
  * Paseo independently compute the identical port for a branch.
+ *
+ * The **server itself just accepts `$PORT` (or `--port`)** like any other
+ * server. Port selection lives in the `bun run dev` target, which inlines this
+ * CLI, e.g.:
+ *
+ *     "dev": "PORT=${PASEO_PORT:-$(bun scripts/port-allocator.ts)} bun apps/server/src/index.ts"
+ *     # or:  "dev": "bun apps/server/src/index.ts --port ${PASEO_PORT:-$(scripts/port-allocator.ts)}"
  *
  * Range is `PASEO_PORT_RANGE` (e.g. "4300-4399") or DEFAULT_RANGE.
  */
@@ -79,22 +87,23 @@ export function currentGitBranch(): string {
 }
 
 /**
- * Resolve the port a service should bind to.
- *
- * Prefers Paseo's injected `$PASEO_PORT` (so the daemon's reverse proxy and our
- * process always agree). Outside Paseo (plain `bun run dev`), it computes a
- * branch-stable port with the shared allocator, using `$PASEO_BRANCH_NAME` when
- * present, else the current git branch.
+ * Branch-stable port for the current checkout, for the dev-side CLI. Uses
+ * `$PASEO_BRANCH_NAME` when present (inside a Paseo worktree), else the current
+ * git branch. Paseo's own portScript path is handled by `paseo-port.ts`; the
+ * `$PASEO_PORT` preference is handled by the shell (`${PASEO_PORT:-...}`).
  */
-export function resolveServerPort(
+export function resolvePort(
 	service = "web",
 	env: NodeJS.ProcessEnv = process.env,
 ): number {
-	const injected = env.PASEO_PORT;
-	if (injected) {
-		const port = Number(injected);
-		if (Number.isInteger(port) && port > 0 && port <= 65535) return port;
-	}
 	const branch = env.PASEO_BRANCH_NAME ?? currentGitBranch();
 	return allocatePort({ service, branch, range: resolveRange(env) });
+}
+
+// CLI: print the branch-stable port for `service` (default "web") to stdout, so
+// the `bun run dev` target can inline it. Guarded so importing the module (the
+// shared functions above) never triggers CLI output.
+if (import.meta.main) {
+	const service = process.argv[2] ?? "web";
+	process.stdout.write(String(resolvePort(service)));
 }

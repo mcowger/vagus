@@ -8,8 +8,9 @@
  * PASEO_BRANCH_NAME, PASEO_WORKTREE_PATH. It prints exactly one branch-stable
  * TCP port to stdout.
  *
- * The dev server uses the same allocator (`resolveServerPort`), so both agree
- * on the port for a given branch with no shared state.
+ * The `bun run dev` target inlines `port-allocator.ts` (same allocator), so the
+ * dev server and Paseo agree on the port for a given branch with no shared
+ * state. The server itself just binds `$PORT` / `--port`.
  */
 import { allocatePort, resolveRange } from "./port-allocator";
 
