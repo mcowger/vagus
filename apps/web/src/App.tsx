@@ -14,6 +14,8 @@ import { Runs } from "./pages/Runs";
 import { Sources } from "./pages/Sources";
 import { TaskModels } from "./pages/TaskModels";
 import { DigestReader } from "./pages/DigestReader";
+import { AdminSettings } from "./pages/AdminSettings";
+import { UsageDashboard } from "./pages/UsageDashboard";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
 	const { data: session, isPending } = useSession();
@@ -110,6 +112,14 @@ export function App() {
 								}
 							/>
 							<Route
+								path="usage"
+								element={
+									<ProtectedRoute>
+										<UsageDashboard />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
 								path="profiles"
 								element={
 									<ProtectedRoute>
@@ -138,6 +148,14 @@ export function App() {
 								element={
 									<ProtectedRoute>
 										<DigestReader />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="admin/settings"
+								element={
+									<ProtectedRoute>
+										<AdminSettings />
 									</ProtectedRoute>
 								}
 							/>

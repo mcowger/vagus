@@ -4,8 +4,10 @@ import { digestRouter } from "./routers/digest";
 import { profilesRouter } from "./routers/profiles";
 import { providersRouter } from "./routers/providers";
 import { runsRouter } from "./routers/runs";
+import { settingsRouter } from "./routers/settings";
 import { sourcesRouter } from "./routers/sources";
 import { taskModelsRouter } from "./routers/task-models";
+import { usageRouter } from "./routers/usage";
 
 export const appRouter = router({
 	/** Trivial liveness procedure so the web client has something to call. */
@@ -15,9 +17,11 @@ export const appRouter = router({
 	digest: digestRouter,
 	profiles: profilesRouter,
 	runs: runsRouter,
+	settings: settingsRouter,
 	sources: sourcesRouter,
 	providers: providersRouter,
 	taskModels: taskModelsRouter,
+	usage: usageRouter,
 });
 
 export type AppRouter = typeof appRouter;

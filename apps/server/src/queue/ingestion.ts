@@ -1,7 +1,10 @@
 import type { Kysely } from "kysely";
 import type { Job } from "plainjob";
 import { BraveNewsAdapter } from "../adapters/brave-news";
+import { GitHubTrendingAdapter } from "../adapters/github-trending";
+import { HackerNewsAdapter } from "../adapters/hackernews";
 import { RssAdapter } from "../adapters/rss";
+import { ScrapeAdapter } from "../adapters/scrape";
 import type { SourceAdapter } from "../adapters/types";
 import type { Database } from "../db/schema";
 import { log } from "../log";
@@ -18,6 +21,10 @@ export interface FetchSourceJobData {
 const adapters: Record<string, SourceAdapter> = {
 	rss: new RssAdapter(),
 	"brave-news": new BraveNewsAdapter(),
+	hackernews: new HackerNewsAdapter(),
+	hn: new HackerNewsAdapter(),
+	"github-trending": new GitHubTrendingAdapter(),
+	scrape: new ScrapeAdapter(),
 };
 
 export async function processFetchSourceJob(

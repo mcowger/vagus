@@ -34,11 +34,17 @@ export const Layout: React.FC = () => {
 								<Link to="/task-models" className="text-slate-600 hover:text-slate-900">
 									Task Models
 								</Link>
+								<Link to="/usage" className="text-slate-600 hover:text-slate-900">
+									Usage & Costs
+								</Link>
 								<Link to="/runs" className="text-slate-600 hover:text-slate-900">
 									Runs
 								</Link>
 								<Link to="/digests" className="text-slate-600 hover:text-slate-900">
 									Digest Reader
+								</Link>
+								<Link to="/admin/settings" className="text-slate-600 hover:text-slate-900">
+									Admin Settings
 								</Link>
 							</nav>
 						)}
