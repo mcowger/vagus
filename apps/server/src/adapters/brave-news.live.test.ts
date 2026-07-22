@@ -9,7 +9,7 @@ describe("Live Brave News Adapter Integration Test", () => {
 		return;
 	}
 
-	const braveApiKey = process.env.TESTING_BRAVE_API_KEY || process.env.BRAVE_SEARCH_API_KEY;
+	const braveApiKey = process.env.TESTING_BRAVE_API_KEY;
 
 	test(
 		"requires valid TESTING_BRAVE_API_KEY and executes search query",
