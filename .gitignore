@@ -4,3 +4,7 @@ data/
 *.db-shm
 *.db-wal
 .env
+.dev-server.pid
+.dev-server.log
+*.png
+

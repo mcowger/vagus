@@ -8,6 +8,7 @@
     "@hono/trpc-server": "^0.4.0",
     "@trpc/server": "^10.45.2",
     "better-auth": "^1.1.18",
+    "bun-plugin-tailwind": "^0.1.2",
     "hono": "^4.7.0",
     "kysely": "^0.27.6",
     "kysely-bun-sqlite": "^0.4.0",
