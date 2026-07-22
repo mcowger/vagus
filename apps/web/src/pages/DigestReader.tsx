@@ -575,16 +575,13 @@ export const DigestReader: React.FC = () => {
 												<CardHeader className="bg-slate-50/80 border-b border-slate-100 py-3.5 px-5">
 													<div className="flex items-start justify-between gap-3">
 														<div>
-															<div className="flex items-center gap-2 mb-1">
-																<span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-100 text-indigo-800">
-																	Cluster #{cluster.cluster_id}
-																</span>
-																{clusterCitations.length > 0 && (
-																	<span className="text-xs text-slate-500 font-mono">
+															{clusterCitations.length > 0 && (
+																<div className="flex items-center gap-2 mb-1.5">
+																	<span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
 																		{clusterCitations.length} source{clusterCitations.length > 1 ? "s" : ""}
 																	</span>
-																)}
-															</div>
+																</div>
+															)}
 															<CardTitle className="text-base font-bold text-slate-900">
 																{cluster.title}
 															</CardTitle>
