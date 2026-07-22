@@ -20,19 +20,21 @@ export class BraveNewsAdapter implements SourceAdapter {
 		source: SourceTable,
 		options?: { apiKey?: string; timeoutMs?: number },
 	): Promise<FetchedSourceItem[]> {
-		const apiKey = options?.apiKey;
-		if (!apiKey) {
-			throw new Error(`Brave News adapter requires an API key for source ${source.id}`);
-		}
-
+		let apiKey = options?.apiKey;
 		let query = "latest news";
+
 		if (source.config) {
 			try {
 				const parsed = JSON.parse(source.config);
 				if (parsed.query) query = parsed.query;
+				if (!apiKey && parsed.apiKey) apiKey = parsed.apiKey;
 			} catch {
-				// use default query
+				// use default config
 			}
+		}
+
+		if (!apiKey) {
+			throw new Error(`Brave News adapter requires an API key for source ${source.id}`);
 		}
 
 		const timeoutMs = options?.timeoutMs ?? 10000;
