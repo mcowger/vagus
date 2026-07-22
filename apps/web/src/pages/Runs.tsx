@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 
 export const Runs: React.FC = () => {
 	const utils = trpc.useUtils();
-	const runsQuery = trpc.runs.list.useQuery(undefined, { refetchInterval: 3000 });
+	const runsQuery = trpc.runs.listRuns.useQuery({ limit: 50 }, { refetchInterval: 3000 } as any);
 	const startRunMutation = trpc.runs.startRun.useMutation({
-		onSuccess: () => utils.runs.list.invalidate(),
+		onSuccess: () => utils.runs.listRuns.invalidate(),
 	});
 
 	const handleStartRun = () => {
@@ -21,8 +21,8 @@ export const Runs: React.FC = () => {
 					<h1 className="text-3xl font-bold tracking-tight text-slate-900">Run History</h1>
 					<p className="text-slate-500 mt-1">Monitor pipeline execution cycles and source ingestion progress.</p>
 				</div>
-				<Button onClick={handleStartRun} disabled={startRunMutation.isLoading}>
-					{startRunMutation.isLoading ? "Starting..." : "Trigger Manual Run"}
+				<Button onClick={handleStartRun} disabled={startRunMutation.isPending}>
+					{startRunMutation.isPending ? "Starting..." : "Trigger Manual Run"}
 				</Button>
 			</div>
 

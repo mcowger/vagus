@@ -20,9 +20,13 @@ import {
 } from "./extraction-contracts";
 import { processEmbedArticleJob } from "./embed-job";
 import { processExtractArticleJob } from "./extract-job";
-import { FETCH_SOURCE_JOB_TYPE, processFetchSourceJob } from "./ingestion";
+import { processScoreUserJob } from "./score-job";
+import { FETCH_SOURCE_JOB_TYPE, processFetchSourceJob, type FetchSourceJobData } from "./ingestion";
 import { NOOP_JOB_TYPE, noopProcessor, type NoopJobData } from "./jobs";
 import { processStageABulletJob } from "./stage-a-job";
+import { ASSEMBLE_DIGEST_JOB_TYPE, SYNTHESIZE_CLUSTER_JOB_TYPE, type AssembleDigestJobData, type SynthesizeClusterJobData } from "./synthesis-contracts";
+import { processSynthesizeClusterJob } from "../synthesis/synthesize-cluster";
+import { processAssembleDigestJob } from "../synthesis/assemble-digest";
 
 /**
  * Wraps plainjob's `bun(sqlite)` connection to normalize named parameter keys.
@@ -72,6 +76,8 @@ let stageABulletWorker: Worker | null = null;
 let embedWorker: Worker | null = null;
 let clusterWorker: Worker | null = null;
 let scoreUserWorker: Worker | null = null;
+let synthesizeClusterWorker: Worker | null = null;
+let assembleDigestWorker: Worker | null = null;
 
 export async function startWorker(): Promise<void> {
 	if (noopWorker) return;
@@ -100,7 +106,6 @@ export async function startWorker(): Promise<void> {
 		{
 			queue,
 			logger: log,
-			concurrency: 5, // Stage per-stage concurrency limit
 			onCompleted: (job) => {
 				try {
 					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as FetchSourceJobData;
@@ -123,7 +128,6 @@ export async function startWorker(): Promise<void> {
 		{
 			queue,
 			logger: log,
-			concurrency: 5,
 			onCompleted: (job) => {
 				try {
 					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as ExtractArticleJobData;
@@ -146,7 +150,6 @@ export async function startWorker(): Promise<void> {
 		{
 			queue,
 			logger: log,
-			concurrency: 5,
 			onCompleted: (job) => {
 				try {
 					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as StageABulletJobData;
@@ -169,7 +172,6 @@ export async function startWorker(): Promise<void> {
 		{
 			queue,
 			logger: log,
-			concurrency: 5,
 			onCompleted: (job) => {
 				try {
 					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as ScoreUserJobData;
@@ -192,7 +194,6 @@ export async function startWorker(): Promise<void> {
 		{
 			queue,
 			logger: log,
-			concurrency: 5,
 			onCompleted: (job) => {
 				try {
 					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as EmbedArticleJobData;
@@ -215,7 +216,6 @@ export async function startWorker(): Promise<void> {
 		{
 			queue,
 			logger: log,
-			concurrency: 1,
 			onCompleted: (job) => {
 				try {
 					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as ClusterRunJobData;
@@ -224,6 +224,50 @@ export async function startWorker(): Promise<void> {
 					}
 				} catch (err) {
 					log.error("Failed to advance stage on cluster job completion", {
+						error: String(err),
+						jobId: job.id,
+					});
+				}
+			},
+		},
+	);
+
+	synthesizeClusterWorker = defineWorker(
+		SYNTHESIZE_CLUSTER_JOB_TYPE,
+		(job) => processSynthesizeClusterJob(db.kysely, queue, job),
+		{
+			queue,
+			logger: log,
+			onCompleted: (job) => {
+				try {
+					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as SynthesizeClusterJobData;
+					if (data?.stageId) {
+						void advanceStage(db.kysely, data.stageId, job.id);
+					}
+				} catch (err) {
+					log.error("Failed to advance stage on synthesize-cluster job completion", {
+						error: String(err),
+						jobId: job.id,
+					});
+				}
+			},
+		},
+	);
+
+	assembleDigestWorker = defineWorker(
+		ASSEMBLE_DIGEST_JOB_TYPE,
+		(job) => processAssembleDigestJob(db.kysely, job),
+		{
+			queue,
+			logger: log,
+			onCompleted: (job) => {
+				try {
+					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as AssembleDigestJobData;
+					if (data?.stageId) {
+						void advanceStage(db.kysely, data.stageId, job.id);
+					}
+				} catch (err) {
+					log.error("Failed to advance stage on assemble-digest job completion", {
 						error: String(err),
 						jobId: job.id,
 					});
@@ -259,6 +303,14 @@ export async function startWorker(): Promise<void> {
 	void clusterWorker.start().catch((err) => {
 		log.error("Cluster worker crashed", { error: String(err) });
 	});
+
+	void synthesizeClusterWorker.start().catch((err) => {
+		log.error("Synthesize cluster worker crashed", { error: String(err) });
+	});
+
+	void assembleDigestWorker.start().catch((err) => {
+		log.error("Assemble digest worker crashed", { error: String(err) });
+	});
 }
 
 export async function stopWorker(): Promise<void> {
@@ -289,6 +341,14 @@ export async function stopWorker(): Promise<void> {
 	if (scoreUserWorker) {
 		await scoreUserWorker.stop();
 		scoreUserWorker = null;
+	}
+	if (synthesizeClusterWorker) {
+		await synthesizeClusterWorker.stop();
+		synthesizeClusterWorker = null;
+	}
+	if (assembleDigestWorker) {
+		await assembleDigestWorker.stop();
+		assembleDigestWorker = null;
 	}
 	queue.close();
 }

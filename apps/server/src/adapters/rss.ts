@@ -1,4 +1,5 @@
 import Parser from "rss-parser";
+import type { Selectable } from "kysely";
 import type { SourceTable } from "../db/schema";
 import type { FetchedSourceItem, SourceAdapter } from "./types";
 
@@ -6,7 +7,7 @@ export class RssAdapter implements SourceAdapter {
 	private parser = new Parser();
 
 	async fetchItems(
-		source: SourceTable,
+		source: Selectable<SourceTable>,
 		options?: { timeoutMs?: number },
 	): Promise<FetchedSourceItem[]> {
 		if (!source.url) {

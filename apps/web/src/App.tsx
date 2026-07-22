@@ -13,6 +13,7 @@ import { Providers } from "./pages/Providers";
 import { Runs } from "./pages/Runs";
 import { Sources } from "./pages/Sources";
 import { TaskModels } from "./pages/TaskModels";
+import { DigestReader } from "./pages/DigestReader";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
 	const { data: session, isPending } = useSession();
@@ -121,6 +122,22 @@ export function App() {
 								element={
 									<ProtectedRoute>
 										<Runs />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="digests"
+								element={
+									<ProtectedRoute>
+										<DigestReader />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="digests/:id"
+								element={
+									<ProtectedRoute>
+										<DigestReader />
 									</ProtectedRoute>
 								}
 							/>

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { Selectable } from "kysely";
 import type { SourceTable } from "../db/schema";
 import { BraveNewsAdapter } from "./brave-news";
 import { RssAdapter } from "./rss";
@@ -14,16 +15,16 @@ describe("Source Adapters", () => {
 
 		// Intercept fetch call for rss feed url
 		const originalFetch = globalThis.fetch;
-		globalThis.fetch = async (input, init) => {
+		globalThis.fetch = (async (input: any, init?: any) => {
 			return new Response(xmlFixture, {
 				status: 200,
 				headers: { "Content-Type": "application/rss+xml" },
 			});
-		};
+		}) as unknown as typeof fetch;
 
 		try {
 			const adapter = new RssAdapter();
-			const fakeSource: SourceTable = {
+			const fakeSource: Selectable<SourceTable> = {
 				id: 1,
 				type: "rss",
 				name: "Tech News",
@@ -52,16 +53,16 @@ describe("Source Adapters", () => {
 		);
 
 		const originalFetch = globalThis.fetch;
-		globalThis.fetch = async (input, init) => {
+		globalThis.fetch = (async (input: any, init?: any) => {
 			return new Response(jsonFixture, {
 				status: 200,
 				headers: { "Content-Type": "application/json" },
 			});
-		};
+		}) as unknown as typeof fetch;
 
 		try {
 			const adapter = new BraveNewsAdapter();
-			const fakeSource: SourceTable = {
+			const fakeSource: Selectable<SourceTable> = {
 				id: 2,
 				type: "brave-news",
 				name: "AI News",

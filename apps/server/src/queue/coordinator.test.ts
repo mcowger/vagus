@@ -131,7 +131,7 @@ test("integration: real plainjob worker processes noop job and advances run to c
 
 	const worker = defineWorker(NOOP_JOB_TYPE, noopProcessor, {
 		queue,
-		pollInterval: 50,
+		pollIntervall: 50,
 		onCompleted: (job) => {
 			try {
 				const data = JSON.parse(job.data) as NoopJobData;

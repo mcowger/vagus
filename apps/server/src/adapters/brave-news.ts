@@ -1,3 +1,4 @@
+import type { Selectable } from "kysely";
 import type { SourceTable } from "../db/schema";
 import type { FetchedSourceItem, SourceAdapter } from "./types";
 
@@ -17,7 +18,7 @@ interface BraveNewsResponse {
 
 export class BraveNewsAdapter implements SourceAdapter {
 	async fetchItems(
-		source: SourceTable,
+		source: Selectable<SourceTable>,
 		options?: { apiKey?: string; timeoutMs?: number },
 	): Promise<FetchedSourceItem[]> {
 		let apiKey = options?.apiKey;

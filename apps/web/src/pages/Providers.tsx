@@ -58,8 +58,8 @@ export const Providers: React.FC = () => {
 									<span className="text-amber-600 font-semibold">Not Configured</span>
 								)}
 							</div>
-							<Button type="submit" disabled={upsertProviderMutation.isLoading || !braveKey}>
-								{upsertProviderMutation.isLoading ? "Saving..." : "Save Key"}
+							<Button type="submit" disabled={upsertProviderMutation.isPending || !braveKey}>
+								{upsertProviderMutation.isPending ? "Saving..." : "Save Key"}
 							</Button>
 						</div>
 					</form>

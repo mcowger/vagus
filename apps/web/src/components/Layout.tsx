@@ -37,6 +37,9 @@ export const Layout: React.FC = () => {
 								<Link to="/runs" className="text-slate-600 hover:text-slate-900">
 									Runs
 								</Link>
+								<Link to="/digests" className="text-slate-600 hover:text-slate-900">
+									Digest Reader
+								</Link>
 							</nav>
 						)}
 					</div>

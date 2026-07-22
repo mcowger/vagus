@@ -112,7 +112,7 @@ describe("extract-job", () => {
 
 	test("fetches and extracts HTML when content is null", async () => {
 		const origFetch = globalThis.fetch;
-		globalThis.fetch = async () => new Response(sampleHtml, { status: 200 });
+		globalThis.fetch = (async () => new Response(sampleHtml, { status: 200 })) as unknown as typeof fetch;
 
 		try {
 			const source = await db

@@ -2,10 +2,11 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { appRouter } from "../router";
 import { createDb } from "../../db/connection";
 import { migrateToLatest } from "../../db/migrate";
-import type { KyselyDb } from "../../db/connection";
+import type { Kysely } from "kysely";
+import type { Database } from "../../db/schema";
 
 let dbObj: ReturnType<typeof createDb>;
-let db: KyselyDb;
+let db: Kysely<Database>;
 
 beforeEach(async () => {
 	dbObj = createDb(":memory:");
@@ -27,6 +28,7 @@ function createCaller(role: "admin" | "user" = "admin") {
 			role,
 			isDisabled: false,
 		},
+		session: null,
 	});
 }
 

@@ -6,7 +6,7 @@ import { defineQueue, defineWorker, type Queue, type Worker } from "plainjob";
 import { RssAdapter } from "../adapters/rss";
 import type { Database } from "../db/schema";
 import { migrateToLatest } from "../db/migrate";
-import { FETCH_SOURCE_JOB_TYPE, processFetchSourceJob } from "./ingestion";
+import { FETCH_SOURCE_JOB_TYPE, processFetchSourceJob, type FetchSourceJobData } from "./ingestion";
 import { createPlainjobConnection } from "./index";
 import { advanceStage, startRun } from "./coordinator";
 
@@ -32,8 +32,8 @@ describe("Ingestion Core & Idempotency", () => {
 			(job) => processFetchSourceJob(db, job),
 			{
 				queue,
-				pollInterval: 50,
-				onCompleted: (job) => {
+				pollIntervall: 50,
+				onCompleted: (job: any) => {
 					try {
 						const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as FetchSourceJobData;
 						if (data?.stageId) {
@@ -41,7 +41,7 @@ describe("Ingestion Core & Idempotency", () => {
 						}
 					} catch {}
 				},
-			},
+			} as any,
 		);
 		void worker.start();
 	});
@@ -69,7 +69,7 @@ describe("Ingestion Core & Idempotency", () => {
 </rss>`;
 
 		const origFetch = globalThis.fetch;
-		globalThis.fetch = async () => new Response(xml, { status: 200 });
+		globalThis.fetch = (async () => new Response(xml, { status: 200 })) as unknown as typeof fetch;
 
 		try {
 			// Insert test source

@@ -1,5 +1,7 @@
 import type { Generated } from "kysely";
 
+export type Timestamp = Generated<string>;
+
 // Kysely schema for app-owned tables. BetterAuth and plainjob create and manage
 // their OWN tables on the same connection — they are intentionally NOT modeled
 // here. Keep this file organized by concern; later milestones extend it with
@@ -18,7 +20,7 @@ export interface RunTable {
 	id: Generated<number>;
 	trigger: RunTrigger;
 	status: RunStatus;
-	started_at: string;
+	started_at: Timestamp;
 	finished_at: string | null;
 	/** JSON blob of per-run stats (per-source counts, etc.). */
 	stats: string | null;
@@ -43,8 +45,8 @@ export interface ProviderConfigTable {
 	api_key: string | null;
 	enabled: number; // 0 or 1
 	config: string | null; // JSON config string
-	created_at: string;
-	updated_at: string;
+	created_at: Timestamp;
+	updated_at: Timestamp;
 }
 
 export type SourceType = "rss" | "brave-news" | "hackernews" | "github-trending" | "scrape";
@@ -57,15 +59,15 @@ export interface SourceTable {
 	config: string | null; // JSON specific config (e.g. search query for brave-news)
 	enabled: number; // 0 or 1
 	owner_user_id: string | null; // NULL = global pool
-	created_at: string;
-	updated_at: string;
+	created_at: Timestamp;
+	updated_at: Timestamp;
 }
 
 export interface ProcessedKeyTable {
 	id: Generated<number>;
 	identity_key: string; // Unique hash or identifier of content
 	source_id: number;
-	processed_at: string;
+	processed_at: Timestamp;
 }
 
 export interface ArticleTable {
@@ -80,8 +82,8 @@ export interface ArticleTable {
 	image_url: string | null;
 	reading_time_minutes: number | null;
 	stage_a_bullet: string | null;
-	fetched_at: string;
-	created_at: string;
+	fetched_at: Timestamp;
+	created_at: Timestamp;
 }
 
 // ---------------------------------------------------------------------------
@@ -93,8 +95,8 @@ export interface TaskModelTable {
 	task_name: string; // e.g. "stage_a_bullet", "stage_b_synthesis"
 	provider: string; // e.g. "openai", "anthropic", "faux"
 	model_name: string; // e.g. "gpt-4o-mini", "faux-cheap"
-	created_at: string;
-	updated_at: string;
+	created_at: Timestamp;
+	updated_at: Timestamp;
 }
 
 export interface LlmUsageTable {
@@ -106,7 +108,7 @@ export interface LlmUsageTable {
 	prompt_tokens: number;
 	completion_tokens: number;
 	estimated_cost: number;
-	created_at: string;
+	created_at: Timestamp;
 }
 
 // ---------------------------------------------------------------------------
@@ -118,7 +120,7 @@ export interface ArticleEmbeddingTable {
 	article_id: number;
 	embedding: Uint8Array; // Float32Array serialized as Uint8Array bytes
 	model_name: string;
-	created_at: string;
+	created_at: Timestamp;
 }
 
 export interface ClusterTable {
@@ -126,7 +128,7 @@ export interface ClusterTable {
 	run_id: number;
 	primary_article_id: number;
 	summary_title: string | null;
-	created_at: string;
+	created_at: Timestamp;
 }
 
 export interface ClusterArticleTable {
@@ -134,7 +136,7 @@ export interface ClusterArticleTable {
 	cluster_id: number;
 	article_id: number;
 	is_primary: number; // 1 = primary, 0 = syndication/related
-	created_at: string;
+	created_at: Timestamp;
 }
 
 export interface InterestProfileTable {
@@ -150,8 +152,8 @@ export interface InterestProfileTable {
 	similarity_threshold: number;
 	max_cluster_cap: number;
 	ntfy_topic: string | null;
-	created_at: string;
-	updated_at: string;
+	created_at: Timestamp;
+	updated_at: Timestamp;
 }
 
 export interface UserSelectedClusterTable {
@@ -161,7 +163,42 @@ export interface UserSelectedClusterTable {
 	cluster_id: number;
 	score: number;
 	reason: string | null;
-	created_at: string;
+	created_at: Timestamp;
+}
+
+// ---------------------------------------------------------------------------
+// Synthesis, Digests & Citations (M5)
+// ---------------------------------------------------------------------------
+
+export interface DigestTable {
+	id: Generated<number>;
+	run_id: number;
+	user_id: string;
+	executive_summary: string;
+	key_takeaways: Generated<string>; // JSON array string
+	why_it_matters: string;
+	key_quotes: Generated<string>; // JSON array string of { quote, citation }
+	created_at: Timestamp;
+}
+
+export interface DigestClusterTable {
+	id: Generated<number>;
+	digest_id: number;
+	cluster_id: number;
+	title: string;
+	summary: string;
+	perspectives: Generated<string>; // JSON array string
+	timeline: Generated<string>; // JSON array string
+	created_at: Timestamp;
+}
+
+export interface CitationTable {
+	id: Generated<number>;
+	digest_id: number;
+	digest_cluster_id: number | null;
+	article_id: number;
+	citation_key: string; // e.g. "art_10"
+	created_at: Timestamp;
 }
 
 export interface Database {
@@ -178,4 +215,7 @@ export interface Database {
 	cluster_article: ClusterArticleTable;
 	interest_profile: InterestProfileTable;
 	user_selected_cluster: UserSelectedClusterTable;
+	digest: DigestTable;
+	digest_cluster: DigestClusterTable;
+	citation: CitationTable;
 }

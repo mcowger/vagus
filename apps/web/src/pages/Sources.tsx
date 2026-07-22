@@ -117,8 +117,8 @@ export const Sources: React.FC = () => {
 								</Label>
 							</div>
 
-							<Button type="submit" className="w-full" disabled={createSourceMutation.isLoading}>
-								{createSourceMutation.isLoading ? "Saving..." : "Add Source"}
+							<Button type="submit" className="w-full" disabled={createSourceMutation.isPending}>
+								{createSourceMutation.isPending ? "Saving..." : "Add Source"}
 							</Button>
 						</form>
 					</CardContent>

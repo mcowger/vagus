@@ -184,8 +184,8 @@ export const TaskModels: React.FC = () => {
 								/>
 							</div>
 
-							<Button type="submit" className="w-full" disabled={setTaskModelMutation.isLoading}>
-								{setTaskModelMutation.isLoading ? "Saving..." : "Save Model Config"}
+							<Button type="submit" className="w-full" disabled={setTaskModelMutation.isPending}>
+								{setTaskModelMutation.isPending ? "Saving..." : "Save Model Config"}
 							</Button>
 						</form>
 					</CardContent>

@@ -92,7 +92,7 @@ export async function callLlmCompletion(options: LlmCallOptions): Promise<LlmCom
 			},
 		};
 	} catch (err) {
-		logger.error({ err, endpoint, modelName }, "Failed LLM completion call");
+		logger.error("Failed LLM completion call", { err, endpoint, modelName });
 		if (throwOnFailure) {
 			throw err;
 		}
@@ -216,7 +216,7 @@ export async function generateCompletion(
 			})
 			.execute();
 	} catch (err) {
-		logger.warn({ err }, "Failed to record LLM usage");
+		logger.warn("Failed to record LLM usage", { err });
 	}
 
 	return result;

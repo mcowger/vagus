@@ -1,3 +1,4 @@
+import type { Selectable } from "kysely";
 import type { SourceTable } from "../db/schema";
 
 export interface FetchedSourceItem {
@@ -14,7 +15,7 @@ export interface FetchedSourceItem {
 export interface SourceAdapter {
 	/** Fetch raw items from a source given its DB configuration and optional API keys. */
 	fetchItems(
-		source: SourceTable,
+		source: Selectable<SourceTable>,
 		options?: { apiKey?: string; timeoutMs?: number },
 	): Promise<FetchedSourceItem[]>;
 }
