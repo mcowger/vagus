@@ -6,6 +6,7 @@ import { log } from "../log";
 import { getPromptTemplates, renderPrompt } from "../prompts/defaults";
 import { advanceStage } from "../queue/coordinator";
 import { SYNTHESIZE_CLUSTER_JOB_TYPE, type SynthesizeClusterJobData } from "../queue/synthesis-contracts";
+import { extractJsonFromText, sanitizeTextContent } from "../utils/json";
 import { ClusterSummaryResult, validateAndFilterCitations } from "./types";
 
 export function parseClusterSummaryResponse(
@@ -13,48 +14,17 @@ export function parseClusterSummaryResponse(
 	validArticleKeys: Set<string>,
 	fallbackTitle: string,
 ): ClusterSummaryResult {
-	let rawObj: any = null;
-
-	try {
-		rawObj = JSON.parse(text);
-	} catch {
-		const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-		if (jsonMatch && jsonMatch[1]) {
-			try {
-				rawObj = JSON.parse(jsonMatch[1]);
-			} catch {}
-		}
-
-		if (!rawObj) {
-			const toolMatch = text.match(/\w+\s*\(\s*(\{[\s\S]*\})\s*\)/);
-			if (toolMatch && toolMatch[1]) {
-				try {
-					rawObj = JSON.parse(toolMatch[1]);
-				} catch {}
-			}
-		}
-
-		if (!rawObj) {
-			const braceMatch = text.match(/\{[\s\S]*\}/);
-			if (braceMatch) {
-				try {
-					rawObj = JSON.parse(braceMatch[0]);
-				} catch {}
-			}
-		}
-	}
+	const rawObj = extractJsonFromText(text);
 
 	const title =
 		typeof rawObj?.title === "string" && rawObj.title.trim()
-			? rawObj.title.trim()
+			? sanitizeTextContent(rawObj.title)
 			: fallbackTitle;
 
 	const summary =
 		typeof rawObj?.summary === "string" && rawObj.summary.trim()
-			? rawObj.summary.trim()
-			: typeof text === "string" && text.trim()
-				? text.trim()
-				: "Synthesized cluster summary.";
+			? sanitizeTextContent(rawObj.summary)
+			: sanitizeTextContent(text) || "Synthesized cluster summary.";
 
 	let perspectives: string[] = [];
 	if (Array.isArray(rawObj?.perspectives)) {

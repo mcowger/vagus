@@ -6,51 +6,46 @@ import { log } from "../log";
 import { getPromptTemplates, renderPrompt } from "../prompts/defaults";
 import { advanceStage } from "../queue/coordinator";
 import type { AssembleDigestJobData } from "../queue/synthesis-contracts";
+import { extractJsonFromText, sanitizeTextContent } from "../utils/json";
 import type { DigestResult } from "./types";
 
 export function parseDigestResult(text: string): DigestResult {
-	let cleanText = text.trim();
-	if (cleanText.startsWith("```")) {
-		cleanText = cleanText.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
-	}
+	const parsed = extractJsonFromText(text);
 
-	try {
-		const parsed = JSON.parse(cleanText);
-		if (typeof parsed === "object" && parsed !== null) {
-			const executive_summary =
-				typeof parsed.executive_summary === "string" ? parsed.executive_summary : text;
+	if (typeof parsed === "object" && parsed !== null) {
+		const executive_summary =
+			typeof parsed.executive_summary === "string"
+				? sanitizeTextContent(parsed.executive_summary)
+				: sanitizeTextContent(text);
 
-			const key_takeaways = Array.isArray(parsed.key_takeaways)
-				? parsed.key_takeaways.map((item: any) => String(item))
-				: [];
+		const key_takeaways = Array.isArray(parsed.key_takeaways)
+			? parsed.key_takeaways.map((item: any) => sanitizeTextContent(String(item)))
+			: [];
 
-			const why_it_matters =
-				typeof parsed.why_it_matters === "string" && parsed.why_it_matters.trim().length > 0
-					? parsed.why_it_matters
-					: "Key developments matching your specified interest profile.";
+		const why_it_matters =
+			typeof parsed.why_it_matters === "string" && parsed.why_it_matters.trim().length > 0
+				? sanitizeTextContent(parsed.why_it_matters)
+				: "Key developments matching your specified interest profile.";
 
-			const key_quotes = Array.isArray(parsed.key_quotes)
-				? parsed.key_quotes
-						.filter((q: any) => q && typeof q === "object")
-						.map((q: any) => ({
-							quote: typeof q.quote === "string" ? String(q.quote) : "",
-							citation: typeof q.citation === "string" ? String(q.citation) : "",
-						}))
-				: [];
+		const key_quotes = Array.isArray(parsed.key_quotes)
+			? parsed.key_quotes
+					.filter((q: any) => q && typeof q === "object")
+					.map((q: any) => ({
+						quote: typeof q.quote === "string" ? sanitizeTextContent(String(q.quote)) : "",
+						citation: typeof q.citation === "string" ? sanitizeTextContent(String(q.citation)) : "",
+					}))
+			: [];
 
-			return {
-				executive_summary,
-				key_takeaways,
-				why_it_matters,
-				key_quotes,
-			};
-		}
-	} catch {
-		// JSON parsing failed, fallback below
+		return {
+			executive_summary,
+			key_takeaways,
+			why_it_matters,
+			key_quotes,
+		};
 	}
 
 	return {
-		executive_summary: text,
+		executive_summary: sanitizeTextContent(text),
 		key_takeaways: [],
 		why_it_matters: "Key developments matching your specified interest profile.",
 		key_quotes: [],

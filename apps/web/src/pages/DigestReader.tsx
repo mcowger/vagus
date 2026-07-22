@@ -98,6 +98,31 @@ function CitationPill({
 	);
 }
 
+function cleanCodeFenceText(text?: string | null): string {
+	if (!text) return "";
+	let cleaned = text.trim();
+
+	if (cleaned.startsWith("```") || cleaned.includes("```json")) {
+		const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+		if (jsonMatch && jsonMatch[1]) {
+			try {
+				const parsed = JSON.parse(jsonMatch[1]);
+				if (parsed && typeof parsed === "object") {
+					if (typeof parsed.summary === "string" && parsed.summary.trim()) {
+						return parsed.summary.trim();
+					}
+					if (typeof parsed.executive_summary === "string" && parsed.executive_summary.trim()) {
+						return parsed.executive_summary.trim();
+					}
+				}
+			} catch {}
+		}
+		cleaned = cleaned.replace(/^```(?:json|JSON)?\s*/i, "").replace(/\s*```$/i, "");
+	}
+
+	return cleaned.trim();
+}
+
 /** Helper to render inline text with markdown bold, colons, and interactive favicon citation pills */
 function InlineFormattedText({
 	text,
@@ -108,12 +133,13 @@ function InlineFormattedText({
 }) {
 	if (!text) return null;
 
+	const cleanText = cleanCodeFenceText(text);
 	let titlePrefix = "";
-	let bodyText = text;
+	let bodyText = cleanText;
 
 	// Check if line has a title colon near start without ** markdown
-	if (!text.startsWith("**")) {
-		const colonMatch = text.match(/^([A-Z][^:.]{2,45}):\s*(.*)$/s);
+	if (!cleanText.startsWith("**")) {
+		const colonMatch = cleanText.match(/^([A-Z][^:.]{2,45}):\s*(.*)$/s);
 		if (colonMatch) {
 			titlePrefix = colonMatch[1];
 			bodyText = colonMatch[2];
