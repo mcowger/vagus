@@ -2,28 +2,28 @@ import { describe, expect, test } from "bun:test";
 import { BraveNewsAdapter } from "./brave-news";
 
 const isLiveRequested = process.env.RUN_LIVE_TESTS === "1" || process.env.TEST_LIVE === "1";
-const braveApiKey = process.env.TESTING_BRAVE_API_KEY || process.env.BRAVE_SEARCH_API_KEY;
-
-const hasBraveCredentials = Boolean(
-	isLiveRequested && braveApiKey && braveApiKey !== "your-brave-key",
-);
 
 describe("Live Brave News Adapter Integration Test", () => {
-	if (!hasBraveCredentials) {
-		test.skip("Skipping live Brave News test: RUN_LIVE_TESTS=1 not set or TESTING_BRAVE_API_KEY missing", () => {});
+	if (!isLiveRequested) {
+		test.skip("Skipping live test: RUN_LIVE_TESTS=1 not set", () => {});
 		return;
 	}
 
-	const adapter = new BraveNewsAdapter();
+	const braveApiKey = process.env.TESTING_BRAVE_API_KEY || process.env.BRAVE_SEARCH_API_KEY;
 
 	test(
-		"executes real search query against Brave News API",
+		"requires valid TESTING_BRAVE_API_KEY and executes search query",
 		async () => {
+			expect(braveApiKey).toBeDefined();
+			expect(braveApiKey).not.toBe("");
+			expect(braveApiKey).not.toBe("your-brave-key");
+
+			const adapter = new BraveNewsAdapter();
 			const items = await adapter.fetchItems(
 				{
 					id: 2,
 					type: "brave-news",
-					name: "Brave Artificial Intelligence News",
+					name: "Brave AI News",
 					url: null,
 					config: JSON.stringify({ query: "artificial intelligence" }),
 					enabled: 1,
