@@ -1,0 +1,17 @@
+{
+	"worktree": {
+		"setup": ["bun install"],
+		"servicePorts": {
+			"portScript": "./scripts/paseo-port.ts"
+		}
+	},
+	"scripts": {
+		"web": {
+			"type": "service",
+			"command": "bun run dev"
+		},
+		"test": {
+			"command": "bun test"
+		}
+	}
+}

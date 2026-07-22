@@ -1,0 +1,9 @@
+{
+	"name": "vagus",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"port": "bun run scripts/paseo-port.ts",
+		"test": "bun test"
+	}
+}
