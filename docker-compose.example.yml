@@ -1,0 +1,35 @@
+# Example Docker Compose Configuration for Vagus News Digest
+version: "3.8"
+
+services:
+  vagus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vagus-news-digest
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - BETTER_AUTH_SECRET=change_me_to_a_secure_random_string_at_least_32_chars
+      - DATABASE_PATH=/app/data/vagus.sqlite
+
+      # Optional pre-configured provider keys
+      # - TESTING_EMBEDDING_BASE_URL=https://api.openai.com/v1
+      # - TESTING_EMBEDDING_KEY=sk-...
+      # - TESTING_LLM_BASE_URL=https://api.openai.com/v1
+      # - TESTING_LLM_KEY=sk-...
+      # - TESTING_BRAVE_API_KEY=BSA...
+
+    volumes:
+      # Persistent SQLite DB and runtime state
+      - ./data:/app/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "bun -e 'fetch(\"http://localhost:3000/healthz\").then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+    restart: unless-stopped
