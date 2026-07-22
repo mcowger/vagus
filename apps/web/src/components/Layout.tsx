@@ -28,6 +28,9 @@ export const Layout: React.FC = () => {
 								<Link to="/providers" className="text-slate-600 hover:text-slate-900">
 									Providers
 								</Link>
+								<Link to="/task-models" className="text-slate-600 hover:text-slate-900">
+									Task Models
+								</Link>
 								<Link to="/runs" className="text-slate-600 hover:text-slate-900">
 									Runs
 								</Link>

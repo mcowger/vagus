@@ -3,8 +3,16 @@ import { bun, defineQueue, defineWorker, type Connection, type Queue, type Worke
 import { db } from "../db/connection";
 import { log } from "../log";
 import { advanceStage } from "./coordinator";
+import {
+	EXTRACT_ARTICLE_JOB_TYPE,
+	STAGE_A_BULLET_JOB_TYPE,
+	type ExtractArticleJobData,
+	type StageABulletJobData,
+} from "./extraction-contracts";
+import { processExtractArticleJob } from "./extract-job";
 import { FETCH_SOURCE_JOB_TYPE, processFetchSourceJob } from "./ingestion";
 import { NOOP_JOB_TYPE, noopProcessor, type NoopJobData } from "./jobs";
+import { processStageABulletJob } from "./stage-a-job";
 
 /**
  * Wraps plainjob's `bun(sqlite)` connection to normalize named parameter keys.
@@ -49,6 +57,8 @@ export const queue: Queue = defineQueue({
 
 let noopWorker: Worker | null = null;
 let fetchWorker: Worker | null = null;
+let extractWorker: Worker | null = null;
+let stageABulletWorker: Worker | null = null;
 
 export async function startWorker(): Promise<void> {
 	if (noopWorker) return;
@@ -94,12 +104,66 @@ export async function startWorker(): Promise<void> {
 		},
 	);
 
+	extractWorker = defineWorker(
+		EXTRACT_ARTICLE_JOB_TYPE,
+		(job) => processExtractArticleJob(db.kysely, job),
+		{
+			queue,
+			logger: log,
+			concurrency: 5,
+			onCompleted: (job) => {
+				try {
+					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as ExtractArticleJobData;
+					if (data?.stageId) {
+						void advanceStage(db.kysely, data.stageId, job.id);
+					}
+				} catch (err) {
+					log.error("Failed to advance stage on extract job completion", {
+						error: String(err),
+						jobId: job.id,
+					});
+				}
+			},
+		},
+	);
+
+	stageABulletWorker = defineWorker(
+		STAGE_A_BULLET_JOB_TYPE,
+		(job) => processStageABulletJob(db.kysely, queue, job),
+		{
+			queue,
+			logger: log,
+			concurrency: 5,
+			onCompleted: (job) => {
+				try {
+					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as StageABulletJobData;
+					if (data?.stageId) {
+						void advanceStage(db.kysely, data.stageId, job.id);
+					}
+				} catch (err) {
+					log.error("Failed to advance stage on stage-a job completion", {
+						error: String(err),
+						jobId: job.id,
+					});
+				}
+			},
+		},
+	);
+
 	void noopWorker.start().catch((err) => {
 		log.error("Noop worker crashed", { error: String(err) });
 	});
 
 	void fetchWorker.start().catch((err) => {
 		log.error("Fetch worker crashed", { error: String(err) });
+	});
+
+	void extractWorker.start().catch((err) => {
+		log.error("Extract worker crashed", { error: String(err) });
+	});
+
+	void stageABulletWorker.start().catch((err) => {
+		log.error("Stage A Bullet worker crashed", { error: String(err) });
 	});
 }
 
@@ -111,6 +175,14 @@ export async function stopWorker(): Promise<void> {
 	if (fetchWorker) {
 		await fetchWorker.stop();
 		fetchWorker = null;
+	}
+	if (extractWorker) {
+		await extractWorker.stop();
+		extractWorker = null;
+	}
+	if (stageABulletWorker) {
+		await stageABulletWorker.stop();
+		stageABulletWorker = null;
 	}
 	queue.close();
 }

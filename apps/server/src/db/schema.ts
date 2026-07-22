@@ -84,6 +84,31 @@ export interface ArticleTable {
 	created_at: string;
 }
 
+// ---------------------------------------------------------------------------
+// LLM & Task Model Configuration (M3)
+// ---------------------------------------------------------------------------
+
+export interface TaskModelTable {
+	id: Generated<number>;
+	task_name: string; // e.g. "stage_a_bullet", "stage_b_synthesis"
+	provider: string; // e.g. "openai", "anthropic", "faux"
+	model_name: string; // e.g. "gpt-4o-mini", "faux-cheap"
+	created_at: string;
+	updated_at: string;
+}
+
+export interface LlmUsageTable {
+	id: Generated<number>;
+	run_id: number | null;
+	task_name: string;
+	provider: string;
+	model_name: string;
+	prompt_tokens: number;
+	completion_tokens: number;
+	estimated_cost: number;
+	created_at: string;
+}
+
 export interface Database {
 	run: RunTable;
 	run_stage: RunStageTable;
@@ -91,4 +116,6 @@ export interface Database {
 	source: SourceTable;
 	processed_key: ProcessedKeyTable;
 	article: ArticleTable;
+	task_model: TaskModelTable;
+	llm_usage: LlmUsageTable;
 }

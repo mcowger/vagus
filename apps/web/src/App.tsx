@@ -11,6 +11,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Providers } from "./pages/Providers";
 import { Runs } from "./pages/Runs";
 import { Sources } from "./pages/Sources";
+import { TaskModels } from "./pages/TaskModels";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
 	const { data: session, isPending } = useSession();
@@ -95,6 +96,14 @@ export function App() {
 								element={
 									<ProtectedRoute>
 										<Providers />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="task-models"
+								element={
+									<ProtectedRoute>
+										<TaskModels />
 									</ProtectedRoute>
 								}
 							/>
