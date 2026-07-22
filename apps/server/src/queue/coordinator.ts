@@ -262,29 +262,30 @@ export async function triggerNextStage(
 		}
 	} else if (completedStage === "cluster" || completedStage === "cluster-run") {
 		// Cluster -> Score
-		const profiles = await db
-			.selectFrom("interest_profile")
-			.select("user_id")
+		const users = await db
+			.selectFrom("user")
+			.select("id")
+			.where("isDisabled", "=", 0)
 			.execute();
 
-		if (profiles.length > 0) {
+		if (users.length > 0) {
 			const stageRow = await db
 				.insertInto("run_stage")
 				.values({
 					run_id: runId,
 					stage: "score",
-					expected: profiles.length,
+					expected: users.length,
 					completed: 0,
 					status: "running",
 				})
 				.returning(["id"])
 				.executeTakeFirstOrThrow();
 
-			for (const p of profiles) {
+			for (const u of users) {
 				queue.add(SCORE_USER_JOB_TYPE, {
 					runId,
 					stageId: stageRow.id,
-					userId: p.user_id,
+					userId: u.id,
 				});
 			}
 		}

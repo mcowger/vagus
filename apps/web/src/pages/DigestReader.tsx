@@ -24,8 +24,86 @@ import {
 	Share2,
 } from "lucide-react";
 
-/** Helper to render inline text with citation chips [art_X] */
-function TextWithCitations({ text }: { text: string }) {
+function getDomainFromUrl(url?: string | null): string {
+	if (!url) return "";
+	try {
+		const parsed = new URL(url);
+		return parsed.hostname.replace(/^www\./, "");
+	} catch {
+		return "";
+	}
+}
+
+function getFaviconUrl(url?: string | null): string {
+	const domain = getDomainFromUrl(url);
+	if (!domain) return "";
+	return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`;
+}
+
+interface CitationItem {
+	id?: number;
+	citation_key: string;
+	article_title?: string;
+	article_url?: string;
+	article_author?: string | null;
+	article_publish_date?: string | null;
+}
+
+function CitationPill({
+	citationKey,
+	citationMap,
+}: {
+	citationKey: string;
+	citationMap?: Map<string, CitationItem>;
+}) {
+	const cleanKey = citationKey.replace(/^\[|\]$/g, "");
+	const citation = citationMap?.get(cleanKey);
+
+	if (!citation || !citation.article_url) {
+		return (
+			<span className="inline-flex items-center px-2 py-0.5 mx-0.5 rounded-full text-[11px] font-mono font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+				{cleanKey}
+			</span>
+		);
+	}
+
+	const domain = getDomainFromUrl(citation.article_url);
+	const favicon = getFaviconUrl(citation.article_url);
+
+	return (
+		<a
+			href={citation.article_url}
+			target="_blank"
+			rel="noopener noreferrer"
+			title={`${citation.article_title || ''} — ${domain}`}
+			className="inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 my-0.5 rounded-full text-[11px] font-medium bg-slate-100 hover:bg-indigo-50 text-slate-800 hover:text-indigo-800 border border-slate-200 hover:border-indigo-300 shadow-2xs transition-all align-middle group cursor-pointer"
+		>
+			{favicon && (
+				<img
+					src={favicon}
+					alt=""
+					className="w-3.5 h-3.5 rounded-xs flex-shrink-0 object-contain"
+					onError={(e) => {
+						(e.target as HTMLElement).style.display = "none";
+					}}
+				/>
+			)}
+			<span className="font-semibold text-slate-800 group-hover:text-indigo-800">
+				{domain || cleanKey}
+			</span>
+			<ExternalLink className="w-2.5 h-2.5 text-slate-400 group-hover:text-indigo-500 transition-colors flex-shrink-0" />
+		</a>
+	);
+}
+
+/** Helper to render inline text with interactive favicon citation pills */
+function TextWithCitations({
+	text,
+	citationMap,
+}: {
+	text: string;
+	citationMap?: Map<string, CitationItem>;
+}) {
 	if (!text) return null;
 	// Match [art_X] or art_X pattern
 	const parts = text.split(/(\[art_\d+\]|art_\d+)/g);
@@ -35,14 +113,12 @@ function TextWithCitations({ text }: { text: string }) {
 			{parts.map((part, idx) => {
 				const isCitation = /^\[?art_\d+\]?$/.test(part);
 				if (isCitation) {
-					const cleanKey = part.replace(/^\[|\]$/g, "");
 					return (
-						<span
+						<CitationPill
 							key={idx}
-							className="inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded text-[11px] font-mono font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors"
-						>
-							{cleanKey}
-						</span>
+							citationKey={part}
+							citationMap={citationMap}
+						/>
 					);
 				}
 				return <React.Fragment key={idx}>{part}</React.Fragment>;
@@ -70,6 +146,20 @@ export const DigestReader: React.FC = () => {
 		{ id: activeDigestId as number },
 		{ enabled: !!activeDigestId && !isNaN(activeDigestId) } as any
 	);
+
+	// Build lookup map from citation_key to CitationItem for favicon pills
+	const citationMap = React.useMemo(() => {
+		const map = new Map<string, CitationItem>();
+		if (digest?.citations) {
+			for (const c of digest.citations) {
+				if (c.citation_key) {
+					const clean = c.citation_key.replace(/^\[|\]$/g, "");
+					map.set(clean, c);
+				}
+			}
+		}
+		return map;
+	}, [digest?.citations]);
 
 	const handleSelectDigest = (digestId: number) => {
 		navigate(`/digests/${digestId}`);
@@ -284,7 +374,7 @@ export const DigestReader: React.FC = () => {
 									</CardTitle>
 								</CardHeader>
 								<CardContent className="pt-4 text-slate-800 leading-relaxed text-sm">
-									<TextWithCitations text={digest.executive_summary} />
+									<TextWithCitations text={digest.executive_summary} citationMap={citationMap} />
 								</CardContent>
 							</Card>
 
@@ -299,7 +389,7 @@ export const DigestReader: React.FC = () => {
 										</CardTitle>
 									</CardHeader>
 									<CardContent className="pt-4 text-slate-800 leading-relaxed text-sm">
-										<TextWithCitations text={digest.why_it_matters} />
+										<TextWithCitations text={digest.why_it_matters} citationMap={citationMap} />
 									</CardContent>
 								</Card>
 
@@ -321,7 +411,7 @@ export const DigestReader: React.FC = () => {
 														{idx + 1}
 													</span>
 													<div className="leading-snug">
-														<TextWithCitations text={takeaway} />
+														<TextWithCitations text={takeaway} citationMap={citationMap} />
 													</div>
 												</div>
 											))
@@ -349,9 +439,7 @@ export const DigestReader: React.FC = () => {
 												{q.citation && (
 													<div className="flex items-center gap-2 pt-1">
 														<span className="text-[11px] text-slate-500 font-medium">Source:</span>
-														<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
-															{q.citation}
-														</span>
+														<CitationPill citationKey={q.citation} citationMap={citationMap} />
 													</div>
 												)}
 											</blockquote>
@@ -428,7 +516,7 @@ export const DigestReader: React.FC = () => {
 																	<li key={bIdx} className="flex items-start gap-2 text-sm text-slate-800 leading-relaxed">
 																		<span className="text-indigo-500 font-bold">•</span>
 																		<div>
-																			<TextWithCitations text={bullet} />
+																			<TextWithCitations text={bullet} citationMap={citationMap} />
 																		</div>
 																	</li>
 																))}
@@ -445,7 +533,7 @@ export const DigestReader: React.FC = () => {
 																<div className="text-sm text-slate-800 leading-relaxed space-y-3">
 																	{cluster.summary.split("\n\n").map((paragraph, pIdx) => (
 																		<p key={pIdx}>
-																			<TextWithCitations text={paragraph} />
+																			<TextWithCitations text={paragraph} citationMap={citationMap} />
 																		</p>
 																	))}
 																</div>
@@ -463,7 +551,7 @@ export const DigestReader: React.FC = () => {
 																			<li key={pIdx} className="flex items-start gap-2">
 																				<ChevronRight className="h-3.5 w-3.5 text-indigo-500 flex-shrink-0 mt-0.5" />
 																				<span>
-																					<TextWithCitations text={persp} />
+																					<TextWithCitations text={persp} citationMap={citationMap} />
 																				</span>
 																			</li>
 																		))}
@@ -492,7 +580,7 @@ export const DigestReader: React.FC = () => {
 																						</div>
 																					)}
 																					<div className="text-slate-800">
-																						<TextWithCitations text={eventText} />
+																						<TextWithCitations text={eventText} citationMap={citationMap} />
 																					</div>
 																				</div>
 																			);
@@ -514,52 +602,67 @@ export const DigestReader: React.FC = () => {
 															</div>
 
 															<div className="grid grid-cols-1 gap-2">
-																{clusterCitations.map((cit) => (
-																	<div
-																		key={cit.id}
-																		className="p-3 rounded-lg bg-slate-50 hover:bg-slate-100/80 border border-slate-200 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
-																	>
-																		<div className="space-y-1">
-																			<div className="flex items-center gap-2">
-																				<span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
-																					{cit.citation_key}
-																				</span>
-																				<a
-																					href={cit.article_url}
-																					target="_blank"
-																					rel="noopener noreferrer"
-																					className="font-semibold text-slate-900 hover:text-indigo-600 transition-colors line-clamp-1"
-																				>
-																					{cit.article_title}
-																				</a>
-																			</div>
-																			<div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium">
-																				{cit.article_author && (
-																					<span className="flex items-center gap-1">
-																						<User className="h-3 w-3" />
-																						{cit.article_author}
-																					</span>
-																				)}
-																				{cit.article_publish_date && (
-																					<span className="flex items-center gap-1 font-mono">
-																						<Calendar className="h-3 w-3" />
-																						{new Date(cit.article_publish_date).toLocaleDateString()}
-																					</span>
-																				)}
-																			</div>
-																		</div>
+																{clusterCitations.map((cit) => {
+																	const domain = getDomainFromUrl(cit.article_url);
+																	const favicon = getFaviconUrl(cit.article_url);
 
-																		<a
-																			href={cit.article_url}
-																			target="_blank"
-																			rel="noopener noreferrer"
-																			className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white hover:bg-indigo-50 text-indigo-700 font-medium border border-slate-200 hover:border-indigo-200 transition-colors self-start sm:self-auto flex-shrink-0"
+																	return (
+																		<div
+																			key={cit.id}
+																			className="p-3 rounded-lg bg-slate-50 hover:bg-slate-100/80 border border-slate-200 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
 																		>
-																			<span>View Article</span>
-																			<ExternalLink className="h-3 w-3" />
-																		</a>
-																	</div>
-																))}
+																			<div className="space-y-1">
+																				<div className="flex items-center gap-2 flex-wrap">
+																					{favicon && (
+																						<img
+																							src={favicon}
+																							alt=""
+																							className="w-4 h-4 rounded-xs flex-shrink-0 object-contain"
+																							onError={(e) => {
+																								(e.target as HTMLElement).style.display = "none";
+																							}}
+																						/>
+																					)}
+																					<span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200/70 text-slate-700 border border-slate-300/60 font-mono">
+																						{domain || cit.citation_key}
+																					</span>
+																					<a
+																						href={cit.article_url}
+																						target="_blank"
+																						rel="noopener noreferrer"
+																						className="font-semibold text-slate-900 hover:text-indigo-600 transition-colors line-clamp-1"
+																					>
+																						{cit.article_title}
+																					</a>
+																				</div>
+																				<div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium pl-6">
+																					{cit.article_author && (
+																						<span className="flex items-center gap-1">
+																							<User className="h-3 w-3" />
+																							{cit.article_author}
+																						</span>
+																					)}
+																					{cit.article_publish_date && (
+																						<span className="flex items-center gap-1 font-mono">
+																							<Calendar className="h-3 w-3" />
+																							{new Date(cit.article_publish_date).toLocaleDateString()}
+																						</span>
+																					)}
+																				</div>
+																			</div>
+
+																			<a
+																				href={cit.article_url}
+																				target="_blank"
+																				rel="noopener noreferrer"
+																				className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white hover:bg-indigo-50 text-indigo-700 font-medium border border-slate-200 hover:border-indigo-300 transition-colors self-start sm:self-auto flex-shrink-0 shadow-2xs"
+																			>
+																				<span>View Source</span>
+																				<ExternalLink className="h-3 w-3" />
+																			</a>
+																		</div>
+																	);
+																})}
 															</div>
 														</div>
 													)}

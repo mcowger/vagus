@@ -99,7 +99,8 @@ export const profilesRouter = router({
 			const now = new Date().toISOString();
 
 			if (!existing) {
-				const defaultVec = await fakeEmbedder.embedText(input.name || "Default Profile");
+				const embedder = await getEmbedder(ctx.db);
+				const defaultVec = await embedder.embedText(input.name || "Default Profile");
 				existing = await ctx.db
 					.insertInto("interest_profile")
 					.values({

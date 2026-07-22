@@ -34,15 +34,41 @@ export async function scoreClustersForUser(
 	const database = getDb(db);
 
 	// 1. Fetch user's interest_profile
-	const profile = await database
+	let profile = await database
 		.selectFrom("interest_profile")
 		.selectAll()
 		.where("user_id", "=", userId)
 		.executeTakeFirst();
 
 	if (!profile) {
-		log.warn("Interest profile not found for user", { userId, runId });
-		return [];
+		const now = new Date().toISOString();
+		const defaultName = "Default Profile";
+		let embedding: Uint8Array | null = null;
+		try {
+			const embedder = await getEmbedder(database);
+			const vec = await embedder.embedText(defaultName);
+			embedding = serializeFloat32(vec);
+		} catch {}
+
+		profile = await database
+			.insertInto("interest_profile")
+			.values({
+				user_id: userId,
+				name: defaultName,
+				keywords: JSON.stringify([]),
+				topics: JSON.stringify([]),
+				entities: JSON.stringify([]),
+				include_rules: JSON.stringify([]),
+				exclude_rules: JSON.stringify([]),
+				profile_embedding: embedding,
+				similarity_threshold: 0.65,
+				max_cluster_cap: 10,
+				ntfy_topic: null,
+				created_at: now,
+				updated_at: now,
+			})
+			.returningAll()
+			.executeTakeFirstOrThrow();
 	}
 
 	const keywords = parseJsonArray(profile.keywords);

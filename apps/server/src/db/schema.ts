@@ -221,7 +221,16 @@ export interface NotificationLogTable {
 	sent_at: Timestamp;
 }
 
+export interface UserTable {
+	id: string;
+	name: string;
+	email: string;
+	role: string;
+	isDisabled: number;
+}
+
 export interface Database {
+	user: UserTable;
 	run: RunTable;
 	run_stage: RunStageTable;
 	provider_config: ProviderConfigTable;
