@@ -9,7 +9,7 @@
 		"dev": "PORT=${PASEO_PORT:-$(bun scripts/port-allocator.ts)} bun apps/server/src/index.ts",
 		"port": "bun run scripts/port-allocator.ts",
 		"test": "bun test",
-		"test:live": "RUN_LIVE_TESTS=1 bun test apps/server/src/embeddings/live.test.ts apps/server/src/llm/live.test.ts apps/server/src/adapters/rss.live.test.ts apps/server/src/adapters/brave-news.live.test.ts apps/server/src/extractor/live.test.ts apps/server/src/synthesis/live.test.ts",
+		"test:live": "RUN_LIVE_TESTS=1 bun test apps/server/src/embeddings/live.test.ts apps/server/src/llm/live.test.ts apps/server/src/adapters/rss.live.test.ts apps/server/src/adapters/brave-news.live.test.ts apps/server/src/extractor/live.test.ts apps/server/src/synthesis/live.test.ts apps/server/src/notifications/live.test.ts",
 		"typecheck": "tsc --noEmit -p apps/server/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json"
 	},
 	"devDependencies": {
