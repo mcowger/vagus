@@ -102,25 +102,30 @@ function cleanCodeFenceText(text?: string | null): string {
 	if (!text) return "";
 	let cleaned = text.trim();
 
+	// Strip code fences if present
 	if (cleaned.startsWith("```") || cleaned.includes("```json")) {
-		const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-		if (jsonMatch && jsonMatch[1]) {
-			try {
-				const parsed = JSON.parse(jsonMatch[1]);
-				if (parsed && typeof parsed === "object") {
-					if (typeof parsed.summary === "string" && parsed.summary.trim()) {
-						return parsed.summary.trim();
-					}
-					if (typeof parsed.executive_summary === "string" && parsed.executive_summary.trim()) {
-						return parsed.executive_summary.trim();
-					}
-				}
-			} catch {}
-		}
-		cleaned = cleaned.replace(/^```(?:json|JSON)?\s*/i, "").replace(/\s*```$/i, "");
+		cleaned = cleaned.replace(/^```(?:json|JSON)?\s*/i, "").replace(/\s*```$/i, "").trim();
 	}
 
-	return cleaned.trim();
+	// Parse raw JSON object strings to extract inner summary/text field
+	if (cleaned.startsWith("{")) {
+		try {
+			const parsed = JSON.parse(cleaned);
+			if (parsed && typeof parsed === "object") {
+				if (typeof parsed.summary === "string" && parsed.summary.trim()) {
+					return parsed.summary.trim();
+				}
+				if (typeof parsed.executive_summary === "string" && parsed.executive_summary.trim()) {
+					return parsed.executive_summary.trim();
+				}
+				if (typeof parsed.text === "string" && parsed.text.trim()) {
+					return parsed.text.trim();
+				}
+			}
+		} catch {}
+	}
+
+	return cleaned;
 }
 
 /** Helper to render inline text with markdown bold, colons, and interactive favicon citation pills */

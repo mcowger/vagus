@@ -20,6 +20,13 @@ describe("Defensive JSON Extractor & Sanitizer", () => {
 		expect(sanitized).toBe("Clean summary text without backticks.");
 	});
 
+	it("extracts inner summary string when raw JSON string is passed without code fences", () => {
+		const rawJsonString = '{ title: "Home Assistant", summary: "Home Assistant 2026.6 introduces intuitive card pickers.", perspectives: ["User design"] }';
+		const sanitized = sanitizeTextContent(rawJsonString);
+
+		expect(sanitized).toBe("Home Assistant 2026.6 introduces intuitive card pickers.");
+	});
+
 	it("parses cluster summary response defensively when LLM includes extraneous ```json wrappers", () => {
 		const rawLlmOutput = '```json { "title": "Home Assistant 2026.6 Release", "summary": "Home Assistant 2026.6 introduces intuitive card pickers.", "perspectives": ["User design"], "timeline": ["June 5, 2026"], "citations": ["art_1"] } ```';
 		const validKeys = new Set(["art_1"]);

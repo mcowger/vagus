@@ -31,9 +31,10 @@ export function extractJsonFromText<T = any>(text: string): T | null {
 			return JSON.parse(jsonCandidate);
 		} catch {}
 
-		// 3. Fix trailing commas and control characters
+		// 3. Fix unquoted keys, trailing commas and control characters
 		const sanitized = jsonCandidate
-			.replace(/,\s*([\}\]])/g, "$1")
+			.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":') // Add double quotes around unquoted object keys
+			.replace(/,\s*([\}\]])/g, "$1") // Remove trailing commas
 			.replace(/[\u0000-\u001F\u007F-\u009F]/g, " ");
 		try {
 			return JSON.parse(sanitized);
@@ -61,7 +62,13 @@ export function sanitizeTextContent(str: string | null | undefined): string {
 	if (!str) return "";
 	let s = str.trim();
 
+	// Strip code fences if present
 	if (s.startsWith("```") || s.includes("```json")) {
+		s = cleanMarkdownFences(s);
+	}
+
+	// Handle strings that are raw JSON objects
+	if (s.startsWith("{")) {
 		const parsed = extractJsonFromText(s);
 		if (parsed && typeof parsed === "object") {
 			if (typeof (parsed as any).summary === "string" && (parsed as any).summary.trim()) {
@@ -74,7 +81,6 @@ export function sanitizeTextContent(str: string | null | undefined): string {
 				return (parsed as any).text.trim();
 			}
 		}
-		s = cleanMarkdownFences(s);
 	}
 
 	return s;
