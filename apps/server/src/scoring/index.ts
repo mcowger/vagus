@@ -1,6 +1,7 @@
 import type { Kysely } from "kysely";
 import { getDb, type Database } from "../db";
-import { deserializeFloat32, cosineSimilarity } from "../embeddings/types";
+import { deserializeFloat32, serializeFloat32, cosineSimilarity } from "../embeddings/types";
+import { getEmbedder } from "../queue/embed-job";
 import { generateCompletion } from "../llm";
 import { log } from "../log";
 
@@ -140,6 +141,32 @@ export async function scoreClustersForUser(
 					articleId: row.article_id,
 					error: String(err),
 				});
+			}
+		}
+
+		if (profileVector && articleVector && profileVector.length !== articleVector.length) {
+			try {
+				const embedder = await getEmbedder(database);
+				const textToEmbed = [
+					profile.name,
+					...keywords,
+					...topics,
+					...entities,
+					...includeRules,
+					...excludeRules,
+				].filter(Boolean).join(" ");
+
+				profileVector = await embedder.embedText(textToEmbed || profile.name || "default");
+				await database
+					.updateTable("interest_profile")
+					.set({
+						profile_embedding: serializeFloat32(profileVector),
+						updated_at: new Date().toISOString(),
+					})
+					.where("user_id", "=", userId)
+					.execute();
+			} catch (err) {
+				log.warn("Failed to re-embed interest profile with matching dimension", { userId, error: String(err) });
 			}
 		}
 

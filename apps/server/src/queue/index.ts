@@ -87,6 +87,13 @@ export async function getWorkerConcurrencyFromDb(): Promise<number> {
 export async function startWorker(): Promise<void> {
 	if (activeWorkers.length > 0) return;
 
+	// Reset any abandoned processing jobs from server restarts
+	try {
+		queue.requeueTimedOutJobs(0);
+	} catch (err) {
+		log.warn("Failed to requeue timed out jobs on startup", { error: String(err) });
+	}
+
 	const concurrency = await getWorkerConcurrencyFromDb();
 	log.info("Starting worker pool with database concurrency", { concurrency });
 

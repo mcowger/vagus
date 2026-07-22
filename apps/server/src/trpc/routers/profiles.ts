@@ -1,9 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../trpc";
-import { FakeEmbedder } from "../../embeddings/fake";
 import { serializeFloat32 } from "../../embeddings/types";
-
-const fakeEmbedder = new FakeEmbedder();
+import { getEmbedder } from "../../queue/embed-job";
 
 function normalizeArrayInput(input: string[] | string | undefined | null): string[] {
 	if (!input) return [];
@@ -47,7 +45,8 @@ export const profilesRouter = router({
 		if (!profile) {
 			const now = new Date().toISOString();
 			const defaultName = "Default Profile";
-			const vec = await fakeEmbedder.embedText(defaultName);
+			const embedder = await getEmbedder(ctx.db);
+			const vec = await embedder.embedText(defaultName);
 			const embedding = serializeFloat32(vec);
 
 			profile = await ctx.db
@@ -165,7 +164,8 @@ export const profilesRouter = router({
 				...excList,
 			].filter(Boolean).join(" ");
 
-			const vec = await fakeEmbedder.embedText(textToEmbed || name || "default");
+			const embedder = await getEmbedder(ctx.db);
+			const vec = await embedder.embedText(textToEmbed || name || "default");
 			const embedding = serializeFloat32(vec);
 
 			await ctx.db
