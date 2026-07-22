@@ -6,8 +6,11 @@ const baseUrl = process.env.TESTING_EMBEDDING_BASE_URL;
 const apiKey = process.env.TESTING_EMBEDDING_KEY;
 const modelName = process.env.TESTING_EMBEDDING_MODEL || "text-embedding-3-small";
 
+const isLiveRequested = process.env.RUN_LIVE_TESTS === "1" || process.env.TEST_LIVE === "1";
+
 const hasLiveCredentials = Boolean(
-	baseUrl &&
+	isLiveRequested &&
+		baseUrl &&
 		apiKey &&
 		apiKey !== "KEYGOESHERE" &&
 		baseUrl !== "https://samples.example.com/v1",
@@ -15,7 +18,7 @@ const hasLiveCredentials = Boolean(
 
 describe("Live Embeddings Integration Test", () => {
 	if (!hasLiveCredentials) {
-		test.skip("Skipping live embedding test: credentials missing in .env", () => {});
+		test.skip("Skipping live embedding test: RUN_LIVE_TESTS=1 not set or credentials missing", () => {});
 		return;
 	}
 
