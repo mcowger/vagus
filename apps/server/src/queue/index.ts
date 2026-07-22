@@ -3,6 +3,7 @@ import { bun, defineQueue, defineWorker, type Connection, type Queue, type Worke
 import { db } from "../db/connection";
 import { log } from "../log";
 import { advanceStage } from "./coordinator";
+import { FETCH_SOURCE_JOB_TYPE, processFetchSourceJob } from "./ingestion";
 import { NOOP_JOB_TYPE, noopProcessor, type NoopJobData } from "./jobs";
 
 /**
@@ -46,18 +47,18 @@ export const queue: Queue = defineQueue({
 	logger: log,
 });
 
-let worker: Worker | null = null;
-let workerPromise: Promise<void> | null = null;
+let noopWorker: Worker | null = null;
+let fetchWorker: Worker | null = null;
 
 export async function startWorker(): Promise<void> {
-	if (worker) return;
+	if (noopWorker) return;
 
-	worker = defineWorker(NOOP_JOB_TYPE, noopProcessor, {
+	noopWorker = defineWorker(NOOP_JOB_TYPE, noopProcessor, {
 		queue,
 		logger: log,
 		onCompleted: (job) => {
 			try {
-				const data = JSON.parse(job.data) as NoopJobData;
+				const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as NoopJobData;
 				if (data?.stageId) {
 					void advanceStage(db.kysely, data.stageId, job.id);
 				}
@@ -70,16 +71,46 @@ export async function startWorker(): Promise<void> {
 		},
 	});
 
-	workerPromise = worker.start().catch((err) => {
-		log.error("Worker crashed", { error: String(err) });
+	fetchWorker = defineWorker(
+		FETCH_SOURCE_JOB_TYPE,
+		(job) => processFetchSourceJob(db.kysely, job),
+		{
+			queue,
+			logger: log,
+			concurrency: 5, // Stage per-stage concurrency limit
+			onCompleted: (job) => {
+				try {
+					const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as FetchSourceJobData;
+					if (data?.stageId) {
+						void advanceStage(db.kysely, data.stageId, job.id);
+					}
+				} catch (err) {
+					log.error("Failed to advance stage on fetch job completion", {
+						error: String(err),
+						jobId: job.id,
+					});
+				}
+			},
+		},
+	);
+
+	void noopWorker.start().catch((err) => {
+		log.error("Noop worker crashed", { error: String(err) });
+	});
+
+	void fetchWorker.start().catch((err) => {
+		log.error("Fetch worker crashed", { error: String(err) });
 	});
 }
 
 export async function stopWorker(): Promise<void> {
-	if (worker) {
-		await worker.stop();
-		worker = null;
-		workerPromise = null;
+	if (noopWorker) {
+		await noopWorker.stop();
+		noopWorker = null;
+	}
+	if (fetchWorker) {
+		await fetchWorker.stop();
+		fetchWorker = null;
 	}
 	queue.close();
 }

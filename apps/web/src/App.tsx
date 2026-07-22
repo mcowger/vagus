@@ -8,6 +8,9 @@ import { Layout } from "./components/Layout";
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { Dashboard } from "./pages/Dashboard";
+import { Providers } from "./pages/Providers";
+import { Runs } from "./pages/Runs";
+import { Sources } from "./pages/Sources";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
 	const { data: session, isPending } = useSession();
@@ -76,6 +79,30 @@ export function App() {
 								element={
 									<ProtectedRoute>
 										<Dashboard />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="sources"
+								element={
+									<ProtectedRoute>
+										<Sources />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="providers"
+								element={
+									<ProtectedRoute>
+										<Providers />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="runs"
+								element={
+									<ProtectedRoute>
+										<Runs />
 									</ProtectedRoute>
 								}
 							/>

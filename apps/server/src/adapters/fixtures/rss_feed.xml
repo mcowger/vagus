@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+ <title>Tech News Feed</title>
+ <description>Sample RSS Feed for testing</description>
+ <link>https://example.com</link>
+ <lastBuildDate>Wed, 22 Jul 2026 12:00:00 GMT</lastBuildDate>
+ <pubDate>Wed, 22 Jul 2026 12:00:00 GMT</pubDate>
+ <ttl>1800</ttl>
+ <item>
+  <title>Bun 1.3 Released with Enhanced Capabilities</title>
+  <description>Bun 1.3 includes fast bundling, SQL support, and improved performance.</description>
+  <link>https://example.com/posts/bun-1-3-released</link>
+  <guid>https://example.com/posts/bun-1-3-released</guid>
+  <pubDate>Wed, 22 Jul 2026 10:00:00 GMT</pubDate>
+ </item>
+ <item>
+  <title>TypeScript 5.8 Preview</title>
+  <description>An overview of upcoming TypeScript features and speed enhancements.</description>
+  <link>https://example.com/posts/typescript-5-8-preview</link>
+  <guid>https://example.com/posts/typescript-5-8-preview</guid>
+  <pubDate>Tue, 21 Jul 2026 15:30:00 GMT</pubDate>
+ </item>
+</channel>
+</rss>

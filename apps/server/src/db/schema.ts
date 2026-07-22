@@ -33,7 +33,62 @@ export interface RunStageTable {
 	status: StageStatus;
 }
 
+// ---------------------------------------------------------------------------
+// Provider & Source Configuration (M2)
+// ---------------------------------------------------------------------------
+
+export interface ProviderConfigTable {
+	id: Generated<number>;
+	provider: string; // e.g. "brave-news", "openai"
+	api_key: string | null;
+	enabled: number; // 0 or 1
+	config: string | null; // JSON config string
+	created_at: string;
+	updated_at: string;
+}
+
+export type SourceType = "rss" | "brave-news" | "hackernews" | "github-trending" | "scrape";
+
+export interface SourceTable {
+	id: Generated<number>;
+	type: SourceType;
+	name: string;
+	url: string | null;
+	config: string | null; // JSON specific config (e.g. search query for brave-news)
+	enabled: number; // 0 or 1
+	owner_user_id: string | null; // NULL = global pool
+	created_at: string;
+	updated_at: string;
+}
+
+export interface ProcessedKeyTable {
+	id: Generated<number>;
+	identity_key: string; // Unique hash or identifier of content
+	source_id: number;
+	processed_at: string;
+}
+
+export interface ArticleTable {
+	id: Generated<number>;
+	identity_key: string;
+	source_id: number;
+	title: string;
+	url: string;
+	author: string | null;
+	content: string | null;
+	publish_date: string | null;
+	image_url: string | null;
+	reading_time_minutes: number | null;
+	stage_a_bullet: string | null;
+	fetched_at: string;
+	created_at: string;
+}
+
 export interface Database {
 	run: RunTable;
 	run_stage: RunStageTable;
+	provider_config: ProviderConfigTable;
+	source: SourceTable;
+	processed_key: ProcessedKeyTable;
+	article: ArticleTable;
 }
