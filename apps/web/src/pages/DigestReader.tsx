@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { jsonrepair } from "jsonrepair";
 import { useParams, useNavigate } from "react-router-dom";
 import { trpc } from "../trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
@@ -112,9 +113,10 @@ function parseRawClusterSummary(raw?: string | null): {
 	}
 
 	if (text.startsWith("{")) {
-		// 1. Direct JSON parse
+		// 1. Direct or jsonrepair parse
 		try {
-			const obj = JSON.parse(text);
+			const repaired = jsonrepair(text);
+			const obj = JSON.parse(repaired);
 			if (obj && typeof obj === "object" && typeof obj.summary === "string" && obj.summary.trim()) {
 				return {
 					summary: obj.summary.trim(),
@@ -124,20 +126,7 @@ function parseRawClusterSummary(raw?: string | null): {
 			}
 		} catch {}
 
-		// 2. Unquoted JSON key repair e.g. { title: "...", summary: "..." }
-		try {
-			const fixedKeys = text.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
-			const obj = JSON.parse(fixedKeys);
-			if (obj && typeof obj === "object" && typeof obj.summary === "string" && obj.summary.trim()) {
-				return {
-					summary: obj.summary.trim(),
-					perspectives: Array.isArray(obj.perspectives) ? obj.perspectives.map(String) : undefined,
-					timeline: Array.isArray(obj.timeline) ? obj.timeline.map(String) : undefined,
-				};
-			}
-		} catch {}
-
-		// 3. Fallback Regex Extraction
+		// 2. Fallback Regex Extraction
 		const summaryRegex = /(?:"summary"|summary)\s*:\s*"(.*?)"\s*,\s*(?:"perspectives"|perspectives|timeline|"timeline")/s;
 		const match = text.match(summaryRegex) || text.match(/(?:"summary"|summary)\s*:\s*"((?:[^"\\]|\\.)*)"/s);
 		if (match && match[1]) {

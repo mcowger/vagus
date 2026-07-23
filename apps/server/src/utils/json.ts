@@ -1,3 +1,5 @@
+import { jsonrepair } from "jsonrepair";
+
 /** Removes markdown code block wrappers like ```json ... ``` */
 export function cleanMarkdownFences(str: string): string {
 	if (!str) return "";
@@ -22,7 +24,13 @@ export function extractJsonFromText<T = any>(text: string): T | null {
 		return JSON.parse(clean);
 	} catch {}
 
-	// 2. Search for outer {...} block
+	// 2. Try jsonrepair on cleaned text
+	try {
+		const repaired = jsonrepair(clean);
+		return JSON.parse(repaired);
+	} catch {}
+
+	// 3. Search for outer {...} block and apply jsonrepair
 	const firstBrace = text.indexOf("{");
 	const lastBrace = text.lastIndexOf("}");
 	if (firstBrace !== -1 && lastBrace > firstBrace) {
@@ -31,13 +39,9 @@ export function extractJsonFromText<T = any>(text: string): T | null {
 			return JSON.parse(jsonCandidate);
 		} catch {}
 
-		// 3. Fix unquoted keys, trailing commas and control characters
-		const sanitized = jsonCandidate
-			.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":') // Add double quotes around unquoted object keys
-			.replace(/,\s*([\}\]])/g, "$1") // Remove trailing commas
-			.replace(/[\u0000-\u001F\u007F-\u009F]/g, " ");
 		try {
-			return JSON.parse(sanitized);
+			const repaired = jsonrepair(jsonCandidate);
+			return JSON.parse(repaired);
 		} catch {}
 	}
 
@@ -52,13 +56,18 @@ export function extractJsonFromText<T = any>(text: string): T | null {
 		}
 	}
 
-	// 5. Search for outer [...] array block
+	// 5. Search for outer [...] array block and apply jsonrepair
 	const firstBracket = text.indexOf("[");
 	const lastBracket = text.lastIndexOf("]");
 	if (firstBracket !== -1 && lastBracket > firstBracket) {
 		const jsonCandidate = text.slice(firstBracket, lastBracket + 1);
 		try {
 			return JSON.parse(jsonCandidate);
+		} catch {}
+
+		try {
+			const repaired = jsonrepair(jsonCandidate);
+			return JSON.parse(repaired);
 		} catch {}
 	}
 
