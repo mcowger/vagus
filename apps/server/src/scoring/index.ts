@@ -81,6 +81,69 @@ export async function scoreClustersForUser(
 			.executeTakeFirstOrThrow();
 	}
 
+	// 2. Check profile delivery pacing and rate limiting constraints
+	if (profile.max_digests_per_day && profile.max_digests_per_day > 0) {
+		const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+		const recentDigestRows = await database
+			.selectFrom("digest")
+			.select(database.fn.count<number>("id").as("count"))
+			.where("user_id", "=", userId)
+			.where("profile_id", "=", profile.id)
+			.where("created_at", ">=", oneDayAgo)
+			.executeTakeFirst();
+
+		const recentCount = Number(recentDigestRows?.count || 0);
+		if (recentCount >= profile.max_digests_per_day) {
+			log.info("Digest creation suppressed: profile reached max_digests_per_day limit", {
+				runId,
+				userId,
+				profileId: profile.id,
+				profileName: profile.name,
+				recentCount,
+				maxAllowed: profile.max_digests_per_day,
+			});
+			return [];
+		}
+	}
+
+	if (profile.target_delivery_time && profile.target_delivery_time.trim()) {
+		const now = new Date();
+		const currentHourMin = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+		const targetTime = profile.target_delivery_time.trim();
+
+		if (currentHourMin < targetTime) {
+			log.info("Digest creation suppressed: current run time is before target_delivery_time", {
+				runId,
+				userId,
+				profileId: profile.id,
+				profileName: profile.name,
+				currentHourMin,
+				targetTime,
+			});
+			return [];
+		}
+
+		const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+		const deliveredToday = await database
+			.selectFrom("digest")
+			.select("created_at")
+			.where("user_id", "=", userId)
+			.where("profile_id", "=", profile.id)
+			.where("created_at", ">=", startOfToday)
+			.executeTakeFirst();
+
+		if (deliveredToday) {
+			log.info("Digest creation suppressed: digest already delivered today after target delivery time", {
+				runId,
+				userId,
+				profileId: profile.id,
+				profileName: profile.name,
+				targetTime,
+			});
+			return [];
+		}
+	}
+
 	const keywords = parseJsonArray(profile.keywords);
 	const topics = parseJsonArray(profile.topics);
 	const entities = parseJsonArray(profile.entities);

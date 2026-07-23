@@ -154,6 +154,8 @@ export interface InterestProfileTable {
 	similarity_threshold: number;
 	max_cluster_cap: number;
 	min_cluster_count: Generated<number>; // min clusters required to trigger digest
+	max_digests_per_day: number | null; // max rate per 24 hours
+	target_delivery_time: string | null; // preferred target delivery time e.g. "09:00"
 	ntfy_topic: string | null;
 	is_default: Generated<number>; // 1 = default profile
 	created_at: Timestamp;

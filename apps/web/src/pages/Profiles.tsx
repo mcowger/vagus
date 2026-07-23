@@ -96,6 +96,8 @@ export const Profiles: React.FC = () => {
 	const [similarityThreshold, setSimilarityThreshold] = useState(0.65);
 	const [maxClusterCap, setMaxClusterCap] = useState(10);
 	const [minClusterCount, setMinClusterCount] = useState(1);
+	const [maxDigestsPerDay, setMaxDigestsPerDay] = useState<string>("");
+	const [targetDeliveryTime, setTargetDeliveryTime] = useState<string>("");
 	const [ntfyTopic, setNtfyTopic] = useState("");
 
 	const [saveSuccess, setSaveSuccess] = useState("");
@@ -114,6 +116,8 @@ export const Profiles: React.FC = () => {
 			setSimilarityThreshold(p.similarity_threshold ?? 0.65);
 			setMaxClusterCap(p.max_cluster_cap ?? 10);
 			setMinClusterCount(p.min_cluster_count ?? 1);
+			setMaxDigestsPerDay(p.max_digests_per_day !== null && p.max_digests_per_day !== undefined ? String(p.max_digests_per_day) : "");
+			setTargetDeliveryTime(p.target_delivery_time || "");
 			setNtfyTopic(p.ntfy_topic || "");
 		}
 	}, [profileQuery.data, activeProfile]);
@@ -133,6 +137,8 @@ export const Profiles: React.FC = () => {
 			similarity_threshold: Number(similarityThreshold),
 			max_cluster_cap: Number(maxClusterCap),
 			min_cluster_count: Number(minClusterCount),
+			max_digests_per_day: maxDigestsPerDay !== "" ? parseInt(maxDigestsPerDay, 10) : null,
+			target_delivery_time: targetDeliveryTime.trim() || null,
 			ntfy_topic: ntfyTopic.trim() || null,
 		});
 	};
@@ -470,6 +476,38 @@ export const Profiles: React.FC = () => {
 								/>
 								<p className="text-xs text-slate-500 leading-relaxed">
 									<strong>Digest Size Limit:</strong> Maximum number of top-scoring story clusters included in a single briefing digest cycle.
+								</p>
+							</div>
+						</div>
+
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-slate-100">
+							<div className="space-y-2">
+								<Label htmlFor="maxDigestsPerDay">Max Rate per Day (24 Hours)</Label>
+								<Input
+									id="maxDigestsPerDay"
+									type="number"
+									min={1}
+									max={24}
+									placeholder="Unlimited (e.g. 1 or 2)"
+									value={maxDigestsPerDay}
+									onChange={(e) => setMaxDigestsPerDay(e.target.value)}
+								/>
+								<p className="text-xs text-slate-500 leading-relaxed">
+									<strong>Rate Limit:</strong> Maximum number of digests produced for this profile per 24 hours. Leave blank for unlimited.
+								</p>
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="targetDeliveryTime">Target Delivery Time (HH:MM)</Label>
+								<Input
+									id="targetDeliveryTime"
+									type="time"
+									placeholder="09:00"
+									value={targetDeliveryTime}
+									onChange={(e) => setTargetDeliveryTime(e.target.value)}
+								/>
+								<p className="text-xs text-slate-500 leading-relaxed">
+									<strong>Preferred Time:</strong> Only produces a digest on the first run after this time each day (e.g. <code>09:00</code> for 9:00 AM briefing).
 								</p>
 							</div>
 						</div>

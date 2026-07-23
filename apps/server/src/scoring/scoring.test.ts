@@ -519,4 +519,52 @@ describe("Scoring Module & Score User Job", () => {
 		// Digest creation is suppressed because 1 qualified cluster < 5 required min clusters
 		expect(scores.length).toBe(0);
 	});
+
+	test("suppresses digest creation when max_digests_per_day rate limit is reached", async () => {
+		const { run, article1, cluster1 } = await setupTestRunAndArticles();
+		const userId = "user-rate-limit";
+		const now = new Date().toISOString();
+
+		await db
+			.insertInto("cluster_article")
+			.values({ cluster_id: cluster1.id, article_id: article1.id, is_primary: 1, created_at: now })
+			.execute();
+
+		const profile = await db
+			.insertInto("interest_profile")
+			.values({
+				user_id: userId,
+				name: "Paced Profile",
+				keywords: JSON.stringify(["TypeScript"]),
+				topics: JSON.stringify([]),
+				entities: JSON.stringify([]),
+				include_rules: JSON.stringify([]),
+				exclude_rules: JSON.stringify([]),
+				similarity_threshold: 0.5,
+				max_cluster_cap: 10,
+				max_digests_per_day: 1,
+				created_at: now,
+				updated_at: now,
+			})
+			.returningAll()
+			.executeTakeFirstOrThrow();
+
+		// Insert existing digest delivered 2 hours ago
+		await db
+			.insertInto("digest")
+			.values({
+				user_id: userId,
+				profile_id: profile.id,
+				run_id: run.id,
+				executive_summary: "Earlier digest today",
+				why_it_matters: "Test",
+				created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+			})
+			.execute();
+
+		const scores = await scoreClustersForUser(db, run.id, userId, profile.id);
+
+		// Suppressed because 1 digest was already produced in the last 24h and max_digests_per_day = 1
+		expect(scores.length).toBe(0);
+	});
 });

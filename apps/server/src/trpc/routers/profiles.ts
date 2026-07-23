@@ -136,6 +136,8 @@ export const profilesRouter = router({
 				similarity_threshold: z.number().min(0).max(1).optional(),
 				max_cluster_cap: z.number().int().min(1).optional(),
 				min_cluster_count: z.number().int().min(1).optional(),
+				max_digests_per_day: z.number().int().min(0).nullable().optional(),
+				target_delivery_time: z.string().nullable().optional(),
 				ntfy_topic: z.string().nullable().optional(),
 			}),
 		)
@@ -175,6 +177,8 @@ export const profilesRouter = router({
 					similarity_threshold: input.similarity_threshold ?? 0.65,
 					max_cluster_cap: input.max_cluster_cap ?? 10,
 					min_cluster_count: input.min_cluster_count ?? 1,
+					max_digests_per_day: input.max_digests_per_day ?? null,
+					target_delivery_time: input.target_delivery_time ?? null,
 					ntfy_topic: input.ntfy_topic ?? null,
 					profile_embedding: embedding,
 					is_default: 0,
@@ -200,6 +204,8 @@ export const profilesRouter = router({
 				similarity_threshold: z.number().min(0).max(1).optional(),
 				max_cluster_cap: z.number().int().min(1).optional(),
 				min_cluster_count: z.number().int().min(1).optional(),
+				max_digests_per_day: z.number().int().min(0).nullable().optional(),
+				target_delivery_time: z.string().nullable().optional(),
 				ntfy_topic: z.string().nullable().optional(),
 			}),
 		)
@@ -233,6 +239,8 @@ export const profilesRouter = router({
 						similarity_threshold: 0.65,
 						max_cluster_cap: 10,
 						min_cluster_count: 1,
+						max_digests_per_day: null,
+						target_delivery_time: null,
 						ntfy_topic: null,
 						is_default: 1,
 						created_at: now,
@@ -276,6 +284,14 @@ export const profilesRouter = router({
 				? input.min_cluster_count
 				: existing.min_cluster_count;
 
+			const maxDigestsPerDay = input.max_digests_per_day !== undefined
+				? input.max_digests_per_day
+				: existing.max_digests_per_day;
+
+			const targetDeliveryTime = input.target_delivery_time !== undefined
+				? input.target_delivery_time
+				: existing.target_delivery_time;
+
 			const ntfyTopic = input.ntfy_topic !== undefined
 				? input.ntfy_topic
 				: existing.ntfy_topic;
@@ -305,6 +321,8 @@ export const profilesRouter = router({
 					similarity_threshold: similarityThreshold,
 					max_cluster_cap: maxClusterCap,
 					min_cluster_count: minClusterCount,
+					max_digests_per_day: maxDigestsPerDay,
+					target_delivery_time: targetDeliveryTime,
 					ntfy_topic: ntfyTopic,
 					profile_embedding: embedding,
 					updated_at: now,
