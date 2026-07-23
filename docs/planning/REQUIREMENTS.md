@@ -26,7 +26,7 @@ idempotency, scheduling, and notification patterns follow
 | Runtime / language | Bun + TypeScript |
 | Web server | Hono |
 | Frontend ↔ backend | tRPC (`@hono/trpc-server`) |
-| Auth | BetterAuth (email/password + API keys, same SQLite DB) |
+| Auth | BetterAuth (Google OAuth + API keys, same SQLite DB) |
 | LLM access | `@earendil-works/pi-ai` |
 | Storage | SQLite |
 | Query builder | Kysely (`kysely-bun-sqlite`) |
@@ -47,7 +47,7 @@ gracefully to lexical/URL/title dedupe.
 
 ## 2. Personas & Roles
 
-- **Admin** — first registered account (per Solar convention). Configures sources,
+- **Admin** — email listed in `ADMIN_EMAILS`. Configures sources,
   schedules, providers/models, keys, notification targets; manages users; can do
   everything a user can.
 - **User** — reads digests, manages their own interest profile / topic filters and
@@ -193,12 +193,18 @@ Hierarchical processing:
 
 ### 3.8 Authentication & Administration (BetterAuth)
 
-- **FR-36** Email/password auth; first registered account becomes **admin**.
-- **FR-37** Admin can manage users (create, disable, role) and issue/revoke API keys.
+- **FR-36** **Google OAuth** is the only human login (no email/password). Emails in
+  `ADMIN_EMAILS` become **admin** and bypass the domain allowlist.
+- **FR-37** Admin can manage users (disable, role) and issue/revoke API keys. Robots
+  authenticate with an API key via the `x-api-key` header (acts as the owning admin).
 - **FR-38** All management surfaces (sources, schedules, providers/models, embedding
   config, notification targets, prompts) live in the product UI (Solar's
   "operational surface in the product" philosophy).
-- **FR-39** Optional email-domain allowlist for sign-up (Solar pattern).
+- **FR-39** Domain allowlist for account creation via `SIGNUP_ALLOWED_DOMAINS`.
+- **FR-40** Dev/test-only `POST /dev/login` (gated by `DEV_AUTH_ENABLED`, never in
+  production) simulates a Google sign-in under the same allowlist rules so
+  agents/CI can authenticate without real Google OAuth. See
+  `docs/planning/AUTH_GOOGLE_ONLY.md`.
 
 ## 4. Data Model (indicative, Kysely/SQLite)
 
@@ -276,8 +282,8 @@ Co-located in one SQLite DB with BetterAuth's tables (`user`, `session`, `accoun
 
 ## 8. Milestone Sketch (for later planning)
 
-1. **M1 Skeleton** — Bun/Hono/tRPC/SQLite/Kysely/BetterAuth; first-user-admin;
-   healthz; empty dashboard.
+1. **M1 Skeleton** — Bun/Hono/tRPC/SQLite/Kysely/BetterAuth; Google OAuth +
+   `ADMIN_EMAILS` admin; healthz; empty dashboard.
 2. **M2 Ingestion** — source CRUD + RSS + Hacker News; idempotent state; run history.
 3. **M3 Pipeline** — Stage 1 extraction (+Readability), Stage A article bullets.
 4. **M4 Clustering** — BYO embedding provider config, Stage 2 shared dedupe/cluster;

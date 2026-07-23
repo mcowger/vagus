@@ -23,6 +23,39 @@ bun run dev:stop          # stop server process group and clean up pidfile
 - The server binds to a branch-stable port allocated by `scripts/port-allocator.ts` (or `$PASEO_PORT` / `$PORT` env override).
 - Pidfile lives at `.dev-server.pid` and logs at `.dev-server.log` (gitignored).
 
+## Authentication (Google OAuth + API Keys)
+
+Humans sign in **only** via **Google OAuth**; robots/automation authenticate with **API keys**. There is **no email/password login**. Account creation is gated by a domain whitelist plus an admin allowlist. See `docs/planning/AUTH_GOOGLE_ONLY.md` for the full design.
+
+### Env vars
+
+| Var | Purpose |
+| --- | --- |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth creds. If either is unset, the Google provider is **not mounted** and `/api/auth/sign-in/social` 404s. |
+| `BETTER_AUTH_URL` | Public base URL (e.g. `https://host`). Required in prod for OAuth callbacks and secure cookies. |
+| `ADMIN_EMAILS` | Comma-separated admin allowlist (case-insensitive). These emails become `admin` and **bypass** the domain whitelist. |
+| `SIGNUP_ALLOWED_DOMAINS` | Comma-separated domains allowed to create an account. Empty = any domain. |
+| `DEV_AUTH_ENABLED` | Dev/test only (ignored when `NODE_ENV=production`). Enables `POST /dev/login` and the seed script. |
+
+### Agent login in dev (no real Google needed)
+
+Real Google OAuth can't be driven headless. With **`DEV_AUTH_ENABLED=true`** (and `NODE_ENV` != `production`) the server mounts a dev-only login that **simulates a Google sign-in** — it enforces the same `ADMIN_EMAILS` / `SIGNUP_ALLOWED_DOMAINS` rules, so it can't create any account Google couldn't.
+
+```bash
+# Start with dev auth on (also preseeds an admin user + API key on detached start)
+DEV_AUTH_ENABLED=true ADMIN_EMAILS=you@example.com bun run dev:agent
+
+# UI/session login: mint a session cookie for an allowed email
+curl -c cookies.txt -X POST "http://localhost:$(bun run port)/dev/login" \
+  -H 'content-type: application/json' -d '{"email":"you@example.com"}'
+# → { ok: true, userId, role }. Reuse cookies.txt for authenticated requests.
+# A disallowed email returns 403 (same as real login would reject it).
+```
+
+- The managed **detached** start (`dev:agent`) runs `scripts/seed-dev.ts` when `DEV_AUTH_ENABLED=true`: it ensures the first `ADMIN_EMAILS` user exists and writes a raw API key to gitignored **`.dev-api-key`**. (Foreground start does not seed — run `bun scripts/seed-dev.ts` manually if needed.)
+- **Robot/API access**: send the key from `.dev-api-key` in the **`x-api-key`** header; it resolves to the owning admin user.
+- Admins can also mint/revoke keys from **Admin Settings** (API Keys panel) or the `apiKeys` tRPC router (admin-only).
+
 ## Live Styling (Tailwind CSS)
 
 - **No manual CSS build step is required.**

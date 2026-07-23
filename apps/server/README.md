@@ -16,9 +16,12 @@ the pieces integrate cleanly. `index.ts` imports exactly these:
 
 ### Track A — Auth (`src/auth.ts`, `src/trpc/context.ts`, `src/trpc/routers/auth.ts`)
 - `export const auth: AuthLike` where `AuthLike.handler(request: Request): Response | Promise<Response>`.
-  Mounted at `/api/auth/*`. Implement with BetterAuth on `db.sqlite`
-  (email/password + api-key plugin, first-account→admin, `user`/`admin` roles,
-  `isDisabled` gate, optional email-domain allowlist).
+  Mounted at `/api/auth/*`. Implemented with BetterAuth on `db.sqlite`:
+  **Google OAuth only** (no email/password) + api-key plugin, `user`/`admin`
+  roles, `isDisabled` gate. Account creation is gated by `SIGNUP_ALLOWED_DOMAINS`
+  with an `ADMIN_EMAILS` admin allowlist (see `resolveSignupRole`). A dev-only
+  `POST /dev/login` (gated by `DEV_AUTH_ENABLED`) simulates a Google sign-in for
+  agents/tests. See `docs/planning/AUTH_GOOGLE_ONLY.md`.
 - In `src/trpc/context.ts`, `createContext({ req })` must resolve the BetterAuth
   session and populate `user: AuthUser | null` and `session`. Keep the return
   shape `{ db, user, session }`.
@@ -38,7 +41,7 @@ the pieces integrate cleanly. `index.ts` imports exactly these:
 - Replace the placeholder `apps/web/src/main.tsx` with the React + shadcn/ui app
   shell: router, `@tanstack/react-query` tRPC client importing the server
   `AppRouter` **type** only (`import type { AppRouter } from "../../server/src/trpc/router"`),
-  auth screens (sign-up/sign-in), empty dashboard. Served at `/*` via the
+  auth screen (Google sign-in), empty dashboard. Served at `/*` via the
   `apps/web/index.html` entry that `index.ts` imports.
 
 ### Track D — Ops plumbing (`src/config.ts`, `src/log.ts`, `/healthz`)

@@ -105,6 +105,29 @@ Vagus decouples global content processing from individual user profile evaluatio
 
 ---
 
+## Authentication
+
+- **Google OAuth only** for humans — there is no email/password login. **API keys** provide robot/automation access (sent via the `x-api-key` header; a key acts as the admin who created it).
+- **Access control**: `ADMIN_EMAILS` (comma-separated) become admins and bypass the domain whitelist; everyone else must match `SIGNUP_ALLOWED_DOMAINS` to create an account.
+- **API keys** are created/revoked by admins in **Admin Settings → API Keys** (raw key shown once).
+
+### Required environment (production)
+
+| Var | Purpose |
+| --- | --- |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth client. If unset, the Google login route is not mounted (sign-in 404s). |
+| `BETTER_AUTH_URL` | Public HTTPS base URL, used for OAuth callbacks and secure cookies. |
+| `ADMIN_EMAILS` | Comma-separated admin allowlist (bypasses the domain whitelist). |
+| `SIGNUP_ALLOWED_DOMAINS` | Comma-separated domains allowed to create an account. |
+
+Google OAuth redirect URI is `${BETTER_AUTH_URL}/api/auth/callback/google`. These are wired through `docker-compose.yml`.
+
+### Dev/test login (no real Google)
+
+Set `DEV_AUTH_ENABLED=true` (ignored when `NODE_ENV=production`) to mount `POST /dev/login`, which simulates a Google sign-in under the same allowlist rules. Detached `dev:agent` starts also preseed an admin user and an API key to `.dev-api-key`. See `AGENTS.md` and `docs/planning/AUTH_GOOGLE_ONLY.md`.
+
+---
+
 ## System Customization & LLM Prompts
 
 - **DB-Driven Settings**: API keys, endpoints, worker concurrency, retention windows, and model routing choices are strictly database-backed.

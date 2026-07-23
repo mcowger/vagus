@@ -63,7 +63,7 @@ apps/
   server/        # Bun + Hono + tRPC + Kysely + BetterAuth + plainjob worker + pipeline
     src/
       index.ts           # Bun.serve + Hono wiring + migrations + worker start
-      auth.ts            # BetterAuth (email/password + api-key plugin)
+      auth.ts            # BetterAuth (Google OAuth + api-key plugin)
       config.ts          # env bootstrap (auth secret, port, db path)
       db/                # kysely instance, schema, migrations/
       trpc/              # context, router (AppRouter exported for the web client)
@@ -238,10 +238,21 @@ per-user synthesis. Degrades to keyword-only scoring when embeddings are unavail
 
 ## 11. Auth (BetterAuth)
 
-- Email/password; **first registered account → admin** (Solar hook).
-- API-key plugin for automation (trigger runs, fetch digests as JSON); admin-scoped
-  where appropriate. Optional email-domain allowlist.
+- **Google OAuth only** for humans (no email/password). Emails in `ADMIN_EMAILS`
+  become **admin** and bypass the domain allowlist; everyone else must match
+  `SIGNUP_ALLOWED_DOMAINS`. Authorization is centralized in `resolveSignupRole`
+  (applied on user creation for both real Google logins and `/dev/login`).
+- **Trusted account linking** for Google (`accountLinking` with
+  `requireLocalEmailVerified: false`) so a Google sign-in links into a same-email
+  account, e.g. one predating the switch away from email/password.
+- API-key plugin for automation (trigger runs, fetch digests as JSON); admin mints
+  keys, robots send them via `x-api-key` (resolves to the owning admin via
+  `enableSessionForAPIKeys`).
+- Dev/test-only `POST /dev/login`, gated by `DEV_AUTH_ENABLED` (never in
+  production), simulates a Google sign-in under the same rules; detached dev
+  starts also seed an admin + an API key to `.dev-api-key`.
 - Same SQLite connection/file as the app; roles `user`/`admin`; `isDisabled` gate.
+- Full design: `docs/planning/AUTH_GOOGLE_ONLY.md`.
 
 ## 12. Dev & Test (T12)
 
