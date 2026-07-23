@@ -140,7 +140,6 @@ export async function clusterRunArticles(
 	const articleRows = (await db
 		.selectFrom("article")
 		.selectAll()
-		.where("run_id", "=", runId)
 		.execute()).filter((article) => isEligibleArticle(article, eligibilitySettings));
 
 	if (articleRows.length === 0) {

@@ -279,6 +279,31 @@ describe("Clustering Module & Job", () => {
 			expect(bankCluster).toBeDefined();
 		});
 
+		test("clusters eligible articles from prior runs into the current digest run", async () => {
+			const source = await db
+				.insertInto("source")
+				.values({ type: "rss", name: "Test Source", url: "https://example.com/rss", enabled: 1 })
+				.returningAll()
+				.executeTakeFirstOrThrow();
+			const articles = await db
+				.insertInto("article")
+				.values([
+					{ run_id: 401, identity_key: "prior-run", source_id: source.id, title: "Iran war funding request", url: "https://example.com/prior", content: "Prior coverage", publish_date: new Date().toISOString() },
+					{ run_id: 402, identity_key: "current-run", source_id: source.id, title: "Iran war funding request update", url: "https://example.com/current", content: "Current coverage", publish_date: new Date().toISOString() },
+				])
+				.returningAll()
+				.execute();
+			await db
+				.insertInto("article_embedding")
+				.values(articles.map((article) => ({ article_id: article.id, embedding: serializeFloat32(new Float32Array([1, 0, 0])), model_name: "test" })))
+				.execute();
+
+			const result = await clusterRunArticles(db, 402, { threshold: 0.8 });
+
+			expect(result.clusters).toHaveLength(1);
+			expect(result.clusterArticles).toHaveLength(2);
+		});
+
 		test("Maintains idempotency on repeated calls for same runId", async () => {
 			const source = await db
 				.insertInto("source")
