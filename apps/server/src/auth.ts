@@ -83,7 +83,7 @@ export function createAuth(
 						let count = 0;
 						try {
 							const row = sqlite
-								.query("SELECT COUNT(*) as count FROM user")
+								.query("SELECT COUNT(*) as count FROM user WHERE role = 'admin'")
 								.get() as { count: number | bigint } | null;
 							count = row ? Number(row.count) : 0;
 						} catch {
