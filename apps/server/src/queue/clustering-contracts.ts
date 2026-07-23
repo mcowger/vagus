@@ -17,4 +17,5 @@ export interface ScoreUserJobData {
 	runId: number;
 	stageId: number;
 	userId: string;
+	profileId?: number;
 }

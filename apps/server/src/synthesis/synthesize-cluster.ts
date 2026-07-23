@@ -82,9 +82,9 @@ export async function processSynthesizeClusterJob(
 		throw new Error(`Invalid job data type: ${typeof job.data}`);
 	}
 
-	const { runId, stageId, userId, clusterId } = data;
+	const { runId, stageId, userId, profileId, clusterId } = data;
 
-	log.info("Starting synthesize-cluster job", { jobId: job.id, runId, stageId, userId, clusterId });
+	log.info("Starting synthesize-cluster job", { jobId: job.id, runId, stageId, userId, profileId, clusterId });
 
 	const database = getDb(db);
 
@@ -143,12 +143,17 @@ Content: ${article.content || "N/A"}\n\n`;
 
 		const validCitations = validateAndFilterCitations(parsedResult.citations, validArticleKeys);
 
-		let digest = await database
+		let digestQuery = database
 			.selectFrom("digest")
 			.select("id")
 			.where("run_id", "=", runId)
-			.where("user_id", "=", userId)
-			.executeTakeFirst();
+			.where("user_id", "=", userId);
+
+		if (profileId) {
+			digestQuery = digestQuery.where("profile_id", "=", profileId);
+		}
+
+		let digest = await digestQuery.executeTakeFirst();
 
 		const now = new Date().toISOString();
 
@@ -159,6 +164,7 @@ Content: ${article.content || "N/A"}\n\n`;
 					.values({
 						run_id: runId,
 						user_id: userId,
+						profile_id: profileId ?? null,
 						executive_summary: "",
 						key_takeaways: JSON.stringify([]),
 						why_it_matters: "",
@@ -168,12 +174,7 @@ Content: ${article.content || "N/A"}\n\n`;
 					.returning("id")
 					.executeTakeFirstOrThrow();
 			} catch {
-				digest = await database
-					.selectFrom("digest")
-					.select("id")
-					.where("run_id", "=", runId)
-					.where("user_id", "=", userId)
-					.executeTakeFirstOrThrow();
+				digest = await digestQuery.executeTakeFirstOrThrow();
 			}
 		}
 

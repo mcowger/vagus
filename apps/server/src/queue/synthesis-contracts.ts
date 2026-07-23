@@ -5,6 +5,7 @@ export interface SynthesizeClusterJobData {
 	runId: number;
 	stageId: number;
 	userId: string;
+	profileId?: number;
 	clusterId: number;
 }
 
@@ -12,4 +13,5 @@ export interface AssembleDigestJobData {
 	runId: number;
 	stageId: number;
 	userId: string;
+	profileId?: number;
 }

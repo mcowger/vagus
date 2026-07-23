@@ -65,15 +65,15 @@ export async function processAssembleDigestJob(
 		throw new Error(`Invalid job data type: ${typeof job.data}`);
 	}
 
-	const { runId, stageId, userId } = data;
+	const { runId, stageId, userId, profileId } = data;
 
-	log.info("Starting assemble-digest job", { jobId: job.id, userId, runId });
+	log.info("Starting assemble-digest job", { jobId: job.id, userId, profileId, runId });
 
 	const database = getDb(db);
 
 	try {
 		// Join digest and digest_cluster for specified runId and userId
-		const clusterRows = await database
+		let query = database
 			.selectFrom("digest_cluster")
 			.innerJoin("digest", "digest.id", "digest_cluster.digest_id")
 			.select([
@@ -86,8 +86,13 @@ export async function processAssembleDigestJob(
 				"digest_cluster.timeline",
 			])
 			.where("digest.run_id", "=", runId)
-			.where("digest.user_id", "=", userId)
-			.execute();
+			.where("digest.user_id", "=", userId);
+
+		if (profileId) {
+			query = query.where("digest.profile_id", "=", profileId);
+		}
+
+		const clusterRows = await query.execute();
 
 		if (clusterRows.length === 0) {
 			log.warn("No digest clusters found for assemble-digest job", {

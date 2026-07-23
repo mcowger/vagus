@@ -154,6 +154,7 @@ export interface InterestProfileTable {
 	similarity_threshold: number;
 	max_cluster_cap: number;
 	ntfy_topic: string | null;
+	is_default: Generated<number>; // 1 = default profile
 	created_at: Timestamp;
 	updated_at: Timestamp;
 }
@@ -181,6 +182,7 @@ export interface UserSelectedClusterTable {
 	id: Generated<number>;
 	run_id: number;
 	user_id: string;
+	profile_id: number | null;
 	cluster_id: number;
 	score: number;
 	reason: string | null;
@@ -195,6 +197,7 @@ export interface DigestTable {
 	id: Generated<number>;
 	run_id: number;
 	user_id: string;
+	profile_id: number | null;
 	executive_summary: string;
 	key_takeaways: Generated<string>; // JSON array string
 	why_it_matters: string;

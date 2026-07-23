@@ -4,7 +4,7 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Sliders, ThumbsUp, ThumbsDown, RotateCcw } from "lucide-react";
+import { Sliders, ThumbsUp, ThumbsDown, RotateCcw, Plus, Trash2, CheckCircle2, Bookmark } from "lucide-react";
 
 function arrayToString(val: string | string[] | null | undefined): string {
 	if (!val) return "";
@@ -27,8 +27,53 @@ function stringToArray(val: string): string[] {
 
 export const Profiles: React.FC = () => {
 	const utils = trpc.useUtils();
-	const profileQuery = trpc.profiles.getProfile.useQuery();
+	const profilesListQuery = trpc.profiles.listProfiles.useQuery();
+
+	const [activeProfileId, setActiveProfileId] = useState<number | undefined>(undefined);
+
+	useEffect(() => {
+		if (profilesListQuery.data && profilesListQuery.data.length > 0 && activeProfileId === undefined) {
+			setActiveProfileId(profilesListQuery.data[0].id);
+		}
+	}, [profilesListQuery.data, activeProfileId]);
+
+	const activeProfile = profilesListQuery.data?.find((p) => p.id === activeProfileId) || profilesListQuery.data?.[0];
+
+	const profileQuery = trpc.profiles.getProfile.useQuery(
+		{ id: activeProfileId },
+		{ enabled: !!activeProfileId },
+	);
+
 	const feedbackQuery = trpc.feedback.getFeedbackStats.useQuery();
+
+	const createProfileMutation = trpc.profiles.createProfile.useMutation({
+		onSuccess: (newProfile) => {
+			utils.profiles.listProfiles.invalidate();
+			setActiveProfileId(newProfile.id);
+			setShowNewProfileModal(false);
+			setNewProfileName("");
+			setSaveSuccess("New category profile created successfully!");
+			setTimeout(() => setSaveSuccess(""), 3000);
+		},
+	});
+
+	const updateProfileMutation = trpc.profiles.updateProfile.useMutation({
+		onSuccess: () => {
+			utils.profiles.listProfiles.invalidate();
+			utils.profiles.getProfile.invalidate();
+			setSaveSuccess("Interest profile saved successfully!");
+			setTimeout(() => setSaveSuccess(""), 3000);
+		},
+	});
+
+	const deleteProfileMutation = trpc.profiles.deleteProfile.useMutation({
+		onSuccess: () => {
+			utils.profiles.listProfiles.invalidate();
+			setActiveProfileId(undefined);
+			setSaveSuccess("Category profile deleted.");
+			setTimeout(() => setSaveSuccess(""), 3000);
+		},
+	});
 
 	const voteSourceMutation = trpc.feedback.voteSource.useMutation({
 		onSuccess: () => {
@@ -42,7 +87,7 @@ export const Profiles: React.FC = () => {
 		},
 	});
 
-	const [name, setName] = useState("Default Profile");
+	const [name, setName] = useState("General News");
 	const [keywords, setKeywords] = useState("");
 	const [topics, setTopics] = useState("");
 	const [entities, setEntities] = useState("");
@@ -51,12 +96,15 @@ export const Profiles: React.FC = () => {
 	const [similarityThreshold, setSimilarityThreshold] = useState(0.65);
 	const [maxClusterCap, setMaxClusterCap] = useState(10);
 	const [ntfyTopic, setNtfyTopic] = useState("");
-	const [saveSuccess, setSaveSuccess] = useState(false);
+
+	const [saveSuccess, setSaveSuccess] = useState("");
+	const [showNewProfileModal, setShowNewProfileModal] = useState(false);
+	const [newProfileName, setNewProfileName] = useState("");
 
 	useEffect(() => {
-		if (profileQuery.data) {
-			const p = profileQuery.data;
-			setName(p.name || "Default Profile");
+		const p = profileQuery.data || activeProfile;
+		if (p) {
+			setName(p.name || "General News");
 			setKeywords(arrayToString(p.keywords));
 			setTopics(arrayToString(p.topics));
 			setEntities(arrayToString(p.entities));
@@ -66,22 +114,15 @@ export const Profiles: React.FC = () => {
 			setMaxClusterCap(p.max_cluster_cap ?? 10);
 			setNtfyTopic(p.ntfy_topic || "");
 		}
-	}, [profileQuery.data]);
-
-	const updateProfileMutation = trpc.profiles.updateProfile.useMutation({
-		onSuccess: () => {
-			utils.profiles.getProfile.invalidate();
-			setSaveSuccess(true);
-			setTimeout(() => setSaveSuccess(false), 3000);
-		},
-	});
+	}, [profileQuery.data, activeProfile]);
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		setSaveSuccess(false);
+		setSaveSuccess("");
 
 		updateProfileMutation.mutate({
-			name: name.trim() || "Default Profile",
+			id: activeProfileId,
+			name: name.trim() || "General News",
 			keywords: stringToArray(keywords),
 			topics: stringToArray(topics),
 			entities: stringToArray(entities),
@@ -90,6 +131,15 @@ export const Profiles: React.FC = () => {
 			similarity_threshold: Number(similarityThreshold),
 			max_cluster_cap: Number(maxClusterCap),
 			ntfy_topic: ntfyTopic.trim() || null,
+		});
+	};
+
+	const handleCreateNewProfile = (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!newProfileName.trim()) return;
+
+		createProfileMutation.mutate({
+			name: newProfileName.trim(),
 		});
 	};
 
@@ -107,8 +157,95 @@ export const Profiles: React.FC = () => {
 			</div>
 
 			{saveSuccess && (
-				<div className="p-4 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium">
-					Profile saved successfully!
+				<div className="p-4 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium flex items-center gap-2">
+					<CheckCircle2 className="h-4 w-4 text-emerald-600" />
+					<span>{saveSuccess}</span>
+				</div>
+			)}
+
+			{/* Category Profile Selector Tab Bar */}
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
+				<div className="flex flex-wrap items-center gap-2">
+					{profilesListQuery.data?.map((p) => {
+						const isSelected = p.id === activeProfileId;
+						return (
+							<button
+								key={p.id}
+								type="button"
+								onClick={() => setActiveProfileId(p.id)}
+								className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+									isSelected
+										? "bg-indigo-600 text-white shadow-xs"
+										: "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+								}`}
+							>
+								<Bookmark className="h-3.5 w-3.5" />
+								<span>{p.name}</span>
+								{p.is_default === 1 && (
+									<span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
+										Default
+									</span>
+								)}
+							</button>
+						);
+					})}
+				</div>
+
+				<div className="flex items-center gap-2">
+					{activeProfile && activeProfile.is_default !== 1 && (profilesListQuery.data?.length || 0) > 1 && (
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={() => {
+								if (confirm(`Are you sure you want to delete category profile '${activeProfile.name}'?`)) {
+									deleteProfileMutation.mutate({ id: activeProfile.id });
+								}
+							}}
+							className="text-xs text-rose-600 hover:text-rose-700 border-rose-200 hover:bg-rose-50 gap-1"
+						>
+							<Trash2 className="h-3.5 w-3.5" />
+							Delete Category
+						</Button>
+					)}
+
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={() => setShowNewProfileModal(true)}
+						className="text-xs gap-1.5"
+					>
+						<Plus className="h-3.5 w-3.5" />
+						New Category
+					</Button>
+				</div>
+			</div>
+
+			{/* New Category Modal */}
+			{showNewProfileModal && (
+				<div className="p-4 rounded-xl bg-indigo-50/80 border border-indigo-200 space-y-3 shadow-xs">
+					<h3 className="text-sm font-bold text-indigo-950 flex items-center gap-2">
+						<Plus className="h-4 w-4 text-indigo-600" />
+						Create New Interest Category Profile
+					</h3>
+					<form onSubmit={handleCreateNewProfile} className="flex flex-col sm:flex-row items-center gap-3">
+						<Input
+							placeholder="e.g. Tech & AI News, Personal Finance, Sports"
+							value={newProfileName}
+							onChange={(e) => setNewProfileName(e.target.value)}
+							className="bg-white text-xs"
+							required
+						/>
+						<div className="flex items-center gap-2 self-end sm:self-auto">
+							<Button type="submit" size="sm" disabled={createProfileMutation.isPending}>
+								{createProfileMutation.isPending ? "Creating..." : "Create Profile"}
+							</Button>
+							<Button type="button" variant="ghost" size="sm" onClick={() => setShowNewProfileModal(false)}>
+								Cancel
+							</Button>
+						</div>
+					</form>
 				</div>
 			)}
 

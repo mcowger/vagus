@@ -19,15 +19,15 @@ export async function processScoreUserJob(
 		throw new Error(`Invalid job data type: ${typeof job.data}`);
 	}
 
-	const { runId, stageId, userId } = data;
+	const { runId, stageId, userId, profileId } = data;
 
-	log.info("Starting score-user job", { jobId: job.id, userId, runId });
+	log.info("Starting score-user job", { jobId: job.id, userId, profileId, runId });
 
 	const database = getDb(db);
 
 	try {
-		await scoreClustersForUser(database, runId, userId);
-		log.info("Completed score-user job", { jobId: job.id, userId, runId });
+		await scoreClustersForUser(database, runId, userId, profileId);
+		log.info("Completed score-user job", { jobId: job.id, userId, profileId, runId });
 	} catch (err) {
 		log.error("Failed score-user job execution", {
 			jobId: job.id,

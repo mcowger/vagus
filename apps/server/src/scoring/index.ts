@@ -31,19 +31,27 @@ export async function scoreClustersForUser(
 	db: Kysely<Database> | null | undefined,
 	runId: number,
 	userId: string,
+	profileId?: number,
 ): Promise<ScoreClusterResult[]> {
 	const database = getDb(db);
 
 	// 1. Fetch user's interest_profile
-	let profile = await database
+	let query = database
 		.selectFrom("interest_profile")
 		.selectAll()
-		.where("user_id", "=", userId)
-		.executeTakeFirst();
+		.where("user_id", "=", userId);
+
+	if (profileId) {
+		query = query.where("id", "=", profileId);
+	} else {
+		query = query.orderBy("is_default", "desc").orderBy("id", "asc");
+	}
+
+	let profile = await query.executeTakeFirst();
 
 	if (!profile) {
 		const now = new Date().toISOString();
-		const defaultName = "Default Profile";
+		const defaultName = "General News";
 		let embedding: Uint8Array | null = null;
 		try {
 			const embedder = await getEmbedder(database);
@@ -65,6 +73,7 @@ export async function scoreClustersForUser(
 				similarity_threshold: 0.65,
 				max_cluster_cap: 10,
 				ntfy_topic: null,
+				is_default: 1,
 				created_at: now,
 				updated_at: now,
 			})
@@ -401,6 +410,7 @@ export async function scoreClustersForUser(
 		.deleteFrom("user_selected_cluster")
 		.where("run_id", "=", runId)
 		.where("user_id", "=", userId)
+		.where("profile_id", "=", profile.id)
 		.execute();
 
 	if (selected.length > 0) {
@@ -411,6 +421,7 @@ export async function scoreClustersForUser(
 				selected.map((s) => ({
 					run_id: runId,
 					user_id: userId,
+					profile_id: profile.id,
 					cluster_id: s.clusterId,
 					score: s.score,
 					reason: s.reason,

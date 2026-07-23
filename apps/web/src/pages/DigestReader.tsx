@@ -273,17 +273,22 @@ export const DigestReader: React.FC = () => {
 	const [verbosityMode, setVerbosityMode] = useState<"tldr" | "deep">("deep");
 	const [showJsonModal, setShowJsonModal] = useState(false);
 	const [copied, setCopied] = useState(false);
+	const [selectedProfileFilter, setSelectedProfileFilter] = useState<number | "all">("all");
 
 	const utils = trpc.useUtils();
 	const feedbackQuery = trpc.feedback.getFeedbackStats.useQuery();
+	const profilesListQuery = trpc.profiles.listProfiles.useQuery();
+
 	const voteClusterMutation = trpc.feedback.voteCluster.useMutation({
 		onSuccess: () => {
 			utils.feedback.getFeedbackStats.invalidate();
 		},
 	});
 
-	// Fetch list of user digests
-	const { data: digestsList, isLoading: isLoadingList } = trpc.digest.listForUser.useQuery();
+	// Fetch list of user digests filtered by profile if selected
+	const { data: digestsList, isLoading: isLoadingList } = trpc.digest.listForUser.useQuery(
+		{ profileId: selectedProfileFilter === "all" ? undefined : selectedProfileFilter },
+	);
 
 	const routeDigestId = id ? parseInt(id, 10) : undefined;
 	const activeDigestId = routeDigestId ?? (digestsList && digestsList.length > 0 ? digestsList[0].id : undefined);
@@ -422,6 +427,37 @@ export const DigestReader: React.FC = () => {
 						</span>
 					</div>
 
+					{/* Category Profile Filter Pills */}
+					{(profilesListQuery.data?.length || 0) > 1 && (
+						<div className="flex flex-wrap gap-1 pb-1">
+							<button
+								type="button"
+								onClick={() => setSelectedProfileFilter("all")}
+								className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+									selectedProfileFilter === "all"
+										? "bg-indigo-600 text-white"
+										: "bg-slate-100 text-slate-600 hover:bg-slate-200"
+								}`}
+							>
+								All
+							</button>
+							{profilesListQuery.data?.map((p) => (
+								<button
+									key={p.id}
+									type="button"
+									onClick={() => setSelectedProfileFilter(p.id)}
+									className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+										selectedProfileFilter === p.id
+											? "bg-indigo-600 text-white"
+											: "bg-slate-100 text-slate-600 hover:bg-slate-200"
+									}`}
+								>
+									{p.name}
+								</button>
+							))}
+						</div>
+					)}
+
 					{isLoadingList ? (
 						<div className="p-4 bg-white rounded-lg border border-slate-200 text-sm text-slate-500 animate-pulse">
 							Loading digests...
@@ -452,7 +488,7 @@ export const DigestReader: React.FC = () => {
 												: "border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300"
 										}`}
 									>
-										<div className="flex items-center justify-between">
+										<div className="flex items-center justify-between gap-1">
 											<span className="text-xs font-mono font-bold text-indigo-600">
 												Digest #{d.id}
 											</span>
@@ -460,9 +496,14 @@ export const DigestReader: React.FC = () => {
 												Run #{d.run_id}
 											</span>
 										</div>
-										<p className="text-xs text-slate-700 font-medium line-clamp-2 mt-1">
-											{d.executive_summary || "Executive summary unavailable"}
-										</p>
+										<div className="mt-1">
+											<span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-100/80 text-indigo-800 border border-indigo-200/60 inline-block mb-1">
+												{d.profile_name || "General News"}
+											</span>
+											<p className="text-xs text-slate-700 font-medium line-clamp-2">
+												{d.executive_summary || "Executive summary unavailable"}
+											</p>
+										</div>
 										<div className="flex items-center gap-1 text-[11px] text-slate-400 mt-2">
 											<Clock className="h-3 w-3" />
 											<span>{createdDate}</span>
@@ -494,9 +535,12 @@ export const DigestReader: React.FC = () => {
 							{/* Digest Metadata Banner */}
 							<div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 								<div>
-									<div className="flex items-center gap-2">
+									<div className="flex items-center gap-2 flex-wrap">
 										<span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
 											Digest #{digest.id}
+										</span>
+										<span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/20">
+											{digest.profile_name || "General News"}
 										</span>
 										<span className="text-xs text-slate-300 font-mono">
 											Pipeline Run #{digest.run_id}

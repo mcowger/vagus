@@ -3,31 +3,61 @@ import { protectedProcedure, router } from "../trpc";
 import { TRPCError } from "@trpc/server";
 
 export const digestRouter = router({
-	listForUser: protectedProcedure.query(async ({ ctx }) => {
-		const userId = ctx.user.id;
-		const digests = await ctx.db
-			.selectFrom("digest")
-			.selectAll()
-			.where("user_id", "=", userId)
-			.orderBy("created_at", "desc")
-			.execute();
+	listForUser: protectedProcedure
+		.input(z.object({ profileId: z.number().optional() }).optional())
+		.query(async ({ ctx, input }) => {
+			const userId = ctx.user.id;
+			let query = ctx.db
+				.selectFrom("digest as d")
+				.leftJoin("interest_profile as p", "p.id", "d.profile_id")
+				.select([
+					"d.id",
+					"d.run_id",
+					"d.user_id",
+					"d.profile_id",
+					"d.executive_summary",
+					"d.key_takeaways",
+					"d.why_it_matters",
+					"d.key_quotes",
+					"d.created_at",
+					"p.name as profile_name",
+				])
+				.where("d.user_id", "=", userId);
 
-		return digests.map((d) => ({
-			...d,
-			key_takeaways: JSON.parse(d.key_takeaways || "[]"),
-			key_quotes: JSON.parse(d.key_quotes || "[]"),
-		}));
-	}),
+			if (input?.profileId) {
+				query = query.where("d.profile_id", "=", input.profileId);
+			}
+
+			const digests = await query.orderBy("d.created_at", "desc").execute();
+
+			return digests.map((d) => ({
+				...d,
+				key_takeaways: JSON.parse(d.key_takeaways || "[]"),
+				key_quotes: JSON.parse(d.key_quotes || "[]"),
+			}));
+		}),
 
 	getById: protectedProcedure
 		.input(z.object({ id: z.number().int() }))
 		.query(async ({ ctx, input }) => {
 			const userId = ctx.user.id;
 			const digest = await ctx.db
-				.selectFrom("digest")
-				.selectAll()
-				.where("id", "=", input.id)
-				.where("user_id", "=", userId)
+				.selectFrom("digest as d")
+				.leftJoin("interest_profile as p", "p.id", "d.profile_id")
+				.select([
+					"d.id",
+					"d.run_id",
+					"d.user_id",
+					"d.profile_id",
+					"d.executive_summary",
+					"d.key_takeaways",
+					"d.why_it_matters",
+					"d.key_quotes",
+					"d.created_at",
+					"p.name as profile_name",
+				])
+				.where("d.id", "=", input.id)
+				.where("d.user_id", "=", userId)
 				.executeTakeFirst();
 
 			if (!digest) {

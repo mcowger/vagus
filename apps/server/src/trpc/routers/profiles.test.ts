@@ -38,7 +38,7 @@ test("getProfile returns default profile when none exists", async () => {
 
 	expect(profile).toBeDefined();
 	expect(profile.user_id).toBe("user-1");
-	expect(profile.name).toBe("Default Profile");
+	expect(profile.name).toBe("General News");
 	expect(profile.keywords).toBe("[]");
 	expect(profile.topics).toBe("[]");
 	expect(profile.entities).toBe("[]");
@@ -56,7 +56,7 @@ test("updateProfile updates profile fields and computes embedding", async () => 
 
 	// Initial get creates default
 	const initial = await caller.profiles.getProfile();
-	expect(initial.name).toBe("Default Profile");
+	expect(initial.name).toBe("General News");
 
 	// Update fields
 	const updated = await caller.profiles.updateProfile({
@@ -88,6 +88,32 @@ test("updateProfile updates profile fields and computes embedding", async () => 
 	expect(fetched.name).toBe("AI Tech Enthusiast");
 	expect(fetched.similarity_threshold).toBe(0.75);
 	expect(fetched.ntfy_topic).toBe("my-ai-alerts");
+});
+
+test("supports multiple interest category profiles per user", async () => {
+	const caller = createCaller("user-multi");
+
+	// List initial
+	const initialList = await caller.profiles.listProfiles();
+	expect(initialList.length).toBe(1);
+	expect(initialList[0].name).toBe("General News");
+
+	// Create second profile
+	const techProfile = await caller.profiles.createProfile({
+		name: "Tech & AI Deep Dive",
+		keywords: ["LLM", "GPU", "Silicon"],
+	});
+
+	expect(techProfile.name).toBe("Tech & AI Deep Dive");
+
+	// List profiles
+	const updatedList = await caller.profiles.listProfiles();
+	expect(updatedList.length).toBe(2);
+
+	// Delete second profile
+	await caller.profiles.deleteProfile({ id: techProfile.id });
+	const finalList = await caller.profiles.listProfiles();
+	expect(finalList.length).toBe(1);
 });
 
 test("updateProfile supports string inputs for array fields", async () => {

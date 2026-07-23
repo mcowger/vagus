@@ -262,30 +262,67 @@ export async function triggerNextStage(
 		}
 	} else if (completedStage === "cluster" || completedStage === "cluster-run") {
 		// Cluster -> Score
-		const users = await db
-			.selectFrom("user")
-			.select("id")
-			.where("isDisabled", "=", 0)
+		let profiles = await db
+			.selectFrom("interest_profile as p")
+			.innerJoin("user as u", "u.id", "p.user_id")
+			.select(["p.id as profile_id", "p.user_id as user_id"])
+			.where("u.isDisabled", "=", 0)
 			.execute();
 
-		if (users.length > 0) {
+		if (profiles.length === 0) {
+			const users = await db
+				.selectFrom("user")
+				.select("id")
+				.where("isDisabled", "=", 0)
+				.execute();
+
+			for (const u of users) {
+				const now = new Date().toISOString();
+				const inserted = await db
+					.insertInto("interest_profile")
+					.values({
+						user_id: u.id,
+						name: "General News",
+						keywords: JSON.stringify([]),
+						topics: JSON.stringify([]),
+						entities: JSON.stringify([]),
+						include_rules: JSON.stringify([]),
+						exclude_rules: JSON.stringify([]),
+						similarity_threshold: 0.65,
+						max_cluster_cap: 10,
+						ntfy_topic: null,
+						is_default: 1,
+						created_at: now,
+						updated_at: now,
+					})
+					.returning("id")
+					.executeTakeFirst();
+
+				if (inserted) {
+					profiles.push({ profile_id: inserted.id, user_id: u.id });
+				}
+			}
+		}
+
+		if (profiles.length > 0) {
 			const stageRow = await db
 				.insertInto("run_stage")
 				.values({
 					run_id: runId,
 					stage: "score",
-					expected: users.length,
+					expected: profiles.length,
 					completed: 0,
 					status: "running",
 				})
 				.returning(["id"])
 				.executeTakeFirstOrThrow();
 
-			for (const u of users) {
+			for (const p of profiles) {
 				queue.add(SCORE_USER_JOB_TYPE, {
 					runId,
 					stageId: stageRow.id,
-					userId: u.id,
+					userId: p.user_id,
+					profileId: p.profile_id,
 				});
 			}
 		}
@@ -315,6 +352,7 @@ export async function triggerNextStage(
 					runId,
 					stageId: stageRow.id,
 					userId: sc.user_id,
+					profileId: sc.profile_id ?? undefined,
 					clusterId: sc.cluster_id,
 				});
 			}
@@ -323,31 +361,32 @@ export async function triggerNextStage(
 		}
 	} else if (completedStage === "synthesize" || completedStage === "synthesize-cluster" || completedStage === "synthesize_cluster") {
 		// Synthesize -> Assemble Digest
-		const userIds = await db
+		const targetTuples = await db
 			.selectFrom("user_selected_cluster")
-			.select("user_id")
+			.select(["user_id", "profile_id"])
 			.where("run_id", "=", runId)
-			.groupBy("user_id")
+			.groupBy(["user_id", "profile_id"])
 			.execute();
 
-		if (userIds.length > 0) {
+		if (targetTuples.length > 0) {
 			const stageRow = await db
 				.insertInto("run_stage")
 				.values({
 					run_id: runId,
 					stage: "assemble",
-					expected: userIds.length,
+					expected: targetTuples.length,
 					completed: 0,
 					status: "running",
 				})
 				.returning(["id"])
 				.executeTakeFirstOrThrow();
 
-			for (const u of userIds) {
+			for (const t of targetTuples) {
 				queue.add(ASSEMBLE_DIGEST_JOB_TYPE, {
 					runId,
 					stageId: stageRow.id,
-					userId: u.user_id,
+					userId: t.user_id,
+					profileId: t.profile_id ?? undefined,
 				});
 			}
 		}
