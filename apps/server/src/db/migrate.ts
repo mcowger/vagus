@@ -8,6 +8,7 @@ import * as m0006 from "./migrations/0006_m6_scheduling";
 import * as m0007 from "./migrations/0007_m8_feedback";
 import * as m0008 from "./migrations/0008_m8_topic_category";
 import * as m0009 from "./migrations/0009_m9_multi_profiles";
+import * as m0010 from "./migrations/0010_m9_min_cluster_count";
 
 // Explicit in-code migration registry. We deliberately avoid filesystem
 // globbing so migrations resolve deterministically under Bun bundling. Add new
@@ -22,6 +23,7 @@ const migrations: Record<string, Migration> = {
 	"0007_m8_feedback": m0007,
 	"0008_m8_topic_category": m0008,
 	"0009_m9_multi_profiles": m0009,
+	"0010_m9_min_cluster_count": m0010,
 };
 
 class StaticMigrationProvider implements MigrationProvider {

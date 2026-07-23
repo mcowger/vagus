@@ -483,4 +483,40 @@ describe("Scoring Module & Score User Job", () => {
 
 		expect(clusterRun2Result).toBeUndefined();
 	});
+
+	test("suppresses digest creation when qualified cluster count is below min_cluster_count threshold", async () => {
+		const { run, article1, cluster1 } = await setupTestRunAndArticles();
+		const userId = "user-min-count";
+		const now = new Date().toISOString();
+
+		await db
+			.insertInto("cluster_article")
+			.values({ cluster_id: cluster1.id, article_id: article1.id, is_primary: 1, created_at: now })
+			.execute();
+
+		// Create interest profile requiring minimum 5 clusters
+		await db
+			.insertInto("interest_profile")
+			.values({
+				user_id: userId,
+				name: "Strict Profile",
+				keywords: JSON.stringify(["TypeScript"]),
+				topics: JSON.stringify([]),
+				entities: JSON.stringify([]),
+				include_rules: JSON.stringify([]),
+				exclude_rules: JSON.stringify([]),
+				similarity_threshold: 0.5,
+				max_cluster_cap: 10,
+				min_cluster_count: 5,
+				created_at: now,
+				updated_at: now,
+			})
+			.execute();
+
+		// Score run 1 (which only has 1 cluster matching)
+		const scores = await scoreClustersForUser(db, run.id, userId);
+
+		// Digest creation is suppressed because 1 qualified cluster < 5 required min clusters
+		expect(scores.length).toBe(0);
+	});
 });

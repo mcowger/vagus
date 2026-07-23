@@ -153,6 +153,7 @@ export interface InterestProfileTable {
 	negative_embedding: Uint8Array | null;
 	similarity_threshold: number;
 	max_cluster_cap: number;
+	min_cluster_count: Generated<number>; // min clusters required to trigger digest
 	ntfy_topic: string | null;
 	is_default: Generated<number>; // 1 = default profile
 	created_at: Timestamp;

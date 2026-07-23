@@ -95,6 +95,7 @@ export const Profiles: React.FC = () => {
 	const [excludeRules, setExcludeRules] = useState("");
 	const [similarityThreshold, setSimilarityThreshold] = useState(0.65);
 	const [maxClusterCap, setMaxClusterCap] = useState(10);
+	const [minClusterCount, setMinClusterCount] = useState(1);
 	const [ntfyTopic, setNtfyTopic] = useState("");
 
 	const [saveSuccess, setSaveSuccess] = useState("");
@@ -112,6 +113,7 @@ export const Profiles: React.FC = () => {
 			setExcludeRules(arrayToString(p.exclude_rules));
 			setSimilarityThreshold(p.similarity_threshold ?? 0.65);
 			setMaxClusterCap(p.max_cluster_cap ?? 10);
+			setMinClusterCount(p.min_cluster_count ?? 1);
 			setNtfyTopic(p.ntfy_topic || "");
 		}
 	}, [profileQuery.data, activeProfile]);
@@ -130,6 +132,7 @@ export const Profiles: React.FC = () => {
 			exclude_rules: stringToArray(excludeRules),
 			similarity_threshold: Number(similarityThreshold),
 			max_cluster_cap: Number(maxClusterCap),
+			min_cluster_count: Number(minClusterCount),
 			ntfy_topic: ntfyTopic.trim() || null,
 		});
 	};
@@ -437,20 +440,38 @@ export const Profiles: React.FC = () => {
 							</p>
 						</div>
 
-						<div className="space-y-2">
-							<Label htmlFor="maxClusterCap">Max Cluster Cap</Label>
-							<Input
-								id="maxClusterCap"
-								type="number"
-								min={1}
-								max={100}
-								value={maxClusterCap}
-								onChange={(e) => setMaxClusterCap(parseInt(e.target.value, 10) || 1)}
-								required
-							/>
-							<p className="text-xs text-slate-500 leading-relaxed">
-								<strong>Digest Size Limit:</strong> Maximum number of top-scoring story clusters included in a single briefing digest cycle (e.g. top 10 stories), keeping daily reports concise and focused.
-							</p>
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+							<div className="space-y-2">
+								<Label htmlFor="minClusterCount">Minimum Cluster Count</Label>
+								<Input
+									id="minClusterCount"
+									type="number"
+									min={1}
+									max={50}
+									value={minClusterCount}
+									onChange={(e) => setMinClusterCount(parseInt(e.target.value, 10) || 1)}
+									required
+								/>
+								<p className="text-xs text-slate-500 leading-relaxed">
+									<strong>Minimum Threshold:</strong> If fewer than N qualifying stories exist during a run cycle, digest creation is suppressed to avoid thin reports.
+								</p>
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="maxClusterCap">Max Cluster Cap</Label>
+								<Input
+									id="maxClusterCap"
+									type="number"
+									min={1}
+									max={100}
+									value={maxClusterCap}
+									onChange={(e) => setMaxClusterCap(parseInt(e.target.value, 10) || 1)}
+									required
+								/>
+								<p className="text-xs text-slate-500 leading-relaxed">
+									<strong>Digest Size Limit:</strong> Maximum number of top-scoring story clusters included in a single briefing digest cycle.
+								</p>
+							</div>
 						</div>
 					</CardContent>
 				</Card>

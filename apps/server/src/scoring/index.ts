@@ -405,6 +405,22 @@ export async function scoreClustersForUser(
 	const cap = profile.max_cluster_cap > 0 ? profile.max_cluster_cap : 10;
 	const selected = qualifiedClusters.slice(0, cap);
 
+	// Check profile minimum cluster threshold
+	const minCount = profile.min_cluster_count > 0 ? profile.min_cluster_count : 1;
+	let finalSelected = selected;
+
+	if (selected.length < minCount) {
+		log.info("Digest creation suppressed: qualified clusters count is below profile minimum threshold", {
+			runId,
+			userId,
+			profileId: profile.id,
+			profileName: profile.name,
+			qualifiedCount: selected.length,
+			requiredMinCount: minCount,
+		});
+		finalSelected = [];
+	}
+
 	// 5. Store selections in user_selected_cluster table
 	await database
 		.deleteFrom("user_selected_cluster")
@@ -413,12 +429,12 @@ export async function scoreClustersForUser(
 		.where("profile_id", "=", profile.id)
 		.execute();
 
-	if (selected.length > 0) {
+	if (finalSelected.length > 0) {
 		const now = new Date().toISOString();
 		await database
 			.insertInto("user_selected_cluster")
 			.values(
-				selected.map((s) => ({
+				finalSelected.map((s) => ({
 					run_id: runId,
 					user_id: userId,
 					profile_id: profile.id,
@@ -434,9 +450,10 @@ export async function scoreClustersForUser(
 	log.info("Scored clusters for user", {
 		runId,
 		userId,
+		profileId: profile.id,
 		totalClusters: clusterRows.length,
-		selectedCount: selected.length,
+		selectedCount: finalSelected.length,
 	});
 
-	return selected;
+	return finalSelected;
 }
