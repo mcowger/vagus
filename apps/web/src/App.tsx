@@ -141,22 +141,14 @@ export function App() {
 									</ProtectedRoute>
 								}
 							/>
-							<Route
-								path="digests"
-								element={
-									<ProtectedRoute>
-										<DigestReader />
-									</ProtectedRoute>
-								}
-							/>
-							<Route
-								path="digests/:id"
-								element={
-									<ProtectedRoute>
-										<DigestReader />
-									</ProtectedRoute>
-								}
-							/>
+						<Route
+							path="digests"
+							element={<DigestReader />}
+						/>
+						<Route
+							path="digests/:id"
+							element={<DigestReader />}
+						/>
 							<Route
 								path="admin/settings"
 								element={

@@ -97,6 +97,14 @@ Vagus decouples global content processing from individual user profile evaluatio
 
 ---
 
+## Public Digest Reader
+
+- **Published Index**: `/digests` lists every published digest without requiring an account.
+- **Shareable Links**: Each digest has a stable public URL at `/digests/:id` (for example, `/digests/6`). Anyone with the link can read the digest and open its cited sources.
+- **Authenticated Feedback**: Reading is public; signed-in users retain the thumbs-up and thumbs-down controls that tailor their own future digests.
+
+---
+
 ## System Customization & LLM Prompts
 
 - **DB-Driven Settings**: API keys, endpoints, worker concurrency, retention windows, and model routing choices are strictly database-backed.

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { jsonrepair } from "jsonrepair";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { trpc } from "../trpc";
+import { useSession } from "../lib/auth-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import {
@@ -186,16 +187,16 @@ function ExecutiveSummaryContent({
 
 export const DigestReader: React.FC = () => {
 	const { id } = useParams<{ id?: string }>();
-	const navigate = useNavigate();
+	const { data: session } = useSession();
 
 	const [verbosityMode, setVerbosityMode] = useState<"tldr" | "deep">("deep");
 	const [showJsonModal, setShowJsonModal] = useState(false);
 	const [copied, setCopied] = useState(false);
-	const [selectedProfileFilter, setSelectedProfileFilter] = useState<number | "all">("all");
 
 	const utils = trpc.useUtils();
-	const feedbackQuery = trpc.feedback.getFeedbackStats.useQuery();
-	const profilesListQuery = trpc.profiles.listProfiles.useQuery();
+	const feedbackQuery = trpc.feedback.getFeedbackStats.useQuery(undefined, {
+		enabled: Boolean(session?.user),
+	});
 
 	const voteClusterMutation = trpc.feedback.voteCluster.useMutation({
 		onSuccess: () => {
@@ -203,23 +204,16 @@ export const DigestReader: React.FC = () => {
 		},
 	});
 
-	// Fetch list of user digests filtered by profile if selected
-	const { data: digestsList, isLoading: isLoadingList } = trpc.digest.listForUser.useQuery(
-		{ profileId: selectedProfileFilter === "all" ? undefined : selectedProfileFilter },
-	);
+	const { data: digestsList, isLoading: isLoadingList } = trpc.digest.listPublic.useQuery();
 
 	const routeDigestId = id ? parseInt(id, 10) : undefined;
 	const activeDigestId = routeDigestId ?? (digestsList && digestsList.length > 0 ? digestsList[0].id : undefined);
 
 	// Fetch detailed digest by id
-	const { data: digest, isLoading: isLoadingDigest } = trpc.digest.getById.useQuery(
+	const { data: digest, isLoading: isLoadingDigest } = trpc.digest.getPublicById.useQuery(
 		{ id: activeDigestId as number },
 		{ enabled: !!activeDigestId && !isNaN(activeDigestId) } as any
 	);
-
-	const handleSelectDigest = (digestId: number) => {
-		navigate(`/digests/${digestId}`);
-	};
 
 	const handleCopyJson = () => {
 		if (!digest) return;
@@ -305,43 +299,12 @@ export const DigestReader: React.FC = () => {
 				<div className="lg:col-span-1 space-y-3">
 					<div className="flex items-center justify-between px-1">
 						<span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-							Your Digests
+							Published Digests
 						</span>
 						<span className="text-xs font-mono text-slate-400">
 							{digestsList?.length || 0} total
 						</span>
 					</div>
-
-					{/* Category Profile Filter Pills */}
-					{(profilesListQuery.data?.length || 0) > 1 && (
-						<div className="flex flex-wrap gap-1 pb-1">
-							<button
-								type="button"
-								onClick={() => setSelectedProfileFilter("all")}
-								className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
-									selectedProfileFilter === "all"
-										? "bg-indigo-600 text-white"
-										: "bg-slate-100 text-slate-600 hover:bg-slate-200"
-								}`}
-							>
-								All
-							</button>
-							{profilesListQuery.data?.map((p) => (
-								<button
-									key={p.id}
-									type="button"
-									onClick={() => setSelectedProfileFilter(p.id)}
-									className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
-										selectedProfileFilter === p.id
-											? "bg-indigo-600 text-white"
-											: "bg-slate-100 text-slate-600 hover:bg-slate-200"
-									}`}
-								>
-									{p.name}
-								</button>
-							))}
-						</div>
-					)}
 
 					{isLoadingList ? (
 						<div className="p-4 bg-white rounded-lg border border-slate-200 text-sm text-slate-500 animate-pulse">
@@ -364,10 +327,10 @@ export const DigestReader: React.FC = () => {
 								});
 
 								return (
-									<button
+									<Link
 										key={d.id}
-										onClick={() => handleSelectDigest(d.id)}
-										className={`w-full text-left p-3 rounded-lg border transition-all ${
+										to={`/digests/${d.id}`}
+										className={`block w-full text-left p-3 rounded-lg border transition-all ${
 											isSelected
 												? "border-indigo-500 bg-indigo-50/60 shadow-sm"
 												: "border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300"
@@ -393,7 +356,7 @@ export const DigestReader: React.FC = () => {
 											<Clock className="h-3 w-3" />
 											<span>{createdDate}</span>
 										</div>
-									</button>
+									</Link>
 								);
 							})}
 						</div>
@@ -412,7 +375,7 @@ export const DigestReader: React.FC = () => {
 							<BookOpen className="h-12 w-12 text-slate-300 mx-auto" />
 							<h3 className="text-lg font-semibold text-slate-800">No digests available</h3>
 							<p className="text-sm text-slate-500 max-w-sm mx-auto">
-								You haven't generated any digests yet. Trigger a manual run in the Runs tab or wait for the scheduled pipeline to create your first digest.
+							No published digests are available yet.
 							</p>
 						</div>
 					) : (
@@ -502,8 +465,8 @@ export const DigestReader: React.FC = () => {
 															</CardTitle>
 														</div>
 
-														{/* Thumbs Up / Down Feedback Controls */}
-														<div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1 shadow-2xs">
+														{session?.user && (
+															<div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1 shadow-2xs">
 															<button
 																type="button"
 																title="Boost stories like this"
@@ -538,7 +501,8 @@ export const DigestReader: React.FC = () => {
 															>
 																<ThumbsDown className="h-4 w-4" />
 															</button>
-														</div>
+															</div>
+														)}
 													</div>
 												</CardHeader>
 
