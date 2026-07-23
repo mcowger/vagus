@@ -46,6 +46,10 @@ test("getProfile returns default profile when none exists", async () => {
 	expect(profile.exclude_rules).toBe("[]");
 	expect(profile.similarity_threshold).toBe(0.65);
 	expect(profile.max_cluster_cap).toBe(10);
+	expect(profile.schedule_enabled).toBe(0);
+	expect(profile.schedule_cron).toBe("0 9 * * *");
+	expect(profile.schedule_timezone).toBe("America/Los_Angeles");
+	expect(profile.cursor_article_id).toBeNull();
 	expect(profile.ntfy_topic).toBeNull();
 	expect(profile.profile_embedding).toBeDefined();
 	expect(profile.profile_embedding).not.toBeNull();
@@ -68,6 +72,9 @@ test("updateProfile updates profile fields and computes embedding", async () => 
 		exclude_rules: ["no sponsored content"],
 		similarity_threshold: 0.75,
 		max_cluster_cap: 15,
+		schedule_enabled: true,
+		schedule_cron: "0 8 * * *",
+		schedule_timezone: "America/New_York",
 		ntfy_topic: "my-ai-alerts",
 	});
 
@@ -79,6 +86,9 @@ test("updateProfile updates profile fields and computes embedding", async () => 
 	expect(JSON.parse(updated.exclude_rules)).toEqual(["no sponsored content"]);
 	expect(updated.similarity_threshold).toBe(0.75);
 	expect(updated.max_cluster_cap).toBe(15);
+	expect(updated.schedule_enabled).toBe(1);
+	expect(updated.schedule_cron).toBe("0 8 * * *");
+	expect(updated.schedule_timezone).toBe("America/New_York");
 	expect(updated.ntfy_topic).toBe("my-ai-alerts");
 	expect(updated.profile_embedding).toBeDefined();
 	expect(updated.profile_embedding).not.toBeNull();
@@ -87,7 +97,58 @@ test("updateProfile updates profile fields and computes embedding", async () => 
 	const fetched = await caller.profiles.getProfile();
 	expect(fetched.name).toBe("AI Tech Enthusiast");
 	expect(fetched.similarity_threshold).toBe(0.75);
+	expect(fetched.schedule_enabled).toBe(1);
+	expect(fetched.schedule_cron).toBe("0 8 * * *");
+	expect(fetched.schedule_timezone).toBe("America/New_York");
 	expect(fetched.ntfy_topic).toBe("my-ai-alerts");
+});
+
+test("validates schedule_cron and schedule_timezone in createProfile and updateProfile", async () => {
+	const caller = createCaller("user-val");
+
+	// Invalid cron in createProfile
+	await expect(
+		caller.profiles.createProfile({
+			name: "Invalid Cron Profile",
+			schedule_cron: "not a cron expression",
+		}),
+	).rejects.toThrow(/schedule_cron/);
+
+	// Invalid timezone in createProfile
+	await expect(
+		caller.profiles.createProfile({
+			name: "Invalid Timezone Profile",
+			schedule_timezone: "Mars/Olympus_Mons",
+		}),
+	).rejects.toThrow(/schedule_timezone/);
+
+	// Valid createProfile with custom schedule
+	const profile = await caller.profiles.createProfile({
+		name: "Scheduled Profile",
+		schedule_enabled: 1,
+		schedule_cron: "30 7 * * 1-5",
+		schedule_timezone: "Europe/London",
+	});
+
+	expect(profile.schedule_enabled).toBe(1);
+	expect(profile.schedule_cron).toBe("30 7 * * 1-5");
+	expect(profile.schedule_timezone).toBe("Europe/London");
+
+	// Invalid cron in updateProfile
+	await expect(
+		caller.profiles.updateProfile({
+			id: profile.id,
+			schedule_cron: "bad cron",
+		}),
+	).rejects.toThrow(/schedule_cron/);
+
+	// Invalid timezone in updateProfile
+	await expect(
+		caller.profiles.updateProfile({
+			id: profile.id,
+			schedule_timezone: "Not/Real",
+		}),
+	).rejects.toThrow(/schedule_timezone/);
 });
 
 test("supports multiple interest category profiles per user", async () => {

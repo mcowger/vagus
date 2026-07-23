@@ -10,7 +10,53 @@ import { db as defaultDb } from "./db/connection";
 export interface CreateAuthOptions {
 	secret?: string;
 	allowedDomains?: string;
+	adminEmails?: string;
 	baseURL?: string;
+	googleClientId?: string;
+	googleClientSecret?: string;
+}
+
+/**
+ * Single source of truth for signup authorization. Applied on user creation
+ * for both real Google logins and the dev-only /dev/login endpoint.
+ *
+ * Rules:
+ *  - admin emails (ADMIN_EMAILS) are always allowed and become admin, bypassing
+ *    the domain whitelist;
+ *  - otherwise the email domain must match SIGNUP_ALLOWED_DOMAINS (when set).
+ *
+ * Returns the resolved role, or throws BAD_REQUEST when the email is not allowed.
+ */
+export function resolveSignupRole(
+	email: string | undefined,
+	allowedDomainsSetting: string,
+	adminEmailsSetting: string,
+): "admin" | "user" {
+	const adminEmails = adminEmailsSetting
+		.split(",")
+		.map((e) => e.trim().toLowerCase())
+		.filter(Boolean);
+	const normalizedEmail = email?.toLowerCase();
+
+	if (normalizedEmail && adminEmails.includes(normalizedEmail)) {
+		return "admin";
+	}
+
+	const allowedDomains = allowedDomainsSetting
+		.split(",")
+		.map((d) => d.trim().toLowerCase())
+		.filter(Boolean);
+
+	if (allowedDomains.length > 0) {
+		const userDomain = normalizedEmail?.split("@")[1];
+		if (!userDomain || !allowedDomains.includes(userDomain)) {
+			throw new APIError("BAD_REQUEST", {
+				message: "Email domain not allowed",
+			});
+		}
+	}
+
+	return "user";
 }
 
 export async function initAuthSchema(authInstance: AuthInstance) {
@@ -32,7 +78,25 @@ export function createAuth(
 	const secret = options.secret ?? config.betterAuthSecret;
 	const allowedDomainsSetting =
 		options.allowedDomains ?? process.env.SIGNUP_ALLOWED_DOMAINS ?? "";
+	const adminEmailsSetting =
+		options.adminEmails ?? process.env.ADMIN_EMAILS ?? "";
+	const googleClientId =
+		options.googleClientId ?? process.env.GOOGLE_CLIENT_ID;
+	const googleClientSecret =
+		options.googleClientSecret ?? process.env.GOOGLE_CLIENT_SECRET;
 	const isHttps = (process.env.BETTER_AUTH_URL || "").startsWith("https");
+
+	// Google is the only human login path; register it only when both creds are
+	// present so local dev/tests without Google creds still boot.
+	const socialProviders =
+		googleClientId && googleClientSecret
+			? {
+					google: {
+						clientId: googleClientId,
+						clientSecret: googleClientSecret,
+					},
+				}
+			: undefined;
 
 	const authInstance = betterAuth({
 		trustedOrigins: ["*"],
@@ -49,9 +113,12 @@ export function createAuth(
 			process.env.BETTER_AUTH_URL ??
 			`http://localhost:${config.port}`,
 		emailAndPassword: {
-			enabled: true,
+			enabled: false,
 		},
-		plugins: [apiKey() as any],
+		socialProviders,
+		// enableSessionForAPIKeys lets robots authenticate by sending the key in the
+		// `x-api-key` header; getSession then resolves it to the owning user.
+		plugins: [apiKey({ enableSessionForAPIKeys: true }) as any],
 		user: {
 			additionalFields: {
 				role: {
@@ -70,31 +137,11 @@ export function createAuth(
 			user: {
 				create: {
 					before: async (user) => {
-						const allowedDomains = allowedDomainsSetting
-							.split(",")
-							.map((d) => d.trim().toLowerCase())
-							.filter(Boolean);
-
-						if (allowedDomains.length > 0 && user.email) {
-							const userDomain = user.email.split("@")[1]?.toLowerCase();
-							if (!userDomain || !allowedDomains.includes(userDomain)) {
-								throw new APIError("BAD_REQUEST", {
-									message: "Email domain not allowed",
-								});
-							}
-						}
-
-						let count = 0;
-						try {
-							const row = sqlite
-								.query("SELECT COUNT(*) as count FROM user WHERE role = 'admin'")
-								.get() as { count: number | bigint } | null;
-							count = row ? Number(row.count) : 0;
-						} catch {
-							count = 0;
-						}
-
-						const role = count === 0 ? "admin" : "user";
+						const role = resolveSignupRole(
+							user.email,
+							allowedDomainsSetting,
+							adminEmailsSetting,
+						);
 
 						return {
 							data: {

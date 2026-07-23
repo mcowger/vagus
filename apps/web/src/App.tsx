@@ -7,7 +7,6 @@ import { useSession } from "./lib/auth-client";
 import { Layout } from "./components/Layout";
 import { Login } from "./pages/Login";
 import { Profiles } from "./pages/Profiles";
-import { Signup } from "./pages/Signup";
 import { Dashboard } from "./pages/Dashboard";
 import { Providers } from "./pages/Providers";
 import { Runs } from "./pages/Runs";
@@ -162,14 +161,6 @@ export function App() {
 								element={
 									<PublicRoute>
 										<Login />
-									</PublicRoute>
-								}
-							/>
-							<Route
-								path="signup"
-								element={
-									<PublicRoute>
-										<Signup />
 									</PublicRoute>
 								}
 							/>

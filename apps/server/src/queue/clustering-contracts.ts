@@ -11,6 +11,7 @@ export interface EmbedArticleJobData {
 export interface ClusterRunJobData {
 	runId: number;
 	stageId: number;
+	profileId?: number;
 }
 
 export interface ScoreUserJobData {

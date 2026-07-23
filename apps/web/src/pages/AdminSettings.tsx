@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { trpc } from "../trpc";
+import { ApiKeysPanel } from "../components/ApiKeysPanel";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -503,6 +504,8 @@ export const AdminSettings: React.FC = () => {
 						})}
 					</div>
 				)}
+
+				<ApiKeysPanel />
 			</div>
 		</div>
 	);

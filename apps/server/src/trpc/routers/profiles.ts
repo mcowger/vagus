@@ -1,7 +1,33 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+import { Cron } from "croner";
 import { protectedProcedure, router } from "../trpc";
 import { serializeFloat32 } from "../../embeddings/types";
 import { getEmbedder } from "../../queue/embed-job";
+
+function isValidCron(cronStr: string): boolean {
+	try {
+		new Cron(cronStr);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function isValidTimezone(tzStr: string): boolean {
+	try {
+		Intl.DateTimeFormat(undefined, { timeZone: tzStr });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function toScheduleEnabled(val: boolean | number | undefined | null): number {
+	if (val === undefined || val === null) return 0;
+	if (typeof val === "boolean") return val ? 1 : 0;
+	return val ? 1 : 0;
+}
 
 function normalizeArrayInput(input: string[] | string | undefined | null): string[] {
 	if (!input) return [];
@@ -136,12 +162,27 @@ export const profilesRouter = router({
 				similarity_threshold: z.number().min(0).max(1).optional(),
 				max_cluster_cap: z.number().int().min(1).optional(),
 				min_cluster_count: z.number().int().min(1).optional(),
-				max_digests_per_day: z.number().int().min(0).nullable().optional(),
-				target_delivery_time: z.string().nullable().optional(),
+				schedule_enabled: z.union([z.boolean(), z.number().int()]).optional(),
+				schedule_cron: z.string().optional(),
+				schedule_timezone: z.string().optional(),
 				ntfy_topic: z.string().nullable().optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
+			if (input.schedule_cron && !isValidCron(input.schedule_cron)) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: `Invalid schedule_cron expression: ${input.schedule_cron}`,
+				});
+			}
+
+			if (input.schedule_timezone && !isValidTimezone(input.schedule_timezone)) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: `Invalid schedule_timezone IANA timezone: ${input.schedule_timezone}`,
+				});
+			}
+
 			const userId = ctx.user.id;
 			const now = new Date().toISOString();
 
@@ -177,8 +218,9 @@ export const profilesRouter = router({
 					similarity_threshold: input.similarity_threshold ?? 0.65,
 					max_cluster_cap: input.max_cluster_cap ?? 10,
 					min_cluster_count: input.min_cluster_count ?? 1,
-					max_digests_per_day: input.max_digests_per_day ?? null,
-					target_delivery_time: input.target_delivery_time ?? null,
+					schedule_enabled: toScheduleEnabled(input.schedule_enabled),
+					schedule_cron: input.schedule_cron ?? "0 9 * * *",
+					schedule_timezone: input.schedule_timezone ?? "America/Los_Angeles",
 					ntfy_topic: input.ntfy_topic ?? null,
 					profile_embedding: embedding,
 					is_default: 0,
@@ -204,12 +246,27 @@ export const profilesRouter = router({
 				similarity_threshold: z.number().min(0).max(1).optional(),
 				max_cluster_cap: z.number().int().min(1).optional(),
 				min_cluster_count: z.number().int().min(1).optional(),
-				max_digests_per_day: z.number().int().min(0).nullable().optional(),
-				target_delivery_time: z.string().nullable().optional(),
+				schedule_enabled: z.union([z.boolean(), z.number().int()]).optional(),
+				schedule_cron: z.string().optional(),
+				schedule_timezone: z.string().optional(),
 				ntfy_topic: z.string().nullable().optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
+			if (input.schedule_cron && !isValidCron(input.schedule_cron)) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: `Invalid schedule_cron expression: ${input.schedule_cron}`,
+				});
+			}
+
+			if (input.schedule_timezone && !isValidTimezone(input.schedule_timezone)) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: `Invalid schedule_timezone IANA timezone: ${input.schedule_timezone}`,
+				});
+			}
+
 			const userId = ctx.user.id;
 
 			let query = ctx.db.selectFrom("interest_profile").selectAll().where("user_id", "=", userId);
@@ -239,8 +296,9 @@ export const profilesRouter = router({
 						similarity_threshold: 0.65,
 						max_cluster_cap: 10,
 						min_cluster_count: 1,
-						max_digests_per_day: null,
-						target_delivery_time: null,
+						schedule_enabled: 0,
+						schedule_cron: "0 9 * * *",
+						schedule_timezone: "America/Los_Angeles",
 						ntfy_topic: null,
 						is_default: 1,
 						created_at: now,
@@ -284,13 +342,17 @@ export const profilesRouter = router({
 				? input.min_cluster_count
 				: existing.min_cluster_count;
 
-			const maxDigestsPerDay = input.max_digests_per_day !== undefined
-				? input.max_digests_per_day
-				: existing.max_digests_per_day;
+			const scheduleEnabled = input.schedule_enabled !== undefined
+				? toScheduleEnabled(input.schedule_enabled)
+				: existing.schedule_enabled;
 
-			const targetDeliveryTime = input.target_delivery_time !== undefined
-				? input.target_delivery_time
-				: existing.target_delivery_time;
+			const scheduleCron = input.schedule_cron !== undefined
+				? input.schedule_cron
+				: existing.schedule_cron;
+
+			const scheduleTimezone = input.schedule_timezone !== undefined
+				? input.schedule_timezone
+				: existing.schedule_timezone;
 
 			const ntfyTopic = input.ntfy_topic !== undefined
 				? input.ntfy_topic
@@ -321,8 +383,9 @@ export const profilesRouter = router({
 					similarity_threshold: similarityThreshold,
 					max_cluster_cap: maxClusterCap,
 					min_cluster_count: minClusterCount,
-					max_digests_per_day: maxDigestsPerDay,
-					target_delivery_time: targetDeliveryTime,
+					schedule_enabled: scheduleEnabled,
+					schedule_cron: scheduleCron,
+					schedule_timezone: scheduleTimezone,
 					ntfy_topic: ntfyTopic,
 					profile_embedding: embedding,
 					updated_at: now,

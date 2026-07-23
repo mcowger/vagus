@@ -6,6 +6,7 @@ import { trpcServer } from "@hono/trpc-server";
 import index from "../../web/index.html";
 import { auth, initAuthSchema } from "./auth";
 import { config } from "./config";
+import { devLogin, isDevAuthEnabled } from "./dev-auth";
 import { db } from "./db/connection";
 import { migrateToLatest } from "./db/migrate";
 import { log, requestLogger } from "./log";
@@ -58,6 +59,33 @@ app.all("/api/auth/*", async (c) => {
 	return res;
 });
 
+// /dev/login → dev/test-only session mint (gated). Simulates a Google sign-in
+// without the OAuth redirect so agents/CI can authenticate. Never mounted in
+// production or when DEV_AUTH_ENABLED is unset.
+if (isDevAuthEnabled()) {
+	log.warn("DEV auth enabled: mounting POST /dev/login (non-production only)");
+	app.post("/dev/login", async (c) => {
+		let email: string | undefined;
+		try {
+			const body = (await c.req.json()) as { email?: string };
+			email = body.email;
+		} catch {
+			return c.json({ error: "invalid JSON body" }, 400);
+		}
+		if (!email) {
+			return c.json({ error: "email is required" }, 400);
+		}
+		try {
+			const { setCookie, userId, role } = await devLogin(email);
+			c.header("set-cookie", setCookie);
+			return c.json({ ok: true, userId, role });
+		} catch (err) {
+			// Disallowed email / disabled account → 403 (mirrors real login rejection).
+			return c.json({ error: String((err as Error).message ?? err) }, 403);
+		}
+	});
+}
+
 // /healthz → Track D refines (structured checks). Real liveness check with DB query.
 app.get("/healthz", (c) => {
 	try {
@@ -98,6 +126,9 @@ async function main(): Promise<void> {
 			// More specific routes take priority over the "/*" SPA catch-all.
 			"/trpc/*": (req) => app.fetch(req),
 			"/api/auth/*": (req) => app.fetch(req),
+			// Always routed to Hono; the handler is only mounted under the dev gate,
+			// so this 404s in production.
+			"/dev/login": (req) => app.fetch(req),
 			"/healthz": (req) => app.fetch(req),
 			"/*": index,
 		},

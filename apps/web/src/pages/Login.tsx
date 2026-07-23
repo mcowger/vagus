@@ -1,44 +1,19 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { signIn } from "../lib/auth-client";
 import { Button } from "../components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 
 export const Login: React.FC = () => {
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
-	const navigate = useNavigate();
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
+	const handleGoogleSignIn = async () => {
 		setError(null);
 		setLoading(true);
-
-		console.log("[Vagus Client] Attempting sign-in for:", email);
-
 		try {
-			const res = await signIn.email({
-				email,
-				password,
-			});
-
-			console.log("[Vagus Client] Sign-in response:", res);
-
-			if (res.error) {
-				console.error("[Vagus Client] Sign-in error:", res.error);
-				setError(res.error.message || "Failed to sign in");
-			} else {
-				console.log("[Vagus Client] Sign-in successful, redirecting to /");
-				window.location.href = "/";
-			}
+			await signIn.social({ provider: "google", callbackURL: "/" });
 		} catch (err: any) {
-			console.error("[Vagus Client] Sign-in exception:", err);
-			setError(err?.message || "An unexpected error occurred");
-		} finally {
+			setError(err?.message || "Failed to start Google sign-in");
 			setLoading(false);
 		}
 	};
@@ -49,50 +24,24 @@ export const Login: React.FC = () => {
 				<CardHeader className="space-y-1">
 					<CardTitle className="text-2xl font-bold">Sign in to vagus</CardTitle>
 					<CardDescription>
-						Enter your email and password to access your account
+						Use your Google account to access your news digests.
 					</CardDescription>
 				</CardHeader>
-				<form onSubmit={handleSubmit}>
-					<CardContent className="space-y-4">
-						{error && (
-							<div className="p-3 text-sm rounded-md bg-red-50 text-red-600 border border-red-200">
-								{error}
-							</div>
-						)}
-						<div className="space-y-2">
-							<Label htmlFor="email">Email</Label>
-							<Input
-								id="email"
-								type="email"
-								placeholder="name@example.com"
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
-								required
-							/>
+				<CardContent className="space-y-4">
+					{error && (
+						<div className="p-3 text-sm rounded-md bg-red-50 text-red-600 border border-red-200">
+							{error}
 						</div>
-						<div className="space-y-2">
-							<Label htmlFor="password">Password</Label>
-							<Input
-								id="password"
-								type="password"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								required
-							/>
-						</div>
-					</CardContent>
-					<CardFooter className="flex flex-col gap-4">
-						<Button type="submit" className="w-full" disabled={loading}>
-							{loading ? "Signing in..." : "Sign in"}
-						</Button>
-						<div className="text-sm text-center text-slate-600">
-							Don't have an account?{" "}
-							<Link to="/signup" className="text-slate-900 font-semibold underline hover:text-slate-700">
-								Sign up
-							</Link>
-						</div>
-					</CardFooter>
-				</form>
+					)}
+					<Button
+						type="button"
+						className="w-full"
+						onClick={handleGoogleSignIn}
+						disabled={loading}
+					>
+						{loading ? "Redirecting..." : "Sign in with Google"}
+					</Button>
+				</CardContent>
 			</Card>
 		</div>
 	);

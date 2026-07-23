@@ -4,7 +4,7 @@ import { getDb, type Database } from "../db";
 import { log } from "../log";
 import { scoreClustersForUser } from "../scoring";
 import { SCORE_USER_JOB_TYPE, type ScoreUserJobData } from "./clustering-contracts";
-import { advanceStage } from "./coordinator";
+import { advanceStage, failStage } from "./coordinator";
 
 export async function processScoreUserJob(
 	db: Kysely<Database> | null | undefined,
@@ -35,7 +35,9 @@ export async function processScoreUserJob(
 			runId,
 			error: String(err),
 		});
-	} finally {
-		await advanceStage(database, stageId, job.id);
+		await failStage(database, stageId, String(err));
+		throw err;
 	}
+
+	await advanceStage(database, stageId, job.id);
 }

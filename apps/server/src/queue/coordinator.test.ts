@@ -185,3 +185,110 @@ test("listRuns lists recent runs with stages", async () => {
 	queue.close();
 	db.close();
 });
+
+test("global workflow stops after embed stage and does not cascade to cluster", async () => {
+	const { triggerNextStage, startRun } = await import("./coordinator");
+	const { CLUSTER_RUN_JOB_TYPE } = await import("./clustering-contracts");
+
+	const db = createDb(":memory:");
+	await migrateToLatest(db.kysely);
+	const queue = defineQueue({ connection: createPlainjobConnection(db.sqlite) });
+
+	const startRes = await startRun(db.kysely, queue, "manual");
+	expect(startRes.started).toBe(true);
+
+	if (startRes.started) {
+		await triggerNextStage(db.kysely, queue, startRes.runId, "embed");
+		const clusterJobs = queue.countJobs({ type: CLUSTER_RUN_JOB_TYPE });
+		expect(clusterJobs).toBe(0);
+	}
+
+	queue.close();
+	db.close();
+});
+
+test("startProfileRun handles profile not found, bounds, and profile overlap", async () => {
+	const { startProfileRun, startRun } = await import("./coordinator");
+	const { serializeFloat32 } = await import("../embeddings/types");
+
+	const db = createDb(":memory:");
+	await migrateToLatest(db.kysely);
+	const queue = defineQueue({ connection: createPlainjobConnection(db.sqlite) });
+
+	// 1. Non-existent profile
+	const notFoundRes = await startProfileRun(db.kysely, queue, "manual", 9999);
+	expect(notFoundRes.started).toBe(false);
+	if (!notFoundRes.started) expect(notFoundRes.reason).toBe("profile_not_found");
+
+	// Create profile
+	const profile = await db.kysely
+		.insertInto("interest_profile")
+		.values({
+			user_id: "user-1",
+			name: "Tech Profile",
+			keywords: JSON.stringify([]),
+			topics: JSON.stringify([]),
+			entities: JSON.stringify([]),
+			include_rules: JSON.stringify([]),
+			exclude_rules: JSON.stringify([]),
+			similarity_threshold: 0.65,
+			max_cluster_cap: 10,
+			ntfy_topic: null,
+			is_default: 1,
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString(),
+		})
+		.returningAll()
+		.executeTakeFirstOrThrow();
+
+	// 2. No embedded articles -> no_new_articles
+	const noArticlesRes = await startProfileRun(db.kysely, queue, "manual", profile.id);
+	expect(noArticlesRes.started).toBe(false);
+	if (!noArticlesRes.started) expect(noArticlesRes.reason).toBe("no_new_articles");
+
+	// Add source, article, and embedding
+	const source = await db.kysely
+		.insertInto("source")
+		.values({ type: "rss", name: "Source 1", enabled: 1, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+		.returningAll()
+		.executeTakeFirstOrThrow();
+
+	const article = await db.kysely
+		.insertInto("article")
+		.values({
+			identity_key: "art-1",
+			source_id: source.id,
+			title: "Article 1",
+			url: "https://example.com/1",
+			fetched_at: new Date().toISOString(),
+			created_at: new Date().toISOString(),
+		})
+		.returningAll()
+		.executeTakeFirstOrThrow();
+
+	await db.kysely
+		.insertInto("article_embedding")
+		.values({
+			article_id: article.id,
+			embedding: serializeFloat32(new Float32Array([1, 0, 0])),
+			model_name: "test-model",
+			created_at: new Date().toISOString(),
+		})
+		.execute();
+
+	// 3. Global run can run concurrently with profile run
+	const globalRes = await startRun(db.kysely, queue, "manual");
+	expect(globalRes.started).toBe(true);
+
+	// Profile run starts successfully alongside running global run
+	const profileRes1 = await startProfileRun(db.kysely, queue, "manual", profile.id);
+	expect(profileRes1.started).toBe(true);
+
+	// 4. Second profile run for same profile is rejected due to overlap
+	const profileRes2 = await startProfileRun(db.kysely, queue, "manual", profile.id);
+	expect(profileRes2.started).toBe(false);
+	if (!profileRes2.started) expect(profileRes2.reason).toBe("overlap");
+
+	queue.close();
+	db.close();
+});

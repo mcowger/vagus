@@ -1,4 +1,5 @@
 import { publicProcedure, router } from "./trpc";
+import { apiKeysRouter } from "./routers/apiKeys";
 import { authRouter } from "./routers/auth";
 import { digestRouter } from "./routers/digest";
 import { feedbackRouter } from "./routers/feedback";
@@ -15,6 +16,7 @@ export const appRouter = router({
 	ping: publicProcedure.query(() => ({ ok: true as const, time: Date.now() })),
 
 	auth: authRouter,
+	apiKeys: apiKeysRouter,
 	digest: digestRouter,
 	feedback: feedbackRouter,
 	profiles: profilesRouter,

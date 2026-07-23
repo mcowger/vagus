@@ -64,13 +64,8 @@ export const Layout: React.FC = () => {
 						) : (
 							<div className="flex items-center gap-2">
 								<Link to="/login">
-									<Button variant="ghost" size="sm">
-										Sign in
-									</Button>
-								</Link>
-								<Link to="/signup">
 									<Button size="sm">
-										Sign up
+										Sign in
 									</Button>
 								</Link>
 							</div>

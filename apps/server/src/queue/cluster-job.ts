@@ -4,7 +4,7 @@ import { clusterRunArticles } from "../clustering";
 import { getDb, type Database } from "../db";
 import { log } from "../log";
 import { CLUSTER_RUN_JOB_TYPE, type ClusterRunJobData } from "./clustering-contracts";
-import { advanceStage } from "./coordinator";
+import { advanceStage, failStage } from "./coordinator";
 
 export async function processClusterRunJob(
 	dbOrJob: Kysely<Database> | Job,
@@ -55,7 +55,9 @@ export async function processClusterRunJob(
 		log.info("Completed cluster-run job", { jobId: job.id, runId });
 	} catch (err) {
 		log.error("Failed cluster-run job execution", { jobId: job.id, runId, error: String(err) });
-	} finally {
-		await advanceStage(db, stageId, job.id);
+		await failStage(db, stageId, String(err));
+		throw err;
 	}
+
+	await advanceStage(db, stageId, job.id);
 }

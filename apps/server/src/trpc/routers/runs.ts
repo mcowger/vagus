@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { queue } from "../../queue";
-import { getRun, listRuns, startRun } from "../../queue/coordinator";
+import { getRun, listRuns, startProfileRun, startRun } from "../../queue/coordinator";
 import { protectedProcedure, router } from "../trpc";
 
 export const runsRouter = router({
@@ -16,6 +16,30 @@ export const runsRouter = router({
 		.mutation(async ({ ctx, input }) => {
 			const trigger = input?.trigger ?? "manual";
 			return await startRun(ctx.db, queue, trigger);
+		}),
+
+	startProfileRun: protectedProcedure
+		.input(
+			z.object({
+				profileId: z.number(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const profile = await ctx.db
+				.selectFrom("interest_profile")
+				.select("id")
+				.where("id", "=", input.profileId)
+				.where("user_id", "=", ctx.user.id)
+				.executeTakeFirst();
+
+			if (!profile) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: `Profile with id ${input.profileId} not found or not owned by user`,
+				});
+			}
+
+			return await startProfileRun(ctx.db, queue, "manual", input.profileId);
 		}),
 
 	listRuns: protectedProcedure

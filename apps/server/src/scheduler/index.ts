@@ -3,12 +3,16 @@ import type { Queue } from "plainjob";
 import { Cron } from "croner";
 import type { Database } from "../db/schema";
 import { log } from "../log";
-import { startRun, type StartRunResult } from "../queue/coordinator";
+import { startProfileRun, startRun, type StartProfileRunResult, type StartRunResult } from "../queue/coordinator";
 
 let schedulerInterval: Timer | ReturnType<typeof setInterval> | null = null;
 let schedulerCron: Cron | null = null;
+let profileSyncInterval: Timer | ReturnType<typeof setInterval> | null = null;
+const profileCrons = new Map<number, Cron>();
+const profileScheduleKeys = new Map<number, string>();
 
 const SCHEDULER_TIMEZONE = "America/Los_Angeles";
+const PROFILE_SYNC_INTERVAL_MS = 60_000;
 
 /**
  * Parses a cron string or interval string into milliseconds.
@@ -53,6 +57,59 @@ async function triggerScheduledRun(db: Kysely<Database>, queue: Queue): Promise<
 	}
 }
 
+async function triggerScheduledProfileRun(
+	db: Kysely<Database>,
+	queue: Queue,
+	profileId: number,
+): Promise<void> {
+	try {
+		const result = await startProfileRun(db, queue, "cron", profileId);
+		if (!result.started && result.reason === "overlap") {
+			log.info("Scheduled profile run skipped due to active run in progress", { profileId });
+		}
+	} catch (err) {
+		log.error("Error executing scheduled profile run", { profileId, error: String(err) });
+	}
+}
+
+async function syncProfileSchedulers(db: Kysely<Database>, queue: Queue): Promise<void> {
+	const enabledProfiles = await db
+		.selectFrom("interest_profile")
+		.select(["id", "schedule_cron", "schedule_timezone"])
+		.where("schedule_enabled", "=", 1)
+		.execute();
+	const enabledIds = new Set(enabledProfiles.map((profile) => profile.id));
+
+	for (const [profileId, cron] of profileCrons) {
+		if (!enabledIds.has(profileId)) {
+			cron.stop();
+			profileCrons.delete(profileId);
+			profileScheduleKeys.delete(profileId);
+		}
+	}
+
+	for (const profile of enabledProfiles) {
+		const schedule = profile.schedule_cron.trim();
+		const timezone = profile.schedule_timezone || SCHEDULER_TIMEZONE;
+		const scheduleKey = `${schedule}|${timezone}`;
+		if (profileScheduleKeys.get(profile.id) === scheduleKey) continue;
+
+		profileCrons.get(profile.id)?.stop();
+		try {
+			const cron = new Cron(schedule, { timezone, protect: true }, () => {
+				void triggerScheduledProfileRun(db, queue, profile.id);
+			});
+			profileCrons.set(profile.id, cron);
+			profileScheduleKeys.set(profile.id, scheduleKey);
+			log.info("Profile scheduler started", { profileId: profile.id, schedule, timezone });
+		} catch (err) {
+			profileCrons.delete(profile.id);
+			profileScheduleKeys.delete(profile.id);
+			log.error("Failed to setup profile cron schedule", { profileId: profile.id, error: String(err) });
+		}
+	}
+}
+
 export interface StartSchedulerOptions {
 	intervalMs?: number;
 	runImmediately?: boolean;
@@ -66,7 +123,7 @@ export async function startScheduler(
 	queue: Queue,
 	options?: StartSchedulerOptions,
 ): Promise<void> {
-	if (schedulerInterval !== null || schedulerCron !== null) {
+	if (schedulerInterval !== null || schedulerCron !== null || profileCrons.size > 0) {
 		stopScheduler();
 	}
 
@@ -84,6 +141,17 @@ export async function startScheduler(
 		log.error("Failed to fetch cron_schedule setting, using default", {
 			error: String(err),
 		});
+	}
+
+	try {
+		await syncProfileSchedulers(db, queue);
+		profileSyncInterval = setInterval(() => {
+			void syncProfileSchedulers(db, queue).catch((err) => {
+				log.error("Failed to refresh profile cron schedules", { error: String(err) });
+			});
+		}, PROFILE_SYNC_INTERVAL_MS);
+	} catch (err) {
+		log.error("Failed to setup profile cron schedules", { error: String(err) });
 	}
 
 	const intervalMs = options?.intervalMs ?? parseScheduleInterval(cronSchedule);
@@ -122,6 +190,15 @@ export function stopScheduler(): void {
 		schedulerCron.stop();
 		schedulerCron = null;
 	}
+	if (profileSyncInterval !== null) {
+		clearInterval(profileSyncInterval);
+		profileSyncInterval = null;
+	}
+	for (const [, c] of profileCrons) {
+		c.stop();
+	}
+	profileCrons.clear();
+	profileScheduleKeys.clear();
 }
 
 /**
@@ -135,6 +212,14 @@ export async function triggerManualRun(
 	return await startRun(db, queue, "manual", options);
 }
 
+export async function triggerManualProfileRun(
+	db: Kysely<Database>,
+	queue: Queue,
+	profileId: number,
+): Promise<StartProfileRunResult> {
+	return await startProfileRun(db, queue, "manual", profileId);
+}
+
 export function isSchedulerRunning(): boolean {
-	return schedulerInterval !== null || schedulerCron !== null;
+	return schedulerInterval !== null || schedulerCron !== null || profileCrons.size > 0;
 }

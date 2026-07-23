@@ -43,14 +43,21 @@ export const Runs: React.FC = () => {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-between">
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 				<div>
-					<h1 className="text-3xl font-bold tracking-tight text-slate-900">Run History</h1>
-					<p className="text-slate-500 mt-1">Monitor pipeline execution cycles and source ingestion progress.</p>
+					<h1 className="text-3xl font-bold tracking-tight text-slate-900">Global Article Preparation</h1>
+					<p className="text-slate-500 mt-1">
+						Monitor global source ingestion, article extraction, and embedding pipeline execution.
+					</p>
 				</div>
 				<Button onClick={handleStartRun} disabled={startRunMutation.isPending}>
-					{startRunMutation.isPending ? "Starting..." : "Trigger Manual Run"}
+					{startRunMutation.isPending ? "Preparing..." : "Prepare Articles Now"}
 				</Button>
+			</div>
+
+			<div className="p-4 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-700 leading-relaxed">
+				<span className="font-bold text-slate-900 block mb-1">Global Preparation vs. Profile Digest Generation</span>
+				Global preparation fetches, extracts, summarizes, and embeds articles across all active feed sources. Individual category profile digests are generated separately on their configured schedules or on demand via <strong>Interest Profiles &rarr; Generate Now</strong>.
 			</div>
 
 			<Card>
@@ -63,7 +70,7 @@ export const Runs: React.FC = () => {
 						<div className="text-slate-500 py-4">Loading runs...</div>
 					) : runsQuery.data?.length === 0 ? (
 						<div className="text-slate-500 py-4 text-center border rounded-md border-dashed">
-							No runs executed yet. Trigger one above!
+							No runs executed yet. Click 'Prepare Articles Now' above to start global article ingestion!
 						</div>
 					) : (
 						<div className="space-y-3">

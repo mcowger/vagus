@@ -15,6 +15,7 @@ export type Timestamp = Generated<string>;
 export type RunTrigger = "cron" | "manual";
 export type RunStatus = "running" | "complete" | "failed";
 export type StageStatus = "pending" | "running" | "complete" | "failed";
+export type RunKind = "global" | "profile";
 
 export interface RunTable {
 	id: Generated<number>;
@@ -24,6 +25,10 @@ export interface RunTable {
 	finished_at: string | null;
 	/** JSON blob of per-run stats (per-source counts, etc.). */
 	stats: string | null;
+	kind: Generated<RunKind>;
+	profile_id: number | null;
+	input_from_article_id: number | null;
+	input_through_article_id: number | null;
 }
 
 export interface RunStageTable {
@@ -144,19 +149,21 @@ export interface InterestProfileTable {
 	id: Generated<number>;
 	user_id: string; // foreign key to BetterAuth user
 	name: string;
-	keywords: string; // JSON array string
-	topics: string; // JSON array string
-	entities: string; // JSON array string
-	include_rules: string; // JSON array string
-	exclude_rules: string; // JSON array string
+	keywords: Generated<string>; // JSON array string
+	topics: Generated<string>; // JSON array string
+	entities: Generated<string>; // JSON array string
+	include_rules: Generated<string>; // JSON array string
+	exclude_rules: Generated<string>; // JSON array string
 	profile_embedding: Uint8Array | null;
 	positive_embedding: Uint8Array | null;
 	negative_embedding: Uint8Array | null;
-	similarity_threshold: number;
-	max_cluster_cap: number;
+	similarity_threshold: Generated<number>;
+	max_cluster_cap: Generated<number>;
 	min_cluster_count: Generated<number>; // min clusters required to trigger digest
-	max_digests_per_day: number | null; // max rate per 24 hours
-	target_delivery_time: string | null; // preferred target delivery time e.g. "09:00"
+	schedule_enabled: Generated<number>; // 0 = disabled, 1 = enabled
+	schedule_cron: Generated<string>;
+	schedule_timezone: Generated<string>;
+	cursor_article_id: number | null;
 	ntfy_topic: string | null;
 	is_default: Generated<number>; // 1 = default profile
 	created_at: Timestamp;

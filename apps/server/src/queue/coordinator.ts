@@ -36,6 +36,10 @@ export type StartRunResult =
 	| { started: true; runId: number; stageId: number }
 	| { started: false; reason: "overlap" | "no_enabled_sources" };
 
+export type StartProfileRunResult =
+	| { started: true; runId: number; stageId: number }
+	| { started: false; reason: "overlap" | "no_new_articles" | "profile_not_found" };
+
 export async function startRun(
 	db: Kysely<Database>,
 	queue: Queue,
@@ -46,6 +50,7 @@ export async function startRun(
 		.selectFrom("run")
 		.select("id")
 		.where("status", "=", "running")
+		.where((eb) => eb.or([eb("kind" as any, "=", "global"), eb("kind" as any, "is", null)]))
 		.executeTakeFirst();
 
 	if (existingRunning) {
@@ -71,6 +76,7 @@ export async function startRun(
 			.selectFrom("run")
 			.select("id")
 			.where("status", "=", "running")
+			.where((eb) => eb.or([eb("kind" as any, "=", "global"), eb("kind" as any, "is", null)]))
 			.executeTakeFirst();
 
 		if (runningInsideTrx) {
@@ -83,10 +89,12 @@ export async function startRun(
 			.values({
 				trigger,
 				status: "running",
+				kind: "global" as any,
+				profile_id: null as any,
 				started_at: now,
 				finished_at: null,
 				stats: JSON.stringify({ completedJobIds: [], isExplicitStage }),
-			})
+			} as any)
 			.returning(["id"])
 			.executeTakeFirstOrThrow();
 
@@ -133,6 +141,103 @@ export async function startRun(
 	});
 }
 
+export async function startProfileRun(
+	db: Kysely<Database>,
+	queue: Queue,
+	trigger: RunTrigger,
+	profileId: number,
+): Promise<StartProfileRunResult> {
+	const existingRunning = await db
+		.selectFrom("run")
+		.select("id")
+		.where("status", "=", "running")
+		.where("kind" as any, "=", "profile")
+		.where("profile_id" as any, "=", profileId)
+		.executeTakeFirst();
+
+	if (existingRunning) {
+		return { started: false, reason: "overlap" };
+	}
+
+	const profile = await db
+		.selectFrom("interest_profile")
+		.selectAll()
+		.where("id", "=", profileId)
+		.executeTakeFirst();
+
+	if (!profile) {
+		return { started: false, reason: "profile_not_found" };
+	}
+
+	const fromArticleId = (profile as any).cursor_article_id ?? 0;
+
+	const maxEmbedding = await db
+		.selectFrom("article_embedding")
+		.select((eb) => eb.fn.max("article_id").as("max_id"))
+		.executeTakeFirst();
+
+	const throughArticleId = maxEmbedding?.max_id ? Number(maxEmbedding.max_id) : 0;
+
+	if (throughArticleId <= fromArticleId) {
+		return { started: false, reason: "no_new_articles" };
+	}
+
+	return await db.transaction().execute(async (trx) => {
+		const runningInsideTrx = await trx
+			.selectFrom("run")
+			.select("id")
+			.where("status", "=", "running")
+			.where("kind" as any, "=", "profile")
+			.where("profile_id" as any, "=", profileId)
+			.executeTakeFirst();
+
+		if (runningInsideTrx) {
+			return { started: false, reason: "overlap" };
+		}
+
+		const now = new Date().toISOString();
+		const runRow = await trx
+			.insertInto("run")
+			.values({
+				trigger,
+				status: "running",
+				kind: "profile" as any,
+				profile_id: profileId as any,
+				input_from_article_id: fromArticleId as any,
+				input_through_article_id: throughArticleId as any,
+				started_at: now,
+				finished_at: null,
+				stats: JSON.stringify({ completedJobIds: [], isExplicitStage: false }),
+			} as any)
+			.returning(["id"])
+			.executeTakeFirstOrThrow();
+
+		const stageRow = await trx
+			.insertInto("run_stage")
+			.values({
+				run_id: runRow.id,
+				stage: "cluster",
+				expected: 1,
+				completed: 0,
+				status: "running",
+			})
+			.returning(["id"])
+			.executeTakeFirstOrThrow();
+
+		queue.add(CLUSTER_RUN_JOB_TYPE, {
+			runId: runRow.id,
+			stageId: stageRow.id,
+			profileId,
+		});
+
+		return {
+			started: true,
+			runId: runRow.id,
+			stageId: stageRow.id,
+		};
+	});
+}
+
 export async function triggerNextStage(
 	db: Kysely<Database>,
 	queue: Queue,
@@ -140,6 +245,15 @@ export async function triggerNextStage(
 	completedStage: string,
 ): Promise<void> {
 	log.info("Triggering next pipeline stage", { runId, completedStage });
+
+	const runRow = await db
+		.selectFrom("run")
+		.selectAll()
+		.where("id", "=", runId)
+		.executeTakeFirst();
+
+	const runKind = (runRow as any)?.kind ?? "global";
+	const profileId = (runRow as any)?.profile_id;
 
 	if (completedStage === "ingest" || completedStage === "fetch-source") {
 		// Ingest -> Extract
@@ -242,7 +356,13 @@ export async function triggerNextStage(
 			await triggerNextStage(db, queue, runId, "embed");
 		}
 	} else if (completedStage === "embed" || completedStage === "embed-article") {
-		// Embed -> Cluster
+		// Global workflow stops after embed.
+		if (runKind === "global") {
+			log.info("Global run reached embed stage, completing global workflow", { runId });
+			return;
+		}
+
+		// Explicit/legacy support if non-global run triggers embed
 		const settings = await getArticleEligibilitySettings(db);
 		const articleCount = (await db
 			.selectFrom("article")
@@ -270,44 +390,57 @@ export async function triggerNextStage(
 		}
 	} else if (completedStage === "cluster" || completedStage === "cluster-run") {
 		// Cluster -> Score
-		let profiles = await db
-			.selectFrom("interest_profile as p")
-			.innerJoin("user as u", "u.id", "p.user_id")
-			.select(["p.id as profile_id", "p.user_id as user_id"])
-			.where("u.isDisabled", "=", 0)
-			.execute();
+		let profiles: { profile_id: number; user_id: string }[] = [];
 
-		if (profiles.length === 0) {
-			const users = await db
-				.selectFrom("user")
-				.select("id")
-				.where("isDisabled", "=", 0)
+		if (runKind === "profile" && profileId) {
+			const prof = await db
+				.selectFrom("interest_profile")
+				.select(["id as profile_id", "user_id"])
+				.where("id", "=", profileId)
+				.executeTakeFirst();
+			if (prof) {
+				profiles = [prof];
+			}
+		} else {
+			profiles = await db
+				.selectFrom("interest_profile as p")
+				.innerJoin("user as u", "u.id", "p.user_id")
+				.select(["p.id as profile_id", "p.user_id as user_id"])
+				.where("u.isDisabled", "=", 0)
 				.execute();
 
-			for (const u of users) {
-				const now = new Date().toISOString();
-				const inserted = await db
-					.insertInto("interest_profile")
-					.values({
-						user_id: u.id,
-						name: "General News",
-						keywords: JSON.stringify([]),
-						topics: JSON.stringify([]),
-						entities: JSON.stringify([]),
-						include_rules: JSON.stringify([]),
-						exclude_rules: JSON.stringify([]),
-						similarity_threshold: 0.65,
-						max_cluster_cap: 10,
-						ntfy_topic: null,
-						is_default: 1,
-						created_at: now,
-						updated_at: now,
-					})
-					.returning("id")
-					.executeTakeFirst();
+			if (profiles.length === 0) {
+				const users = await db
+					.selectFrom("user")
+					.select("id")
+					.where("isDisabled", "=", 0)
+					.execute();
 
-				if (inserted) {
-					profiles.push({ profile_id: inserted.id, user_id: u.id });
+				for (const u of users) {
+					const now = new Date().toISOString();
+					const inserted = await db
+						.insertInto("interest_profile")
+						.values({
+							user_id: u.id,
+							name: "General News",
+							keywords: JSON.stringify([]),
+							topics: JSON.stringify([]),
+							entities: JSON.stringify([]),
+							include_rules: JSON.stringify([]),
+							exclude_rules: JSON.stringify([]),
+							similarity_threshold: 0.65,
+							max_cluster_cap: 10,
+							ntfy_topic: null,
+							is_default: 1,
+							created_at: now,
+							updated_at: now,
+						})
+						.returning("id")
+						.executeTakeFirst();
+
+					if (inserted) {
+						profiles.push({ profile_id: inserted.id, user_id: u.id });
+					}
 				}
 			}
 		}
@@ -396,6 +529,22 @@ export async function triggerNextStage(
 					userId: t.user_id,
 					profileId: t.profile_id ?? undefined,
 				});
+			}
+		}
+	} else if (completedStage === "assemble" || completedStage === "assemble-digest") {
+		if (runKind === "profile" && profileId && (runRow as any)?.input_through_article_id) {
+			const digest = await db
+				.selectFrom("digest")
+				.select("id")
+				.where("run_id", "=", runId)
+				.executeTakeFirst();
+
+			if (digest) {
+				await db
+					.updateTable("interest_profile")
+					.set({ cursor_article_id: (runRow as any).input_through_article_id } as any)
+					.where("id", "=", profileId)
+					.execute();
 			}
 		}
 	}
@@ -552,14 +701,26 @@ export async function failStage(
 
 		const run = await trx
 			.selectFrom("run")
-			.select(["stats"])
+			.selectAll()
 			.where("id", "=", stage.run_id)
 			.executeTakeFirst();
+
 		let stats: Record<string, unknown> = {};
 		try {
 			stats = run?.stats ? JSON.parse(run.stats) : {};
 		} catch {}
 		stats.failure = { stage: stage.stage, error };
+
+		if (run && (run as any).kind === "profile" && (run as any).profile_id && (run as any).input_through_article_id) {
+			await trx
+				.updateTable("interest_profile")
+				.set({ cursor_article_id: (run as any).input_through_article_id } as any)
+				.where("id", "=", (run as any).profile_id)
+				.execute();
+
+			await trx.deleteFrom("user_selected_cluster").where("run_id", "=", run.id).execute();
+			await trx.deleteFrom("digest").where("run_id", "=", run.id).execute();
+		}
 
 		await trx
 			.updateTable("run")

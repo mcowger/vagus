@@ -10,6 +10,8 @@ import {
 	startScheduler,
 	stopScheduler,
 	triggerManualRun,
+	triggerManualProfileRun,
+	isSchedulerRunning,
 } from "./index";
 
 afterEach(() => {
@@ -122,6 +124,107 @@ test("scheduler ticking automatically triggers cron run based on interval", asyn
 	const runs = await listRuns(db.kysely);
 	expect(runs.length).toBeGreaterThanOrEqual(1);
 	expect(runs[0].trigger).toBe("cron");
+
+	queue.close();
+	db.close();
+});
+
+test("startScheduler sets up profile crons and stopScheduler cleans them up", async () => {
+	const db = createDb(":memory:");
+	await migrateToLatest(db.kysely);
+	const queue = defineQueue({ connection: createPlainjobConnection(db.sqlite) });
+
+	// Create a profile with schedule_enabled = 1
+	await db.kysely
+		.insertInto("interest_profile")
+		.values({
+			user_id: "user-sched",
+			name: "Scheduled Profile",
+			keywords: JSON.stringify([]),
+			topics: JSON.stringify([]),
+			entities: JSON.stringify([]),
+			include_rules: JSON.stringify([]),
+			exclude_rules: JSON.stringify([]),
+			similarity_threshold: 0.65,
+			max_cluster_cap: 10,
+			schedule_enabled: 1 as any,
+			schedule_cron: "0 9 * * *" as any,
+			schedule_timezone: "America/Los_Angeles" as any,
+			is_default: 1,
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString(),
+		} as any)
+		.execute();
+
+	await startScheduler(db.kysely, queue);
+	expect(isSchedulerRunning()).toBe(true);
+
+	stopScheduler();
+	expect(isSchedulerRunning()).toBe(false);
+
+	queue.close();
+	db.close();
+});
+
+test("triggerManualProfileRun triggers a profile run when new embedded articles exist", async () => {
+	const { serializeFloat32 } = await import("../embeddings/types");
+
+	const db = createDb(":memory:");
+	await migrateToLatest(db.kysely);
+	const queue = defineQueue({ connection: createPlainjobConnection(db.sqlite) });
+
+	const profile = await db.kysely
+		.insertInto("interest_profile")
+		.values({
+			user_id: "user-manual",
+			name: "Manual Profile",
+			keywords: JSON.stringify([]),
+			topics: JSON.stringify([]),
+			entities: JSON.stringify([]),
+			include_rules: JSON.stringify([]),
+			exclude_rules: JSON.stringify([]),
+			similarity_threshold: 0.65,
+			max_cluster_cap: 10,
+			cursor_article_id: null as any,
+			is_default: 1,
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString(),
+		} as any)
+		.returningAll()
+		.executeTakeFirstOrThrow();
+
+	// Insert source, article, embedding
+	const source = await db.kysely
+		.insertInto("source")
+		.values({ type: "rss", name: "Source 1", enabled: 1, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+		.returningAll()
+		.executeTakeFirstOrThrow();
+
+	const article = await db.kysely
+		.insertInto("article")
+		.values({
+			identity_key: "manual-art-1",
+			source_id: source.id,
+			title: "Manual Article",
+			url: "https://example.com/manual-1",
+			fetched_at: new Date().toISOString(),
+			created_at: new Date().toISOString(),
+		})
+		.returningAll()
+		.executeTakeFirstOrThrow();
+
+	await db.kysely
+		.insertInto("article_embedding")
+		.values({
+			article_id: article.id,
+			embedding: serializeFloat32(new Float32Array([1, 0, 0])),
+			model_name: "test-model",
+			created_at: new Date().toISOString(),
+		})
+		.execute();
+
+	const res = await triggerManualProfileRun(db.kysely, queue, profile.id);
+	expect(res.started).toBe(true);
 
 	queue.close();
 	db.close();

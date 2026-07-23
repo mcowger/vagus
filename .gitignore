@@ -6,5 +6,6 @@ data/
 .env
 .dev-server.pid
 .dev-server.log
+.dev-api-key
 *.png
 

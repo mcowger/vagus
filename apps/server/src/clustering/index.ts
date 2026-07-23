@@ -1,5 +1,5 @@
 import type { Kysely, Selectable } from "kysely";
-import type { ClusterArticleTable, ClusterTable, Database } from "../db/schema";
+import type { ArticleTable, ClusterArticleTable, ClusterTable, Database } from "../db/schema";
 import { deserializeFloat32 } from "../embeddings/types";
 import { cosineSimilarity } from "../embeddings/types";
 import { generateCompletion } from "../llm";
@@ -12,6 +12,8 @@ export interface ClusterRunOptions {
 	llmMergeEnabled?: boolean;
 	topicSubclusterThreshold?: number;
 	topicValidationMaxBuckets?: number;
+	inputFromArticleId?: number;
+	inputThroughArticleId?: number;
 }
 
 export interface ClusterRunResult {
@@ -78,6 +80,7 @@ export function selectPrimaryArticle<T extends { id: number; publish_date: strin
 
 const DEFAULT_TOPIC_SUBCLUSTER_THRESHOLD = 0.65;
 const DEFAULT_TOPIC_VALIDATION_MAX_BUCKETS = 20;
+const PROFILE_CONTEXT_LOOKBACK_MS = 48 * 60 * 60 * 1000;
 const MIN_TOPIC_FREQUENCY = 3;
 const TOPIC_STOP_WORDS = new Set([
 	"after", "ai", "america", "ap", "are", "bbc", "china", "chinese", "cnn", "deal", "exclusive", "here", "how", "latest", "live", "most", "new", "news", "red", "reuters", "the", "they", "today", "us", "war", "was", "watch", "what", "when", "why", "with",
@@ -137,10 +140,43 @@ export async function clusterRunArticles(
 	const topicValidationMaxBuckets = options?.topicValidationMaxBuckets ?? DEFAULT_TOPIC_VALIDATION_MAX_BUCKETS;
 	const eligibilitySettings = await getArticleEligibilitySettings(db);
 
-	const articleRows = (await db
-		.selectFrom("article")
+	const runRow = await db
+		.selectFrom("run")
 		.selectAll()
-		.execute()).filter((article) => isEligibleArticle(article, eligibilitySettings));
+		.where("id", "=", runId)
+		.executeTakeFirst();
+
+	const runKind = (runRow as any)?.kind;
+	const fromArticleId = options?.inputFromArticleId ?? (runRow as any)?.input_from_article_id ?? null;
+	const throughArticleId = options?.inputThroughArticleId ?? (runRow as any)?.input_through_article_id ?? null;
+
+	let articleRows: Selectable<ArticleTable>[];
+
+	if (runKind === "profile" || fromArticleId !== null) {
+		const fromId = fromArticleId ?? 0;
+		const throughId = throughArticleId;
+		const runStartedAt = runRow?.started_at ? new Date(runRow.started_at).getTime() : Date.now();
+		const contextCutoff = runStartedAt - PROFILE_CONTEXT_LOOKBACK_MS;
+
+		const embeddedArticles = (await db
+			.selectFrom("article as a")
+			.innerJoin("article_embedding as ae", "ae.article_id", "a.id")
+			.selectAll("a")
+			.groupBy("a.id")
+			.execute()) as Selectable<ArticleTable>[];
+
+		articleRows = embeddedArticles.filter((article) => {
+			const isNew = article.id > fromId && (throughId === null || throughId === undefined || article.id <= throughId);
+			const isContext = article.id <= fromId && new Date(article.created_at).getTime() >= contextCutoff;
+			if (!isNew && !isContext) return false;
+			return isEligibleArticle(article, eligibilitySettings);
+		});
+	} else {
+		articleRows = (await db
+			.selectFrom("article")
+			.selectAll()
+			.execute()).filter((article) => isEligibleArticle(article, eligibilitySettings));
+	}
 
 	if (articleRows.length === 0) {
 		return { clusters: [], clusterArticles: [] };
@@ -189,7 +225,7 @@ export async function clusterRunArticles(
 		buckets.set(key, bucket);
 	}
 
-	const groups: typeof articlesWithParsed[] = [];
+	let groups: typeof articlesWithParsed[] = [];
 	const topicBuckets = [...buckets.entries()].filter(([key, bucket]) => key !== "unbucketed" && bucket.length > 1).sort((left, right) => right[1].length - left[1].length);
 	const validatedTopics = new Set<string>();
 	if (llmMergeEnabled) {
@@ -206,6 +242,11 @@ export async function clusterRunArticles(
 	for (const [topic, bucket] of buckets) {
 		if (validatedTopics.has(topic)) groups.push(bucket);
 		else groups.push(...semanticGroups(bucket, topic === "unbucketed" ? threshold : topicSubclusterThreshold));
+	}
+
+	if (runKind === "profile" || fromArticleId !== null) {
+		const fromId = fromArticleId ?? 0;
+		groups = groups.filter((group) => group.some((art) => art.id > fromId));
 	}
 
 	// Write clusters and cluster_articles to DB in a transaction

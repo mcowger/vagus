@@ -85,6 +85,12 @@ case "${1:-}" in
     done
 
     if [ "$HEALTHY" -eq 1 ]; then
+      # Preseed the dev admin user + API key once the server (and thus the auth
+      # schema) is up. Gated the same way the server gates /dev/login.
+      if [ "${DEV_AUTH_ENABLED:-}" = "true" ]; then
+        (cd "$ROOT" && bun scripts/seed-dev.ts) >> "$LOGFILE" 2>&1 || \
+          echo "warning: seed-dev.ts failed; see $LOGFILE"
+      fi
       echo "dev server started (pid $(cat "$PIDFILE")) -> http://localhost:$SERVER_PORT  port: $SERVER_PORT  logs: $LOGFILE"
     else
       echo "dev server failed to start or health check timed out; last log lines:"

@@ -4,7 +4,7 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Sliders, ThumbsUp, ThumbsDown, RotateCcw, Plus, Trash2, CheckCircle2, Bookmark } from "lucide-react";
+import { Sliders, ThumbsUp, ThumbsDown, RotateCcw, Plus, Trash2, CheckCircle2, Bookmark, Clock, Play, AlertCircle, AlertTriangle } from "lucide-react";
 
 function arrayToString(val: string | string[] | null | undefined): string {
 	if (!val) return "";
@@ -96,13 +96,41 @@ export const Profiles: React.FC = () => {
 	const [similarityThreshold, setSimilarityThreshold] = useState(0.65);
 	const [maxClusterCap, setMaxClusterCap] = useState(10);
 	const [minClusterCount, setMinClusterCount] = useState(1);
-	const [maxDigestsPerDay, setMaxDigestsPerDay] = useState<string>("");
-	const [targetDeliveryTime, setTargetDeliveryTime] = useState<string>("");
+	const [scheduleEnabled, setScheduleEnabled] = useState<boolean>(false);
+	const [scheduleCron, setScheduleCron] = useState<string>("0 9 * * *");
+	const [scheduleTimezone, setScheduleTimezone] = useState<string>("America/Los_Angeles");
 	const [ntfyTopic, setNtfyTopic] = useState("");
 
 	const [saveSuccess, setSaveSuccess] = useState("");
+	const [generateFeedback, setGenerateFeedback] = useState<{
+		type: "success" | "skipped" | "error";
+		message: string;
+	} | null>(null);
 	const [showNewProfileModal, setShowNewProfileModal] = useState(false);
 	const [newProfileName, setNewProfileName] = useState("");
+
+	const startProfileRunMutation = trpc.runs.startProfileRun.useMutation({
+		onSuccess: (data) => {
+			utils.runs.listRuns.invalidate();
+			setGenerateFeedback(data.started
+				? { type: "success", message: `Digest run #${data.runId} started.` }
+				: { type: "skipped", message: `Digest generation skipped: ${data.reason.replaceAll("_", " ")}.` });
+			setTimeout(() => setGenerateFeedback(null), 6000);
+		},
+		onError: (error) => {
+			setGenerateFeedback({
+				type: "error",
+				message: error?.message || "Failed to trigger profile digest generation.",
+			});
+			setTimeout(() => setGenerateFeedback(null), 6000);
+		},
+	});
+
+	const handleGenerateNow = () => {
+		if (!activeProfileId) return;
+		setGenerateFeedback(null);
+		startProfileRunMutation.mutate({ profileId: activeProfileId });
+	};
 
 	useEffect(() => {
 		const p = profileQuery.data || activeProfile;
@@ -116,8 +144,9 @@ export const Profiles: React.FC = () => {
 			setSimilarityThreshold(p.similarity_threshold ?? 0.65);
 			setMaxClusterCap(p.max_cluster_cap ?? 10);
 			setMinClusterCount(p.min_cluster_count ?? 1);
-			setMaxDigestsPerDay(p.max_digests_per_day !== null && p.max_digests_per_day !== undefined ? String(p.max_digests_per_day) : "");
-			setTargetDeliveryTime(p.target_delivery_time || "");
+			setScheduleEnabled(p.schedule_enabled === 1);
+			setScheduleCron(p.schedule_cron || "0 9 * * *");
+			setScheduleTimezone(p.schedule_timezone || "America/Los_Angeles");
 			setNtfyTopic(p.ntfy_topic || "");
 		}
 	}, [profileQuery.data, activeProfile]);
@@ -137,8 +166,9 @@ export const Profiles: React.FC = () => {
 			similarity_threshold: Number(similarityThreshold),
 			max_cluster_cap: Number(maxClusterCap),
 			min_cluster_count: Number(minClusterCount),
-			max_digests_per_day: maxDigestsPerDay !== "" ? parseInt(maxDigestsPerDay, 10) : null,
-			target_delivery_time: targetDeliveryTime.trim() || null,
+			schedule_enabled: scheduleEnabled,
+			schedule_cron: scheduleCron.trim() || "0 9 * * *",
+			schedule_timezone: scheduleTimezone.trim() || "America/Los_Angeles",
 			ntfy_topic: ntfyTopic.trim() || null,
 		});
 	};
@@ -149,6 +179,9 @@ export const Profiles: React.FC = () => {
 
 		createProfileMutation.mutate({
 			name: newProfileName.trim(),
+			schedule_enabled: false,
+			schedule_cron: "0 9 * * *",
+			schedule_timezone: "America/Los_Angeles",
 		});
 	};
 
@@ -201,6 +234,18 @@ export const Profiles: React.FC = () => {
 				</div>
 
 				<div className="flex items-center gap-2">
+					<Button
+						type="button"
+						variant="default"
+						size="sm"
+						disabled={!activeProfileId || startProfileRunMutation.isPending}
+						onClick={handleGenerateNow}
+						className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
+					>
+						<Play className="h-3.5 w-3.5" />
+						{startProfileRunMutation.isPending ? "Generating..." : "Generate Now"}
+					</Button>
+
 					{activeProfile && activeProfile.is_default !== 1 && (profilesListQuery.data?.length || 0) > 1 && (
 						<Button
 							type="button"
@@ -479,38 +524,111 @@ export const Profiles: React.FC = () => {
 								</p>
 							</div>
 						</div>
+					</CardContent>
+				</Card>
 
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-slate-100">
+				{/* Automatic Digest Schedule */}
+				<Card>
+					<CardHeader>
+						<CardTitle className="text-lg flex items-center gap-2">
+							<Clock className="h-5 w-5 text-indigo-600" />
+							Automatic Digest Schedule
+						</CardTitle>
+						<CardDescription>
+							Configure automated cron schedule and timezone for this category profile's digest generation.
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div className="p-3.5 rounded-lg bg-indigo-50/60 border border-indigo-100 text-xs text-indigo-950 space-y-1.5">
+							<div className="font-semibold text-indigo-900 flex items-center gap-1.5">
+								<span>🌐 Global Preparation & Profile Schedules</span>
+							</div>
+							<p className="leading-relaxed">
+								Article ingestion and content extraction run globally. This schedule automatically generates and evaluates this profile's digest from globally prepared content.
+							</p>
+						</div>
+
+						<div className="flex items-center gap-3 pt-1">
+							<input
+								type="checkbox"
+								id="scheduleEnabled"
+								checked={scheduleEnabled}
+								onChange={(e) => setScheduleEnabled(e.target.checked)}
+								className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+							/>
+							<Label htmlFor="scheduleEnabled" className="font-medium text-slate-900 cursor-pointer text-sm">
+								Enable Automatic Digest Schedule
+							</Label>
+						</div>
+
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
 							<div className="space-y-2">
-								<Label htmlFor="maxDigestsPerDay">Max Rate per Day (24 Hours)</Label>
+								<Label htmlFor="scheduleCron">Cron Expression</Label>
 								<Input
-									id="maxDigestsPerDay"
-									type="number"
-									min={1}
-									max={24}
-									placeholder="Unlimited (e.g. 1 or 2)"
-									value={maxDigestsPerDay}
-									onChange={(e) => setMaxDigestsPerDay(e.target.value)}
+									id="scheduleCron"
+									placeholder="0 9 * * *"
+									value={scheduleCron}
+									onChange={(e) => setScheduleCron(e.target.value)}
+									disabled={!scheduleEnabled}
+									className="font-mono text-xs"
 								/>
 								<p className="text-xs text-slate-500 leading-relaxed">
-									<strong>Rate Limit:</strong> Maximum number of digests produced for this profile per 24 hours. Leave blank for unlimited.
+									Standard 5-field cron expression (e.g. <code>0 9 * * *</code> for 9:00 AM daily, <code>0 8,18 * * *</code> for twice daily).
 								</p>
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="targetDeliveryTime">Target Delivery Time (HH:MM)</Label>
+								<Label htmlFor="scheduleTimezone">IANA Timezone</Label>
 								<Input
-									id="targetDeliveryTime"
-									type="time"
-									placeholder="09:00"
-									value={targetDeliveryTime}
-									onChange={(e) => setTargetDeliveryTime(e.target.value)}
+									id="scheduleTimezone"
+									placeholder="America/Los_Angeles"
+									value={scheduleTimezone}
+									onChange={(e) => setScheduleTimezone(e.target.value)}
+									disabled={!scheduleEnabled}
+									className="font-mono text-xs"
 								/>
 								<p className="text-xs text-slate-500 leading-relaxed">
-									<strong>Preferred Time:</strong> Only produces a digest on the first run after this time each day (e.g. <code>09:00</code> for 9:00 AM briefing).
+									Valid IANA timezone identifier (e.g. <code>America/Los_Angeles</code>, <code>America/New_York</code>, <code>UTC</code>).
 								</p>
 							</div>
 						</div>
+
+						<div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+							<div>
+								<div className="text-xs font-semibold text-slate-800">Manual Digest Generation</div>
+								<div className="text-xs text-slate-500">
+									Generate a digest immediately for <strong>{name || "this profile"}</strong> using persisted settings and prepared articles, even when schedule is disabled.
+								</div>
+							</div>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								disabled={!activeProfileId || startProfileRunMutation.isPending}
+								onClick={handleGenerateNow}
+								className="text-xs gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50 flex-shrink-0"
+							>
+								<Play className="h-3.5 w-3.5 text-indigo-600" />
+								{startProfileRunMutation.isPending ? "Generating..." : "Generate Digest Now"}
+							</Button>
+						</div>
+
+						{generateFeedback && (
+							<div
+								className={`p-3 rounded-md text-xs font-medium flex items-center gap-2 ${
+									generateFeedback.type === "success"
+										? "bg-emerald-50 border border-emerald-200 text-emerald-800"
+										: generateFeedback.type === "skipped"
+										? "bg-amber-50 border border-amber-200 text-amber-800"
+										: "bg-rose-50 border border-rose-200 text-rose-800"
+								}`}
+							>
+								{generateFeedback.type === "success" && <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />}
+								{generateFeedback.type === "skipped" && <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />}
+								{generateFeedback.type === "error" && <AlertCircle className="h-4 w-4 text-rose-600 flex-shrink-0" />}
+								<span>{generateFeedback.message}</span>
+							</div>
+						)}
 					</CardContent>
 				</Card>
 
