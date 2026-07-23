@@ -9,7 +9,8 @@ import { config } from "./config";
 import { db } from "./db/connection";
 import { migrateToLatest } from "./db/migrate";
 import { log, requestLogger } from "./log";
-import { startWorker, stopWorker } from "./queue";
+import { queue, startWorker, stopWorker } from "./queue";
+import { startScheduler, stopScheduler } from "./scheduler";
 import { createContext } from "./trpc/context";
 import { appRouter } from "./trpc/router";
 
@@ -105,6 +106,7 @@ async function main(): Promise<void> {
 
 	await startWorker();
 	log.info("worker started");
+	await startScheduler(db.kysely, queue);
 
 	// --- Graceful shutdown (TECHNICAL_DESIGN §2) --------------------------
 	let shuttingDown = false;
@@ -113,6 +115,7 @@ async function main(): Promise<void> {
 		shuttingDown = true;
 		log.info("shutting down", { signal });
 		await server.stop(); // stop accepting new connections
+		stopScheduler();
 		await stopWorker(); // drain in-flight jobs
 		db.close();
 		log.info("shutdown complete");

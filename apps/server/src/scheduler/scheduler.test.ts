@@ -6,6 +6,7 @@ import { advanceStage, getRun, listRuns } from "../queue/coordinator";
 import { createPlainjobConnection } from "../queue/index";
 import {
 	parseScheduleInterval,
+	getNextCronRun,
 	startScheduler,
 	stopScheduler,
 	triggerManualRun,
@@ -15,15 +16,20 @@ afterEach(() => {
 	stopScheduler();
 });
 
-test("parseScheduleInterval correctly parses intervals and cron defaults", () => {
+	test("parseScheduleInterval only parses explicit duration schedules", () => {
 	expect(parseScheduleInterval("100")).toBe(100);
 	expect(parseScheduleInterval("250ms")).toBe(250);
 	expect(parseScheduleInterval("5s")).toBe(5000);
 	expect(parseScheduleInterval("2m")).toBe(120000);
 	expect(parseScheduleInterval("1h")).toBe(3600000);
-	expect(parseScheduleInterval("* * * * *")).toBe(60000);
-	expect(parseScheduleInterval("0 * * * *")).toBe(3600000);
-});
+		expect(parseScheduleInterval("0 * * * *")).toBeNull();
+	});
+
+	test("cron schedules run at calendar boundaries instead of process-relative intervals", () => {
+		const nextRun = getNextCronRun("0 * * * *", new Date("2026-07-23T05:58:27.000Z"));
+
+		expect(nextRun?.toISOString()).toBe("2026-07-23T06:00:00.000Z");
+	});
 
 test("starts a scheduled run", async () => {
 	const db = createDb(":memory:");

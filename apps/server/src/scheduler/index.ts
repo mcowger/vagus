@@ -1,17 +1,19 @@
 import type { Kysely } from "kysely";
 import type { Queue } from "plainjob";
+import { Cron } from "croner";
 import type { Database } from "../db/schema";
 import { log } from "../log";
 import { startRun, type StartRunResult } from "../queue/coordinator";
 
 let schedulerInterval: Timer | ReturnType<typeof setInterval> | null = null;
-let currentDb: Kysely<Database> | null = null;
-let currentQueue: Queue | null = null;
+let schedulerCron: Cron | null = null;
+
+const SCHEDULER_TIMEZONE = "America/Los_Angeles";
 
 /**
  * Parses a cron string or interval string into milliseconds.
  */
-export function parseScheduleInterval(schedule: string): number {
+export function parseScheduleInterval(schedule: string): number | null {
 	const trimmed = schedule.trim();
 
 	// Match numeric intervals like "100", "500ms", "10s", "5m", "1h", "1d"
@@ -33,13 +35,22 @@ export function parseScheduleInterval(schedule: string): number {
 		}
 	}
 
-	// For standard 5-part cron schedules, e.g. "* * * * *" (every minute)
-	if (trimmed === "* * * * *") {
-		return 60 * 1000;
-	}
+	return null;
+}
 
-	// Default fallback for hourly cron ("0 * * * *") or unspecified cron (3,600,000 ms = 1 hour)
-	return 60 * 60 * 1000;
+export function getNextCronRun(schedule: string, startFrom: Date): Date | null {
+	return new Cron(schedule, { timezone: SCHEDULER_TIMEZONE, paused: true }).nextRun(startFrom);
+}
+
+async function triggerScheduledRun(db: Kysely<Database>, queue: Queue): Promise<void> {
+	try {
+		const result = await startRun(db, queue, "cron");
+		if (!result.started && result.reason === "overlap") {
+			log.info("Scheduled run skipped due to active run in progress");
+		}
+	} catch (err) {
+		log.error("Error executing scheduled run", { error: String(err) });
+	}
 }
 
 export interface StartSchedulerOptions {
@@ -55,12 +66,9 @@ export async function startScheduler(
 	queue: Queue,
 	options?: StartSchedulerOptions,
 ): Promise<void> {
-	if (schedulerInterval !== null) {
+	if (schedulerInterval !== null || schedulerCron !== null) {
 		stopScheduler();
 	}
-
-	currentDb = db;
-	currentQueue = queue;
 
 	let cronSchedule = "0 * * * *";
 	try {
@@ -81,24 +89,25 @@ export async function startScheduler(
 	const intervalMs = options?.intervalMs ?? parseScheduleInterval(cronSchedule);
 
 	if (options?.runImmediately) {
-		try {
-			await startRun(db, queue, "cron");
-		} catch (err) {
-			log.error("Error running immediate scheduled run", { error: String(err) });
-		}
+		await triggerScheduledRun(db, queue);
 	}
 
-	schedulerInterval = setInterval(async () => {
-		if (!currentDb || !currentQueue) return;
-		try {
-			const result = await startRun(currentDb, currentQueue, "cron");
-			if (!result.started && result.reason === "overlap") {
-				log.info("Scheduled run skipped due to active run in progress");
-			}
-		} catch (err) {
-			log.error("Error executing scheduled run tick", { error: String(err) });
-		}
-	}, intervalMs);
+	if (intervalMs !== null) {
+		schedulerInterval = setInterval(() => void triggerScheduledRun(db, queue), intervalMs);
+		log.info("Scheduler started with interval", { schedule: cronSchedule, intervalMs });
+		return;
+	}
+
+	schedulerCron = new Cron(
+		cronSchedule,
+		{ timezone: SCHEDULER_TIMEZONE, protect: true },
+		() => triggerScheduledRun(db, queue),
+	);
+	log.info("Scheduler started with cron", {
+		schedule: cronSchedule,
+		timezone: SCHEDULER_TIMEZONE,
+		nextRun: schedulerCron.nextRun()?.toISOString(),
+	});
 }
 
 /**
@@ -109,8 +118,10 @@ export function stopScheduler(): void {
 		clearInterval(schedulerInterval);
 		schedulerInterval = null;
 	}
-	currentDb = null;
-	currentQueue = null;
+	if (schedulerCron !== null) {
+		schedulerCron.stop();
+		schedulerCron = null;
+	}
 }
 
 /**
@@ -125,5 +136,5 @@ export async function triggerManualRun(
 }
 
 export function isSchedulerRunning(): boolean {
-	return schedulerInterval !== null;
+	return schedulerInterval !== null || schedulerCron !== null;
 }

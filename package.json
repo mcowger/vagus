@@ -32,6 +32,7 @@
 		"typescript": "^7.0.2"
 	},
 	"dependencies": {
+		"croner": "^10.0.1",
 		"jsonrepair": "^3.15.0"
 	}
 }
