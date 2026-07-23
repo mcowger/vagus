@@ -54,6 +54,12 @@ export const AdminSettings: React.FC = () => {
 	const [ntfyBaseUrl, setNtfyBaseUrl] = useState("https://ntfy.sh");
 	const [appBaseUrl, setAppBaseUrl] = useState("http://localhost:5173");
 	const [workerConcurrency, setWorkerConcurrency] = useState("5");
+	const [clusteringSimilarityThreshold, setClusteringSimilarityThreshold] = useState("0.8");
+	const [clusteringLlmMergeMinSimilarity, setClusteringLlmMergeMinSimilarity] = useState("0.45");
+	const [clusteringLlmMergeEnabled, setClusteringLlmMergeEnabled] = useState(true);
+	const [clusteringLlmMergeMaxCandidates, setClusteringLlmMergeMaxCandidates] = useState("12");
+	const [pipelineArticleMaxAgeHours, setPipelineArticleMaxAgeHours] = useState("48");
+	const [pipelineFilterFeedArtifacts, setPipelineFilterFeedArtifacts] = useState(true);
 
 	const [successMessage, setSuccessMessage] = useState("");
 	const [errorMessage, setErrorMessage] = useState("");
@@ -71,6 +77,12 @@ export const AdminSettings: React.FC = () => {
 			if (s.ntfy_base_url !== undefined) setNtfyBaseUrl(s.ntfy_base_url);
 			if (s.app_base_url !== undefined) setAppBaseUrl(s.app_base_url);
 			if (s.worker_concurrency !== undefined) setWorkerConcurrency(s.worker_concurrency);
+			if (s.clustering_similarity_threshold !== undefined) setClusteringSimilarityThreshold(s.clustering_similarity_threshold);
+			if (s.clustering_llm_merge_min_similarity !== undefined) setClusteringLlmMergeMinSimilarity(s.clustering_llm_merge_min_similarity);
+			if (s.clustering_llm_merge_enabled !== undefined) setClusteringLlmMergeEnabled(s.clustering_llm_merge_enabled !== "false");
+			if (s.clustering_llm_merge_max_candidates !== undefined) setClusteringLlmMergeMaxCandidates(s.clustering_llm_merge_max_candidates);
+			if (s.pipeline_article_max_age_hours !== undefined) setPipelineArticleMaxAgeHours(s.pipeline_article_max_age_hours);
+			if (s.pipeline_filter_feed_artifacts !== undefined) setPipelineFilterFeedArtifacts(s.pipeline_filter_feed_artifacts !== "false");
 		}
 	}, [settingsQuery.data]);
 
@@ -99,6 +111,12 @@ export const AdminSettings: React.FC = () => {
 			ntfy_base_url: ntfyBaseUrl,
 			app_base_url: appBaseUrl,
 			worker_concurrency: workerConcurrency,
+			clustering_similarity_threshold: clusteringSimilarityThreshold,
+			clustering_llm_merge_min_similarity: clusteringLlmMergeMinSimilarity,
+			clustering_llm_merge_enabled: clusteringLlmMergeEnabled,
+			clustering_llm_merge_max_candidates: clusteringLlmMergeMaxCandidates,
+			pipeline_article_max_age_hours: pipelineArticleMaxAgeHours,
+			pipeline_filter_feed_artifacts: pipelineFilterFeedArtifacts,
 		});
 	};
 
@@ -161,6 +179,42 @@ export const AdminSettings: React.FC = () => {
 						<div className="text-slate-500 py-4">Loading system settings...</div>
 					) : (
 						<form onSubmit={handleSubmit} className="space-y-5">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+								<div className="space-y-2">
+									<Label htmlFor="clusteringSimilarityThreshold">Story Similarity Threshold</Label>
+									<Input id="clusteringSimilarityThreshold" type="number" min="0" max="1" step="0.01" value={clusteringSimilarityThreshold} onChange={(e) => setClusteringSimilarityThreshold(e.target.value)} required />
+									<p className="text-xs text-slate-500">Strict similarity required for deterministic multi-source story clusters.</p>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="clusteringLlmMergeMinSimilarity">LLM Merge Candidate Threshold</Label>
+									<Input id="clusteringLlmMergeMinSimilarity" type="number" min="0" max="1" step="0.01" value={clusteringLlmMergeMinSimilarity} onChange={(e) => setClusteringLlmMergeMinSimilarity(e.target.value)} required />
+									<p className="text-xs text-slate-500">Lower-bound similarity before the event-identity model evaluates a merge.</p>
+								</div>
+							</div>
+
+							<label className="flex items-center gap-2 text-sm text-slate-700">
+								<input type="checkbox" checked={clusteringLlmMergeEnabled} onChange={(e) => setClusteringLlmMergeEnabled(e.target.checked)} />
+								Use LLM event-identity merge for nearby clusters
+							</label>
+
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+								<div className="space-y-2">
+									<Label htmlFor="clusteringLlmMergeMaxCandidates">LLM Merge Candidate Limit</Label>
+									<Input id="clusteringLlmMergeMaxCandidates" type="number" min="0" max="50" value={clusteringLlmMergeMaxCandidates} onChange={(e) => setClusteringLlmMergeMaxCandidates(e.target.value)} required />
+									<p className="text-xs text-slate-500">Maximum nearby cluster pairs evaluated per pipeline run.</p>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="pipelineArticleMaxAgeHours">Article Eligibility Window (Hours)</Label>
+									<Input id="pipelineArticleMaxAgeHours" type="number" min="1" max="720" value={pipelineArticleMaxAgeHours} onChange={(e) => setPipelineArticleMaxAgeHours(e.target.value)} required />
+									<p className="text-xs text-slate-500">Articles outside this publish-date window never reach extraction or clustering.</p>
+								</div>
+							</div>
+
+							<label className="flex items-center gap-2 text-sm text-slate-700">
+								<input type="checkbox" checked={pipelineFilterFeedArtifacts} onChange={(e) => setPipelineFilterFeedArtifacts(e.target.checked)} />
+								Exclude feed hubs, navigation pages, and empty article records
+							</label>
+
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 								<div className="space-y-2">
 									<Label htmlFor="articleRetention">Article Retention (Days)</Label>

@@ -110,8 +110,8 @@ test("getStats groups llm_usage by run_id, provider, task_name, and model_name a
 			{
 				run_id: null,
 				task_name: "adhoc_task",
-				provider: "faux",
-				model_name: "faux-cheap",
+				provider: "test-provider",
+				model_name: "test-model",
 				prompt_tokens: 50,
 				completion_tokens: 25,
 				estimated_cost: 0.0,

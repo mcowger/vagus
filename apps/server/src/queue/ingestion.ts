@@ -125,6 +125,7 @@ export async function processFetchSourceJob(
 				await trx
 					.insertInto("article")
 					.values({
+						run_id: runId,
 						identity_key: item.identityKey,
 						source_id: sourceId,
 						title: item.title,

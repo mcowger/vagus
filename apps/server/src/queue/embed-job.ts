@@ -3,7 +3,7 @@ import type { Job } from "plainjob";
 import { getDb, type Database } from "../db";
 import { OpenAiEmbedder } from "../embeddings/openai";
 import type { Embedder } from "../embeddings/types";
-import { serializeFloat32 } from "../embeddings/types";
+import { normalizeFloat32, serializeFloat32 } from "../embeddings/types";
 import { log } from "../log";
 import { advanceStage } from "./coordinator";
 import {
@@ -120,14 +120,11 @@ export async function processEmbedArticleJob(
 			return;
 		}
 
-		const textToEmbed = [
-			article.title,
-			article.stage_a_bullet || article.content,
-		]
+		const textToEmbed = [article.title, article.stage_a_bullet]
 			.filter((t): t is string => Boolean(t && t.trim()))
 			.join("\n\n");
 
-		const vector = await embedder.embedText(textToEmbed);
+		const vector = normalizeFloat32(await embedder.embedText(textToEmbed));
 		const serialized = serializeFloat32(vector);
 
 		await db

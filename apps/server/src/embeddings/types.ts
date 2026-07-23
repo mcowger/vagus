@@ -28,3 +28,13 @@ export function cosineSimilarity(a: Float32Array, b: Float32Array): number {
 	if (normA === 0 || normB === 0) return 0;
 	return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
+
+export function normalizeFloat32(vector: Float32Array): Float32Array {
+	let magnitude = 0;
+	for (const value of vector) magnitude += value * value;
+	if (magnitude === 0) return vector;
+	const normalized = new Float32Array(vector.length);
+	const divisor = Math.sqrt(magnitude);
+	for (let index = 0; index < vector.length; index++) normalized[index] = vector[index] / divisor;
+	return normalized;
+}

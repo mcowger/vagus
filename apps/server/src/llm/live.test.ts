@@ -30,7 +30,6 @@ describe("Live LLM Integration Test", () => {
 				modelName,
 				prompt: "What is 2 + 2? Answer with just the digit.",
 				temperature: 0.0,
-				throwOnFailure: true,
 			});
 
 			expect(result.text).toBeTruthy();
@@ -60,7 +59,6 @@ describe("Live LLM Integration Test", () => {
 					"You are a news digest generator. Summarize the key event into a single concise sentence.",
 				prompt: `Summarize this news article excerpt into 1 sentence:\n${articleExcerpt}`,
 				temperature: 0.2,
-				throwOnFailure: true,
 			});
 
 			expect(result.text).toBeTruthy();
@@ -82,7 +80,6 @@ describe("Live LLM Integration Test", () => {
 				modelName,
 				prompt,
 				temperature: 0.1,
-				throwOnFailure: true,
 			});
 
 			expect(result.text).toBeTruthy();

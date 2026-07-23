@@ -17,6 +17,13 @@ describe("Stage C Assemble Digest Worker", () => {
 			dialect: new BunSqliteDialect({ database: sqlite }),
 		});
 		await migrateToLatest(db);
+		globalThis.fetch = (async () =>
+			new Response(JSON.stringify({
+				choices: [{ message: { content: JSON.stringify({ executive_summary: "Test executive summary.", key_takeaways: [], why_it_matters: "Test significance.", key_quotes: [] }) } }],
+				usage: { prompt_tokens: 10, completion_tokens: 5 },
+			}))) as unknown as typeof fetch;
+		await db.insertInto("provider_config").values({ provider: "test-llm", api_key: "test-key", enabled: 1, config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }) }).execute();
+		await db.insertInto("task_model").values({ task_name: "stage_c_assembly", provider: "test-llm", model_name: "test-model" }).execute();
 	});
 
 	afterEach(async () => {
@@ -207,7 +214,7 @@ describe("Stage C Assemble Digest Worker", () => {
 			expect(updatedStage.status).toBe("complete");
 		});
 
-		test("handles missing digest clusters gracefully", async () => {
+		test("fails the stage when digest clusters are missing", async () => {
 			const run = await db
 				.insertInto("run")
 				.values({
@@ -245,7 +252,7 @@ describe("Stage C Assemble Digest Worker", () => {
 				status: "pending",
 			} as any;
 
-			await processAssembleDigestJob(db, job);
+			await expect(processAssembleDigestJob(db, job)).rejects.toThrow("No digest clusters found");
 
 			const updatedStage = await db
 				.selectFrom("run_stage")
@@ -253,8 +260,15 @@ describe("Stage C Assemble Digest Worker", () => {
 				.where("id", "=", stage.id)
 				.executeTakeFirstOrThrow();
 
-			expect(updatedStage.completed).toBe(1);
-			expect(updatedStage.status).toBe("complete");
+			expect(updatedStage.completed).toBe(0);
+			expect(updatedStage.status).toBe("failed");
+
+			const updatedRun = await db
+				.selectFrom("run")
+				.selectAll()
+				.where("id", "=", run.id)
+				.executeTakeFirstOrThrow();
+			expect(updatedRun.status).toBe("failed");
 		});
 	});
 });

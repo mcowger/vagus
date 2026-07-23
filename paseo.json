@@ -15,6 +15,9 @@
 		},
 		"test": {
 			"command": "bun test"
+		},
+		"deploy-staging": {
+			"command": "bun run deploy:staging"
 		}
 	}
 }

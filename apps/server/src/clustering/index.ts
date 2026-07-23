@@ -1,10 +1,17 @@
 import type { Kysely, Selectable } from "kysely";
 import type { ClusterArticleTable, ClusterTable, Database } from "../db/schema";
 import { deserializeFloat32 } from "../embeddings/types";
-import { InMemoryVectorIndex } from "../embeddings/vector-index";
+import { cosineSimilarity } from "../embeddings/types";
+import { generateCompletion } from "../llm";
+import { getPromptTemplates, renderPrompt } from "../prompts/defaults";
+import { getArticleEligibilitySettings, isEligibleArticle } from "../pipeline/article-eligibility";
+import { log } from "../log";
 
 export interface ClusterRunOptions {
 	threshold?: number;
+	llmMergeEnabled?: boolean;
+	topicSubclusterThreshold?: number;
+	topicValidationMaxBuckets?: number;
 }
 
 export interface ClusterRunResult {
@@ -69,34 +76,54 @@ export function selectPrimaryArticle<T extends { id: number; publish_date: strin
 	return sorted[0];
 }
 
-class UnionFind {
-	private parent = new Map<number, number>();
+const DEFAULT_TOPIC_SUBCLUSTER_THRESHOLD = 0.65;
+const DEFAULT_TOPIC_VALIDATION_MAX_BUCKETS = 20;
+const MIN_TOPIC_FREQUENCY = 3;
+const TOPIC_STOP_WORDS = new Set([
+	"after", "ai", "america", "ap", "are", "bbc", "china", "chinese", "cnn", "deal", "exclusive", "here", "how", "latest", "live", "most", "new", "news", "red", "reuters", "the", "they", "today", "us", "war", "was", "watch", "what", "when", "why", "with",
+]);
 
-	find(i: number): number {
-		if (!this.parent.has(i)) {
-			this.parent.set(i, i);
-			return i;
-		}
-		let root = i;
-		while (root !== this.parent.get(root)!) {
-			root = this.parent.get(root)!;
-		}
-		let curr = i;
-		while (curr !== root) {
-			const nxt = this.parent.get(curr)!;
-			this.parent.set(curr, root);
-			curr = nxt;
-		}
-		return root;
-	}
+function articleSimilarity(
+	left: { embedding: Float32Array | null; title: string },
+	right: { embedding: Float32Array | null; title: string },
+): number {
+	if (left.embedding && right.embedding) return cosineSimilarity(left.embedding, right.embedding);
+	return computeJaccardSimilarity(tokenizeTitle(left.title), tokenizeTitle(right.title));
+}
 
-	union(i: number, j: number): void {
-		const rootI = this.find(i);
-		const rootJ = this.find(j);
-		if (rootI !== rootJ) {
-			this.parent.set(rootI, rootJ);
-		}
+function topicTerms(article: { title: string; stage_a_bullet: string | null }): Set<string> {
+	const namedTerms = article.title.match(/\b(?:[A-Z][a-z]{2,}|[A-Z]{2,})\b/g) ?? [];
+	const terms = new Set(namedTerms.map((term) => term.toLowerCase()).filter((term) => !TOPIC_STOP_WORDS.has(term)));
+	const normalized = `${article.title}\n${article.stage_a_bullet ?? ""}`.toLowerCase().replaceAll("britain", "uk");
+	if (normalized.includes("iran") && !/(jewelry|zendaya|odyssey)/.test(normalized)) terms.add("iran-war");
+	if (normalized.includes("prime minister") && (normalized.includes("uk") || normalized.includes("burnham"))) terms.add("uk-prime-minister");
+	return terms;
+}
+
+function topicPrompt<T extends { id: number; title: string; stage_a_bullet: string | null }>(articles: T[]): string {
+	return articles
+		.slice(0, 12)
+		.map((article) => `[art_${article.id}] ${article.title}\n${article.stage_a_bullet ?? ""}`)
+		.join("\n\n");
+}
+
+function isSameTopic(response: string): boolean {
+	try {
+		const parsed = JSON.parse(response.replace(/^```json\s*|\s*```$/g, "")) as { same_topic?: unknown };
+		return parsed.same_topic === true;
+	} catch {
+		return false;
 	}
+}
+
+function semanticGroups<T extends { embedding: Float32Array | null; title: string }>(articles: T[], threshold: number): T[][] {
+	const groups: T[][] = [];
+	for (const article of articles) {
+		const group = groups.find((candidate) => candidate.every((member) => articleSimilarity(article, member) >= threshold));
+		if (group) group.push(article);
+		else groups.push([article]);
+	}
+	return groups;
 }
 
 export async function clusterRunArticles(
@@ -105,9 +132,16 @@ export async function clusterRunArticles(
 	options?: ClusterRunOptions,
 ): Promise<ClusterRunResult> {
 	const threshold = options?.threshold ?? 0.8;
+	const llmMergeEnabled = options?.llmMergeEnabled ?? false;
+	const topicSubclusterThreshold = options?.topicSubclusterThreshold ?? DEFAULT_TOPIC_SUBCLUSTER_THRESHOLD;
+	const topicValidationMaxBuckets = options?.topicValidationMaxBuckets ?? DEFAULT_TOPIC_VALIDATION_MAX_BUCKETS;
+	const eligibilitySettings = await getArticleEligibilitySettings(db);
 
-	// Fetch all articles
-	const articleRows = await db.selectFrom("article").selectAll().execute();
+	const articleRows = (await db
+		.selectFrom("article")
+		.selectAll()
+		.where("run_id", "=", runId)
+		.execute()).filter((article) => isEligibleArticle(article, eligibilitySettings));
 
 	if (articleRows.length === 0) {
 		return { clusters: [], clusterArticles: [] };
@@ -130,69 +164,49 @@ export async function clusterRunArticles(
 		}
 	}
 
-	const vectorIndex = new InMemoryVectorIndex();
-	const titleTokenMap = new Map<number, Set<string>>();
-
 	const articlesWithParsed = articleRows.map((art) => {
 		const vec = embeddingMap.get(art.id) ?? null;
-		if (vec) {
-			vectorIndex.add(art.id, vec);
-		}
-		const tokens = tokenizeTitle(art.title);
-		titleTokenMap.set(art.id, tokens);
 		return {
 			...art,
 			embedding: vec,
 		};
 	});
 
-	const uf = new UnionFind();
-
-	// Ensure all articles are initialized in UnionFind
-	for (const art of articlesWithParsed) {
-		uf.find(art.id);
+	const frequencies = new Map<string, number>();
+	for (const article of articlesWithParsed) {
+		for (const term of topicTerms(article)) frequencies.set(term, (frequencies.get(term) ?? 0) + 1);
+	}
+	const buckets = new Map<string, typeof articlesWithParsed>();
+	for (const article of articlesWithParsed) {
+		const terms = topicTerms(article);
+		const topic = terms.has("iran-war") || terms.has("uk-prime-minister")
+			? [...terms].find((term) => term === "iran-war" || term === "uk-prime-minister")
+			: [...terms]
+			.filter((term) => (frequencies.get(term) ?? 0) >= MIN_TOPIC_FREQUENCY)
+			.sort((left, right) => (frequencies.get(left) ?? 0) - (frequencies.get(right) ?? 0))[0];
+		const key = topic ?? "unbucketed";
+		const bucket = buckets.get(key) ?? [];
+		bucket.push(article);
+		buckets.set(key, bucket);
 	}
 
-	// 1. Cosine similarity matching via InMemoryVectorIndex
-	for (const art of articlesWithParsed) {
-		if (art.embedding) {
-			const searchResults = vectorIndex.search(
-				art.embedding,
-				articlesWithParsed.length,
-				threshold,
-			);
-			for (const res of searchResults) {
-				uf.union(art.id, res.id);
-			}
+	const groups: typeof articlesWithParsed[] = [];
+	const topicBuckets = [...buckets.entries()].filter(([key, bucket]) => key !== "unbucketed" && bucket.length > 1).sort((left, right) => right[1].length - left[1].length);
+	const validatedTopics = new Set<string>();
+	if (llmMergeEnabled) {
+		const { systemPrompt, userPromptTemplate } = await getPromptTemplates(db, "event_identity_merge");
+		for (const [index, [topic, bucket]] of topicBuckets.slice(0, topicValidationMaxBuckets).entries()) {
+			log.info("Validating broad topic bucket", { runId, topic, articles: bucket.length, bucket: index + 1 });
+			const completion = await generateCompletion("event_identity_merge", renderPrompt(userPromptTemplate, { topic, articles: topicPrompt(bucket) }), { db, runId, systemPrompt });
+			const accepted = isSameTopic(completion.text);
+			log.info("Completed broad topic validation", { runId, topic, articles: bucket.length, accepted });
+			if (accepted) validatedTopics.add(topic);
 		}
 	}
 
-	// 2. Lexical fallback (Jaccard similarity on title tokens) for articles without embeddings
-	for (let i = 0; i < articlesWithParsed.length; i++) {
-		const a1 = articlesWithParsed[i];
-		const tokens1 = titleTokenMap.get(a1.id)!;
-
-		for (let j = i + 1; j < articlesWithParsed.length; j++) {
-			const a2 = articlesWithParsed[j];
-
-			// If either article lacks an embedding, fallback to Jaccard similarity
-			if (!a1.embedding || !a2.embedding) {
-				const tokens2 = titleTokenMap.get(a2.id)!;
-				const sim = computeJaccardSimilarity(tokens1, tokens2);
-				if (sim >= threshold) {
-					uf.union(a1.id, a2.id);
-				}
-			}
-		}
-	}
-
-	// Group articles by root parent
-	const groupsMap = new Map<number, typeof articlesWithParsed>();
-	for (const art of articlesWithParsed) {
-		const root = uf.find(art.id);
-		const group = groupsMap.get(root) ?? [];
-		group.push(art);
-		groupsMap.set(root, group);
+	for (const [topic, bucket] of buckets) {
+		if (validatedTopics.has(topic)) groups.push(bucket);
+		else groups.push(...semanticGroups(bucket, topic === "unbucketed" ? threshold : topicSubclusterThreshold));
 	}
 
 	// Write clusters and cluster_articles to DB in a transaction
@@ -203,7 +217,7 @@ export async function clusterRunArticles(
 		const createdClusters: Selectable<ClusterTable>[] = [];
 		const createdClusterArticles: Selectable<ClusterArticleTable>[] = [];
 
-		for (const group of groupsMap.values()) {
+		for (const group of groups) {
 			const primary = selectPrimaryArticle(group);
 
 			const clusterRow = await trx

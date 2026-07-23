@@ -10,6 +10,10 @@ import * as m0008 from "./migrations/0008_m8_topic_category";
 import * as m0009 from "./migrations/0009_m9_multi_profiles";
 import * as m0010 from "./migrations/0010_m9_min_cluster_count";
 import * as m0011 from "./migrations/0011_m9_profile_pacing";
+import * as m0012 from "./migrations/0012_m10_remove_faux_task_models";
+import * as m0013 from "./migrations/0013_m11_clustering";
+import * as m0014 from "./migrations/0014_m11_article_eligibility";
+import * as m0015 from "./migrations/0015_m11_topic_clustering";
 
 // Explicit in-code migration registry. We deliberately avoid filesystem
 // globbing so migrations resolve deterministically under Bun bundling. Add new
@@ -26,6 +30,10 @@ const migrations: Record<string, Migration> = {
 	"0009_m9_multi_profiles": m0009,
 	"0010_m9_min_cluster_count": m0010,
 	"0011_m9_profile_pacing": m0011,
+	"0012_m10_remove_faux_task_models": m0012,
+	"0013_m11_clustering": m0013,
+	"0014_m11_article_eligibility": m0014,
+	"0015_m11_topic_clustering": m0015,
 };
 
 class StaticMigrationProvider implements MigrationProvider {

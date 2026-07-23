@@ -4,7 +4,7 @@ import { getDb, type Database } from "../db";
 import { generateCompletion } from "../llm";
 import { log } from "../log";
 import { getPromptTemplates, renderPrompt } from "../prompts/defaults";
-import { advanceStage } from "../queue/coordinator";
+import { advanceStage, failStage } from "../queue/coordinator";
 import type { AssembleDigestJobData } from "../queue/synthesis-contracts";
 import { extractJsonFromText, sanitizeTextContent } from "../utils/json";
 import type { DigestResult } from "./types";
@@ -95,12 +95,7 @@ export async function processAssembleDigestJob(
 		const clusterRows = await query.execute();
 
 		if (clusterRows.length === 0) {
-			log.warn("No digest clusters found for assemble-digest job", {
-				jobId: job.id,
-				userId,
-				runId,
-			});
-			return;
+			throw new Error(`No digest clusters found for user ${userId} in run ${runId}`);
 		}
 
 		const digestId = clusterRows[0].digest_id;
@@ -198,7 +193,9 @@ Timeline: ${timeline.join("; ")}`;
 			runId,
 			error: String(err),
 		});
-	} finally {
-		await advanceStage(database, stageId, job.id);
+		await failStage(database, stageId, String(err));
+		throw err;
 	}
+
+	await advanceStage(database, stageId, job.id);
 }

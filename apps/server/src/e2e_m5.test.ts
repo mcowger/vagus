@@ -19,6 +19,16 @@ async function createTestDb(): Promise<{ db: Kysely<Database>; sqlite: BunSqlite
 	});
 
 	await migrateToLatest(db);
+	globalThis.fetch = (async () =>
+		new Response(JSON.stringify({
+			choices: [{ message: { content: JSON.stringify({ title: "Test summary", summary: "Test cluster summary.", perspectives: [], timeline: [], citations: [], executive_summary: "Test executive summary.", key_takeaways: [], why_it_matters: "Test significance.", key_quotes: [] }) } }],
+			usage: { prompt_tokens: 10, completion_tokens: 5 },
+		}))) as unknown as typeof fetch;
+	await db.insertInto("provider_config").values({ provider: "test-llm", api_key: "test-key", enabled: 1, config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }) }).execute();
+	await db.insertInto("task_model").values([
+		{ task_name: "stage_b_synthesis", provider: "test-llm", model_name: "test-model" },
+		{ task_name: "stage_c_assembly", provider: "test-llm", model_name: "test-model" },
+	]).execute();
 
 	return { db, sqlite };
 }

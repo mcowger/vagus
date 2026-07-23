@@ -47,6 +47,17 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
 			'Synthesize an overall executive digest from the following cluster summaries, perspectives, timeline, and key quotes:\n\n{{clustersText}}{{quotesText}}\n\nPlease provide a structured JSON response matching:\n{\n  "executive_summary": "Formatted bullet points for each identified key trend or major development (e.g., \'- **Trend Title**: Clear synthesis of this trend with relevant citations [art_1]\')",\n  "key_takeaways": ["3-5 key actionable takeaways across all selected news stories"],\n  "why_it_matters": "Broad significance and impact for the user\'s domain/interests",\n  "key_quotes": [\n    {\n      "quote": "Selected verbatim quote from primary sources",\n      "citation": "Citation key like art_1"\n    }\n  ]\n}',
 		variables: ["clustersText", "quotesText"],
 	},
+	event_identity_merge: {
+		key: "event_identity_merge",
+		name: "Story Event Identity Merge",
+		stage: "Clustering",
+		description: "Determines whether coverage belongs in one reader-facing ongoing news topic.",
+		defaultSystemPrompt:
+			"You are a news editor deciding whether coverage belongs in one reader-facing ongoing topic. Accept only coverage tied to the same ongoing event, conflict, policy agenda, or developing situation. Reject a broad category, company, country, government body, or person when the articles describe unrelated developments.",
+		defaultUserPrompt:
+			"Do these articles belong in one reader-facing ongoing topic? Respond only with JSON: {\"same_topic\": true} or {\"same_topic\": false}.\n\nTopic: {{topic}}\n\nArticles:\n{{articles}}",
+		variables: ["topic", "articles"],
+	},
 	scoring_tiebreaker: {
 		key: "scoring_tiebreaker",
 		name: "Scoring: Relevance Evaluation",

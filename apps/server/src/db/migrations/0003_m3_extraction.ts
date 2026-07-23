@@ -32,15 +32,6 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 		)
 		.execute();
 
-	// Seed default task model for stage_a_bullet
-	await (db as Kysely<any>)
-		.insertInto("task_model")
-		.values({
-			task_name: "stage_a_bullet",
-			provider: "faux",
-			model_name: "faux-cheap",
-		})
-		.execute();
 }
 
 export async function down(db: Kysely<unknown>): Promise<void> {

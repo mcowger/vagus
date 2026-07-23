@@ -72,6 +72,7 @@ export interface ProcessedKeyTable {
 
 export interface ArticleTable {
 	id: Generated<number>;
+	run_id: number | null;
 	identity_key: string;
 	source_id: number;
 	title: string;
@@ -93,8 +94,8 @@ export interface ArticleTable {
 export interface TaskModelTable {
 	id: Generated<number>;
 	task_name: string; // e.g. "stage_a_bullet", "stage_b_synthesis"
-	provider: string; // e.g. "openai", "anthropic", "faux"
-	model_name: string; // e.g. "gpt-4o-mini", "faux-cheap"
+	provider: string; // e.g. "openai", "anthropic"
+	model_name: string; // e.g. "gpt-4o-mini"
 	created_at: Timestamp;
 	updated_at: Timestamp;
 }

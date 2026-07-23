@@ -4,7 +4,7 @@ import { getDb, type Database } from "../db";
 import { generateCompletion } from "../llm";
 import { log } from "../log";
 import { getPromptTemplates, renderPrompt } from "../prompts/defaults";
-import { advanceStage } from "./coordinator";
+import { advanceStage, failStage } from "./coordinator";
 import { STAGE_A_BULLET_JOB_TYPE, type StageABulletJobData } from "./extraction-contracts";
 
 export async function processStageABulletJob(
@@ -35,42 +35,39 @@ export async function processStageABulletJob(
 			.executeTakeFirst();
 
 		if (!article) {
-			log.warn("Article not found for stage-a-bullet job", { articleId, jobId: job.id });
-			return;
+			throw new Error(`Article ${articleId} not found for stage-a-bullet job`);
 		}
 
 		// Idempotency check: if stage_a_bullet is already set, skip calling LLM
 		if (article.stage_a_bullet) {
 			log.info("stage_a_bullet already set for article, skipping LLM call", { articleId });
-			return;
+		} else {
+			const contentSnippet = article.content ? article.content.trim() : "";
+			const { systemPrompt, userPromptTemplate } = await getPromptTemplates(database, "stage_a_bullet");
+			const prompt = renderPrompt(userPromptTemplate, {
+				title: article.title,
+				content: contentSnippet,
+			});
+
+			const completion = await generateCompletion("stage_a_bullet", prompt, {
+				runId,
+				db: database,
+				systemPrompt,
+			});
+
+			await database
+				.updateTable("article")
+				.set({ stage_a_bullet: completion.text })
+				.where("id", "=", articleId)
+				.execute();
+
+			log.info("Updated article stage_a_bullet", { articleId });
 		}
-
-		// Load editable prompt template
-		const contentSnippet = article.content ? article.content.trim() : "";
-		const { systemPrompt, userPromptTemplate } = await getPromptTemplates(database, "stage_a_bullet");
-		const prompt = renderPrompt(userPromptTemplate, {
-			title: article.title,
-			content: contentSnippet,
-		});
-
-		// Call LLM completion
-		const completion = await generateCompletion("stage_a_bullet", prompt, {
-			runId,
-			db: database,
-			systemPrompt,
-		});
-
-		// Update article table with stage_a_bullet
-		await database
-			.updateTable("article")
-			.set({ stage_a_bullet: completion.text })
-			.where("id", "=", articleId)
-			.execute();
-
-		log.info("Updated article stage_a_bullet", { articleId });
 	} catch (err) {
 		log.error("Failed stage-a-bullet job execution", { articleId, error: String(err) });
-	} finally {
-		await advanceStage(database, stageId, job.id);
+		await failStage(database, stageId, String(err));
+		throw err;
 	}
+
+	await advanceStage(database, stageId, job.id);
 }

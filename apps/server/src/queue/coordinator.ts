@@ -2,6 +2,7 @@ import type { Kysely, Selectable } from "kysely";
 import type { Queue } from "plainjob";
 import type { Database, RunStageTable, RunTable, RunTrigger, StageStatus } from "../db/schema";
 import { log } from "../log";
+import { getArticleEligibilitySettings, isEligibleArticle } from "../pipeline/article-eligibility";
 import {
 	CLUSTER_RUN_JOB_TYPE,
 	EMBED_ARTICLE_JOB_TYPE,
@@ -142,11 +143,13 @@ export async function triggerNextStage(
 
 	if (completedStage === "ingest" || completedStage === "fetch-source") {
 		// Ingest -> Extract
-		const articles = await db
+		const settings = await getArticleEligibilitySettings(db);
+		const articles = (await db
 			.selectFrom("article")
 			.selectAll()
+			.where("run_id", "=", runId)
 			.where((eb) => eb.or([eb("content", "is", null), eb("stage_a_bullet", "is", null)]))
-			.execute();
+			.execute()).filter((article) => isEligibleArticle(article, settings));
 
 		if (articles.length > 0) {
 			const stageRow = await db
@@ -173,11 +176,13 @@ export async function triggerNextStage(
 		}
 	} else if (completedStage === "extract" || completedStage === "extract-article") {
 		// Extract -> Stage A Bullet
-		const articles = await db
+		const settings = await getArticleEligibilitySettings(db);
+		const articles = (await db
 			.selectFrom("article")
 			.selectAll()
+			.where("run_id", "=", runId)
 			.where("stage_a_bullet", "is", null)
-			.execute();
+			.execute()).filter((article) => isEligibleArticle(article, settings));
 
 		if (articles.length > 0) {
 			const stageRow = await db
@@ -204,12 +209,14 @@ export async function triggerNextStage(
 		}
 	} else if (completedStage === "stage_a" || completedStage === "stage_a_bullet") {
 		// Stage A -> Embed
-		const unembeddedArticles = await db
+		const settings = await getArticleEligibilitySettings(db);
+		const unembeddedArticles = (await db
 			.selectFrom("article as a")
 			.leftJoin("article_embedding as ae", "ae.article_id", "a.id")
-			.select("a.id as id")
+			.select(["a.id as id", "a.title as title", "a.content as content", "a.stage_a_bullet as stage_a_bullet", "a.publish_date as publish_date"])
+			.where("a.run_id", "=", runId)
 			.where("ae.id", "is", null)
-			.execute();
+			.execute()).filter((article) => isEligibleArticle(article, settings));
 
 		if (unembeddedArticles.length > 0) {
 			const stageRow = await db
@@ -236,11 +243,12 @@ export async function triggerNextStage(
 		}
 	} else if (completedStage === "embed" || completedStage === "embed-article") {
 		// Embed -> Cluster
-		const articleCountRow = await db
+		const settings = await getArticleEligibilitySettings(db);
+		const articleCount = (await db
 			.selectFrom("article")
-			.select(db.fn.count<number>("id").as("count"))
-			.executeTakeFirst();
-		const articleCount = Number(articleCountRow?.count || 0);
+			.select(["title", "content", "stage_a_bullet", "publish_date"])
+			.where("run_id", "=", runId)
+			.execute()).filter((article) => isEligibleArticle(article, settings)).length;
 
 		if (articleCount > 0) {
 			const stageRow = await db
@@ -518,6 +526,47 @@ export async function advanceStage(
 	}
 
 	return result;
+}
+
+export async function failStage(
+	db: Kysely<Database>,
+	stageId: number,
+	error: string,
+): Promise<void> {
+	const now = new Date().toISOString();
+
+	await db.transaction().execute(async (trx) => {
+		const stage = await trx
+			.selectFrom("run_stage")
+			.selectAll()
+			.where("id", "=", stageId)
+			.executeTakeFirst();
+
+		if (!stage || stage.status === "complete" || stage.status === "failed") return;
+
+		await trx
+			.updateTable("run_stage")
+			.set({ status: "failed" })
+			.where("id", "=", stageId)
+			.execute();
+
+		const run = await trx
+			.selectFrom("run")
+			.select(["stats"])
+			.where("id", "=", stage.run_id)
+			.executeTakeFirst();
+		let stats: Record<string, unknown> = {};
+		try {
+			stats = run?.stats ? JSON.parse(run.stats) : {};
+		} catch {}
+		stats.failure = { stage: stage.stage, error };
+
+		await trx
+			.updateTable("run")
+			.set({ status: "failed", finished_at: now, stats: JSON.stringify(stats) })
+			.where("id", "=", stage.run_id)
+			.execute();
+	});
 }
 
 export type RunWithStages = Selectable<RunTable> & { stages: Selectable<RunStageTable>[] };

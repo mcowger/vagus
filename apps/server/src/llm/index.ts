@@ -23,7 +23,6 @@ export interface LlmCallOptions {
 	prompt: string;
 	systemPrompt?: string;
 	temperature?: number;
-	throwOnFailure?: boolean;
 }
 
 export async function callLlmCompletion(options: LlmCallOptions): Promise<LlmCompletionResult> {
@@ -34,7 +33,6 @@ export async function callLlmCompletion(options: LlmCallOptions): Promise<LlmCom
 		prompt,
 		systemPrompt,
 		temperature = 0.3,
-		throwOnFailure = false,
 	} = options;
 
 	let promptTokens = Math.ceil((prompt.length + (systemPrompt?.length || 0)) / 4);
@@ -42,12 +40,7 @@ export async function callLlmCompletion(options: LlmCallOptions): Promise<LlmCom
 	let cost = 0;
 
 	if (!apiKey) {
-		if (throwOnFailure) {
-			throw new Error("Missing API key for LLM completion");
-		}
-		const text = `Faux summary for: ${prompt.slice(0, 100).trim()}...`;
-		completionTokens = Math.ceil(text.length / 4);
-		return { text, usage: { promptTokens, completionTokens, cost: 0 } };
+		throw new Error("Missing API key for LLM completion");
 	}
 
 	const base = baseUrl.replace(/\/+$/, "");
@@ -93,18 +86,7 @@ export async function callLlmCompletion(options: LlmCallOptions): Promise<LlmCom
 		};
 	} catch (err) {
 		logger.error("Failed LLM completion call", { err, endpoint, modelName });
-		if (throwOnFailure) {
-			throw err;
-		}
-		const fallbackText = `Fallback completion for: ${prompt.slice(0, 80).trim()}`;
-		return {
-			text: fallbackText,
-			usage: {
-				promptTokens,
-				completionTokens: Math.ceil(fallbackText.length / 4),
-				cost: 0,
-			},
-		};
+		throw err;
 	}
 }
 
@@ -126,11 +108,7 @@ export async function getTaskModel(
 		};
 	}
 
-	// Default fallback
-	return {
-		provider: "faux",
-		modelName: "faux-cheap",
-	};
+	throw new Error(`No model configured for task ${taskName}`);
 }
 
 export async function generateCompletion(
@@ -138,7 +116,6 @@ export async function generateCompletion(
 	prompt: string,
 	options?: {
 		runId?: number;
-		customFauxResponse?: string;
 		db?: Kysely<Database>;
 		systemPrompt?: string;
 	},
@@ -148,48 +125,31 @@ export async function generateCompletion(
 
 	let result: LlmCompletionResult;
 
-	if (config.provider === "faux") {
-		const text =
-			options?.customFauxResponse ||
-			`Summary: ${prompt.slice(0, 100).replace(/\n/g, " ").trim()}...`;
-		const promptTokens = Math.ceil(prompt.length / 4);
-		const completionTokens = Math.ceil(text.length / 4);
-		result = {
-			text,
-			usage: {
-				promptTokens,
-				completionTokens,
-				cost: (promptTokens + completionTokens) * 0.000001,
-			},
-		};
-	} else {
-		const pConfig = await db
-			.selectFrom("provider_config")
-			.selectAll()
-			.where("provider", "=", config.provider)
-			.executeTakeFirst();
+	const pConfig = await db
+		.selectFrom("provider_config")
+		.selectAll()
+		.where("provider", "=", config.provider)
+		.executeTakeFirst();
 
-		let baseUrl: string | undefined;
-		let apiKey: string | undefined;
-
-		if (pConfig) {
-			apiKey = pConfig.api_key ?? undefined;
-			if (pConfig.config) {
-				try {
-					const parsed = JSON.parse(pConfig.config);
-					baseUrl = parsed.baseUrl;
-				} catch {}
-			}
-		}
-
-		result = await callLlmCompletion({
-			baseUrl,
-			apiKey,
-			modelName: config.modelName,
-			prompt,
-			systemPrompt: options?.systemPrompt,
-		});
+	if (!pConfig || !pConfig.enabled) {
+		throw new Error(`No enabled provider configured for task ${taskName}`);
 	}
+
+	let baseUrl: string | undefined;
+	if (pConfig.config) {
+		try {
+			const parsed = JSON.parse(pConfig.config);
+			baseUrl = parsed.baseUrl;
+		} catch {}
+	}
+
+	result = await callLlmCompletion({
+		baseUrl,
+		apiKey: pConfig.api_key ?? undefined,
+		modelName: config.modelName,
+		prompt,
+		systemPrompt: options?.systemPrompt,
+	});
 
 	// Capture LLM Usage in DB
 	try {

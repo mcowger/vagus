@@ -25,6 +25,12 @@ const PIPELINE_TASKS: PipelineTask[] = [
 		defaultModel: "text-embedding-3-small",
 	},
 	{
+		id: "event_identity_merge",
+		title: "Broad Topic Validation",
+		description: "Validates whether related coverage belongs in one reader-facing ongoing story, rather than a broad category or entity.",
+		defaultModel: "gpt-4o-mini",
+	},
+	{
 		id: "stage_b_synthesis",
 		title: "Story Cluster Synthesis",
 		description: "Synthesizes multi-article clusters into unified story overviews, timelines, and perspectives.",

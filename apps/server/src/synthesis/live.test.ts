@@ -51,7 +51,6 @@ Hubble astronomers confirmed atmospheric composition measurements of WASP-96b us
 				systemPrompt,
 				prompt,
 				temperature: 0.2,
-				throwOnFailure: true,
 			});
 
 			expect(result.text).toBeTruthy();
@@ -91,7 +90,6 @@ Citations: art_1, art_2`;
 				systemPrompt,
 				prompt,
 				temperature: 0.2,
-				throwOnFailure: true,
 			});
 
 			expect(result.text).toBeTruthy();

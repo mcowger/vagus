@@ -32,11 +32,10 @@ function createCaller(role: "admin" | "user" = "admin") {
 	});
 }
 
-test("getTaskModels returns initial seeded task models", async () => {
+test("getTaskModels returns no implicit task models", async () => {
 	const caller = createCaller("admin");
 	const models = await caller.taskModels.getTaskModels();
-	expect(models.length).toBeGreaterThanOrEqual(1);
-	expect(models.some((m) => m.task_name === "stage_a_bullet")).toBe(true);
+	expect(models).toEqual([]);
 });
 
 test("setTaskModel inserts and updates task model config", async () => {

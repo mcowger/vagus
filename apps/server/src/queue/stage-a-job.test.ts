@@ -21,6 +21,13 @@ describe("Stage A Bullet Job Processor", () => {
 			dialect: new BunSqliteDialect({ database: sqlite }),
 		});
 		await migrateToLatest(db);
+		globalThis.fetch = (async () =>
+			new Response(JSON.stringify({
+				choices: [{ message: { content: "Test article summary." } }],
+				usage: { prompt_tokens: 10, completion_tokens: 5 },
+			}))) as unknown as typeof fetch;
+		await db.insertInto("provider_config").values({ provider: "test-llm", api_key: "test-key", enabled: 1, config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }) }).execute();
+		await db.insertInto("task_model").values({ task_name: "stage_a_bullet", provider: "test-llm", model_name: "test-model" }).execute();
 
 		queue = defineQueue({
 			connection: createPlainjobConnection(sqlite),

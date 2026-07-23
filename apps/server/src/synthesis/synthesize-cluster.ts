@@ -4,7 +4,7 @@ import { getDb, type Database } from "../db";
 import { generateCompletion } from "../llm";
 import { log } from "../log";
 import { getPromptTemplates, renderPrompt } from "../prompts/defaults";
-import { advanceStage } from "../queue/coordinator";
+import { advanceStage, failStage } from "../queue/coordinator";
 import { SYNTHESIZE_CLUSTER_JOB_TYPE, type SynthesizeClusterJobData } from "../queue/synthesis-contracts";
 import { extractJsonFromText, sanitizeTextContent } from "../utils/json";
 import { ClusterSummaryResult, validateAndFilterCitations } from "./types";
@@ -103,8 +103,7 @@ export async function processSynthesizeClusterJob(
 			.execute();
 
 		if (articles.length === 0) {
-			log.warn("No articles found for cluster in synthesize-cluster job", { clusterId, jobId: job.id });
-			return;
+			throw new Error(`No articles found for cluster ${clusterId}`);
 		}
 
 		const validArticleKeys = new Set<string>();
@@ -256,7 +255,9 @@ Content: ${article.content || "N/A"}\n\n`;
 			clusterId,
 			error: String(err),
 		});
-	} finally {
-		await advanceStage(database, stageId, job.id);
+		await failStage(database, stageId, String(err));
+		throw err;
 	}
+
+	await advanceStage(database, stageId, job.id);
 }

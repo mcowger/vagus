@@ -34,6 +34,17 @@ describe("Milestone 7 Multi-Tenant E2E Test (Source Breadth, Usage & Admin Setti
 		});
 
 		await migrateToLatest(db);
+		globalThis.fetch = (async () =>
+			new Response(JSON.stringify({
+				choices: [{ message: { content: JSON.stringify({ title: "Test summary", summary: "Test cluster summary.", perspectives: [], timeline: [], citations: [], executive_summary: "Test executive summary.", key_takeaways: [], why_it_matters: "Test significance.", key_quotes: [] }) } }],
+				usage: { prompt_tokens: 10, completion_tokens: 5 },
+			}))) as unknown as typeof fetch;
+		await db.insertInto("provider_config").values({ provider: "test-llm", api_key: "test-key", enabled: 1, config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }) }).execute();
+		await db.insertInto("task_model").values([
+			{ task_name: "stage_a_bullet", provider: "test-llm", model_name: "test-model" },
+			{ task_name: "stage_b_synthesis", provider: "test-llm", model_name: "test-model" },
+			{ task_name: "stage_c_assembly", provider: "test-llm", model_name: "test-model" },
+		]).execute();
 
 		queue = defineQueue({
 			connection: createPlainjobConnection(sqlite),
@@ -101,6 +112,12 @@ describe("Milestone 7 Multi-Tenant E2E Test (Source Breadth, Usage & Admin Setti
 		const origFetch = globalThis.fetch;
 		globalThis.fetch = (async (url: string | URL | Request) => {
 			const uStr = String(url);
+			if (uStr.includes("test.invalid")) {
+				return new Response(JSON.stringify({
+					choices: [{ message: { content: JSON.stringify({ title: "Test summary", summary: "Test cluster summary.", perspectives: [], timeline: [], citations: [], executive_summary: "Test executive summary.", key_takeaways: [], why_it_matters: "Test significance.", key_quotes: [] }) } }],
+					usage: { prompt_tokens: 10, completion_tokens: 5 },
+				}), { status: 200 });
+			}
 			if (uStr.includes("firebaseio.com")) {
 				if (uStr.includes("topstories")) {
 					return new Response(JSON.stringify([9901]), { status: 200 });
@@ -152,6 +169,12 @@ describe("Milestone 7 Multi-Tenant E2E Test (Source Breadth, Usage & Admin Setti
 				type: "stage-a-bullet",
 				data: { runId: run.id, stageId: stage.id, articleId: article.id },
 			} as unknown as Job);
+
+			await db
+				.updateTable("article")
+				.set({ publish_date: new Date().toISOString() })
+				.where("id", "=", article.id)
+				.execute();
 
 			// Run Embeddings
 			await processEmbedArticleJob(db, {

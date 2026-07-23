@@ -23,6 +23,11 @@ describe("Clustering Module & Job", () => {
 			dialect: new BunSqliteDialect({ database: sqlite }),
 		});
 		await migrateToLatest(db);
+		await db
+			.updateTable("system_setting")
+			.set({ value: "87600" })
+			.where("key", "=", "pipeline_article_max_age_hours")
+			.execute();
 
 		queue = defineQueue({
 			connection: createPlainjobConnection(sqlite),
@@ -107,6 +112,7 @@ describe("Clustering Module & Job", () => {
 			const art1 = await db
 				.insertInto("article")
 				.values({
+					run_id: 100,
 					identity_key: "art-1",
 					source_id: source.id,
 					title: "Tech Article 1",
@@ -120,6 +126,7 @@ describe("Clustering Module & Job", () => {
 			const art2 = await db
 				.insertInto("article")
 				.values({
+					run_id: 100,
 					identity_key: "art-2",
 					source_id: source.id,
 					title: "Tech Article 2",
@@ -133,6 +140,7 @@ describe("Clustering Module & Job", () => {
 			const art3 = await db
 				.insertInto("article")
 				.values({
+					run_id: 100,
 					identity_key: "art-3",
 					source_id: source.id,
 					title: "Unrelated Cooking News",
@@ -213,11 +221,13 @@ describe("Clustering Module & Job", () => {
 			const art1 = await db
 				.insertInto("article")
 				.values({
+					run_id: 101,
 					identity_key: "lex-1",
 					source_id: source.id,
 					title: "SpaceX Starship Launches Heavy Rocket Payload",
 					url: "https://example.com/lex-1",
 					content: "Content 1",
+					publish_date: new Date().toISOString(),
 				})
 				.returningAll()
 				.executeTakeFirstOrThrow();
@@ -225,11 +235,13 @@ describe("Clustering Module & Job", () => {
 			const art2 = await db
 				.insertInto("article")
 				.values({
+					run_id: 101,
 					identity_key: "lex-2",
 					source_id: source.id,
 					title: "SpaceX Starship Launches Heavy Rocket Payload Today",
 					url: "https://example.com/lex-2",
 					content: "Content 2",
+					publish_date: new Date().toISOString(),
 				})
 				.returningAll()
 				.executeTakeFirstOrThrow();
@@ -237,11 +249,13 @@ describe("Clustering Module & Job", () => {
 			const art3 = await db
 				.insertInto("article")
 				.values({
+					run_id: 101,
 					identity_key: "lex-3",
 					source_id: source.id,
 					title: "Central Banks Raise Baseline Interest Rates",
 					url: "https://example.com/lex-3",
 					content: "Content 3",
+					publish_date: new Date().toISOString(),
 				})
 				.returningAll()
 				.executeTakeFirstOrThrow();
@@ -280,11 +294,13 @@ describe("Clustering Module & Job", () => {
 			await db
 				.insertInto("article")
 				.values({
+					run_id: 200,
 					identity_key: "idempotent-1",
 					source_id: source.id,
 					title: "Unique Title",
 					url: "https://example.com/idempotent-1",
 					content: "Content",
+					publish_date: new Date().toISOString(),
 				})
 				.execute();
 
@@ -322,10 +338,13 @@ describe("Clustering Module & Job", () => {
 			const art1 = await db
 				.insertInto("article")
 				.values({
+					run_id: 300,
 					identity_key: "thresh-1",
 					source_id: source.id,
 					title: "AI Breakthrough Announcement",
 					url: "https://example.com/t1",
+					content: "AI breakthrough coverage",
+					publish_date: new Date().toISOString(),
 				})
 				.returningAll()
 				.executeTakeFirstOrThrow();
@@ -333,10 +352,13 @@ describe("Clustering Module & Job", () => {
 			const art2 = await db
 				.insertInto("article")
 				.values({
+					run_id: 300,
 					identity_key: "thresh-2",
 					source_id: source.id,
 					title: "AI Breakthrough Announcement Details",
 					url: "https://example.com/t2",
+					content: "AI breakthrough details",
+					publish_date: new Date().toISOString(),
 				})
 				.returningAll()
 				.executeTakeFirstOrThrow();
@@ -358,7 +380,7 @@ describe("Clustering Module & Job", () => {
 			expect(resDefault.clusters.length).toBe(1);
 
 			// Strict threshold 0.95 -> 2 clusters
-			const resStrict = await clusterRunArticles(db, 301, { threshold: 0.95 });
+			const resStrict = await clusterRunArticles(db, 300, { threshold: 0.95 });
 			expect(resStrict.clusters.length).toBe(2);
 		});
 	});
@@ -383,6 +405,8 @@ describe("Clustering Module & Job", () => {
 					source_id: source.id,
 					title: "Job Test Article",
 					url: "https://example.com/job-1",
+					content: "Job test content",
+					publish_date: new Date().toISOString(),
 				})
 				.execute();
 
@@ -398,6 +422,12 @@ describe("Clustering Module & Job", () => {
 				runId: startRes.runId,
 				stageId: startRes.stageId,
 			};
+
+			await db
+				.updateTable("article")
+				.set({ run_id: startRes.runId })
+				.where("identity_key", "=", "job-art-1")
+				.execute();
 
 			const job = {
 				id: 50,

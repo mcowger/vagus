@@ -131,6 +131,12 @@ export const settingsRouter = router({
 				cron_schedule: z.string().optional(),
 				app_base_url: z.string().optional(),
 				worker_concurrency: z.union([z.string(), z.number()]).optional(),
+				clustering_similarity_threshold: z.union([z.string(), z.number()]).optional(),
+				clustering_llm_merge_min_similarity: z.union([z.string(), z.number()]).optional(),
+				clustering_llm_merge_enabled: z.union([z.string(), z.boolean()]).optional(),
+				clustering_llm_merge_max_candidates: z.union([z.string(), z.number()]).optional(),
+				pipeline_article_max_age_hours: z.union([z.string(), z.number()]).optional(),
+				pipeline_filter_feed_artifacts: z.union([z.string(), z.boolean()]).optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {

@@ -35,7 +35,23 @@ export async function processClusterRunJob(
 	log.info("Starting cluster-run job", { jobId: job.id, runId, stageId });
 
 	try {
-		await clusterRunArticles(db, runId);
+		const settings = await db
+			.selectFrom("system_setting")
+			.select(["key", "value"])
+			.where("key", "in", [
+				"clustering_similarity_threshold",
+				"clustering_llm_merge_enabled",
+				"clustering_topic_subcluster_threshold",
+				"clustering_topic_validation_max_buckets",
+			])
+			.execute();
+		const setting = new Map(settings.map((row) => [row.key, row.value]));
+		await clusterRunArticles(db, runId, {
+			threshold: Number(setting.get("clustering_similarity_threshold") ?? 0.8),
+			llmMergeEnabled: setting.get("clustering_llm_merge_enabled") !== "false",
+			topicSubclusterThreshold: Number(setting.get("clustering_topic_subcluster_threshold") ?? 0.65),
+			topicValidationMaxBuckets: Number(setting.get("clustering_topic_validation_max_buckets") ?? 20),
+		});
 		log.info("Completed cluster-run job", { jobId: job.id, runId });
 	} catch (err) {
 		log.error("Failed cluster-run job execution", { jobId: job.id, runId, error: String(err) });

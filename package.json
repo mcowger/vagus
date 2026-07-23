@@ -14,6 +14,15 @@
 		"test": "bun test",
 		"test:live": "RUN_LIVE_TESTS=1 bun test apps/server/src/embeddings/live.test.ts apps/server/src/llm/live.test.ts apps/server/src/adapters/rss.live.test.ts apps/server/src/adapters/brave-news.live.test.ts apps/server/src/extractor/live.test.ts apps/server/src/synthesis/live.test.ts apps/server/src/notifications/live.test.ts apps/server/src/adapters/hackernews.live.test.ts apps/server/src/adapters/github-trending.live.test.ts apps/server/src/adapters/scrape.live.test.ts",
 		"deploy:staging": "bun run scripts/deploy-staging.ts",
+		"sync:staging:dev": "timeout 15m bun run scripts/sync-staging-to-dev.ts",
+		"pipeline:dev": "timeout 15m bun run scripts/run-dev-pipeline.ts",
+		"evaluate:clustering": "timeout 5m bun run scripts/evaluate-clustering.ts",
+		"evaluate:merge-candidates": "timeout 1m bun run scripts/evaluate-merge-candidates.ts",
+		"evaluate:event-identity": "timeout 1m bun run scripts/evaluate-event-identity.ts",
+		"evaluate:broad-topics": "timeout 2m bun run scripts/evaluate-broad-topics.ts",
+		"review:topics": "timeout 1m bun run scripts/generate-topic-review.ts",
+		"evaluate:topic-subclusters": "timeout 1m bun run scripts/evaluate-topic-subclusters.ts",
+		"benchmark:topic-models": "timeout 5m bun run scripts/benchmark-topic-models.ts",
 		"typecheck": "tsc --noEmit -p apps/server/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json"
 	},
 	"devDependencies": {
