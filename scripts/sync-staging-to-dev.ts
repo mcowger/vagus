@@ -18,7 +18,7 @@ function copyStagingData(dev: Sqlite): void {
 			DELETE FROM user_source_weight; DELETE FROM source; DELETE FROM llm_usage;
 			DELETE FROM run_stage; DELETE FROM run; DELETE FROM provider_config; DELETE FROM task_model;
 		`);
-		console.log("[sync] Copying 25 staging sources, article records with Stage A summaries, and provider configuration...");
+		console.log("[sync] Copying 25 staging sources, article records with article summaries, and provider configuration...");
 		dev.exec(`
 			INSERT INTO source (id, type, name, url, config, enabled, owner_user_id, created_at, updated_at)
 			SELECT id, type, name, url, config, enabled, owner_user_id, created_at, updated_at FROM staging.source;

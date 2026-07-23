@@ -8,15 +8,12 @@ import {
 	BookOpen,
 	FileText,
 	Layers,
-	ListChecks,
-	Lightbulb,
 	ExternalLink,
 	Copy,
 	Check,
 	Code,
 	Sparkles,
 	Clock,
-	User,
 	Calendar,
 	Download,
 	X,
@@ -87,9 +84,11 @@ function cleanCodeFenceText(text?: string | null): string {
 	return parseRawClusterSummary(text).summary;
 }
 
-function stripCitationTags(text: string): string {
+export function stripCitationTags(text: string): string {
 	return text
-		.replace(/\s*\[?art_\d+\]?\s*/g, " ")
+		.replace(/\s*\[(?:\s*art_\d+\s*)(?:,\s*art_\d+\s*)*\]/g, " ")
+		.replace(/\s*\bart_\d+\b\s*/g, " ")
+		.replace(/[;,]+(?=\s*[.!?])/g, "")
 		.replace(/\s+([,.;:!?])/g, "$1")
 		.replace(/\s{2,}/g, " ")
 		.trim();
@@ -248,12 +247,6 @@ export const DigestReader: React.FC = () => {
 			.map((s) => s.trim())
 			.filter((s) => s.length > 5);
 	};
-
-	// Parse takeaways safely
-	const normalizedTakeaways = React.useMemo(() => {
-		if (!digest?.key_takeaways) return [];
-		return Array.isArray(digest.key_takeaways) ? digest.key_takeaways : [String(digest.key_takeaways)];
-	}, [digest?.key_takeaways]);
 
 	return (
 		<div className="space-y-6">
@@ -461,49 +454,7 @@ export const DigestReader: React.FC = () => {
 								</CardContent>
 							</Card>
 
-							{/* Section 2: Why It Matters & Key Takeaways Grid */}
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-								{/* Why It Matters */}
-								<Card className="border-amber-100 shadow-sm">
-									<CardHeader className="bg-amber-50/50 pb-3">
-										<CardTitle className="text-base font-bold flex items-center gap-2 text-amber-900">
-											<Lightbulb className="h-5 w-5 text-amber-600" />
-											Why It Matters
-										</CardTitle>
-									</CardHeader>
-									<CardContent className="pt-4 text-slate-800 leading-relaxed text-sm">
-										<InlineFormattedText text={digest.why_it_matters} />
-									</CardContent>
-								</Card>
-
-								{/* Key Takeaways */}
-								<Card className="border-emerald-100 shadow-sm">
-									<CardHeader className="bg-emerald-50/50 pb-3">
-										<CardTitle className="text-base font-bold flex items-center gap-2 text-emerald-900">
-											<ListChecks className="h-5 w-5 text-emerald-600" />
-											Key Takeaways
-										</CardTitle>
-									</CardHeader>
-									<CardContent className="pt-4 space-y-2 text-sm text-slate-800">
-										{normalizedTakeaways.length === 0 ? (
-											<p className="text-slate-400 italic">No key takeaways specified.</p>
-										) : (
-											normalizedTakeaways.map((takeaway, idx) => (
-												<div key={idx} className="flex items-start gap-2.5">
-													<span className="flex-shrink-0 mt-0.5 h-4 w-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-bold">
-														{idx + 1}
-													</span>
-													<div className="leading-snug">
-													<InlineFormattedText text={takeaway} />
-													</div>
-												</div>
-											))
-										)}
-									</CardContent>
-								</Card>
-							</div>
-
-							{/* Section 3: Story Clusters & Deep Dives */}
+							{/* Story Clusters & Deep Dives */}
 							<div className="space-y-4 pt-2">
 								<div className="flex items-center justify-between">
 									<h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -629,79 +580,41 @@ export const DigestReader: React.FC = () => {
 														</div>
 													)}
 
-													{/* Per-Story Source List (Solar UX Style) */}
+													{/* Compact source citations */}
 													{clusterCitations.length > 0 && (
-														<div className="pt-4 border-t border-slate-100 space-y-3">
-															<div className="flex items-center justify-between">
+														<div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-1.5">
 																<h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
 																	<FileText className="h-3.5 w-3.5 text-slate-500" />
-																	Sources & References ({clusterCitations.length})
+																	Sources ({clusterCitations.length})
 																</h5>
-															</div>
-
-															<div className="grid grid-cols-1 gap-2">
 																{clusterCitations.map((cit) => {
 																	const domain = getDomainFromUrl(cit.article_url);
 																	const favicon = getFaviconUrl(cit.article_url);
 
 																	return (
-																		<div
+																		<a
 																			key={cit.id}
-																			className="p-3 rounded-lg bg-slate-50 hover:bg-slate-100/80 border border-slate-200 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+																			href={cit.article_url}
+																			target="_blank"
+																			rel="noopener noreferrer"
+																			title={cit.article_title}
+																			className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
 																		>
-																			<div className="space-y-1">
-																				<div className="flex items-center gap-2 flex-wrap">
-																					{favicon && (
-																						<img
-																							src={favicon}
-																							alt=""
-																							className="w-4 h-4 rounded-xs flex-shrink-0 object-contain"
-																							onError={(e) => {
-																								(e.target as HTMLElement).style.display = "none";
-																							}}
-																						/>
-																					)}
-																					<span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200/70 text-slate-700 border border-slate-300/60 font-mono">
-																						{domain || cit.citation_key}
-																					</span>
-																					<a
-																						href={cit.article_url}
-																						target="_blank"
-																						rel="noopener noreferrer"
-																						className="font-semibold text-slate-900 hover:text-indigo-600 transition-colors line-clamp-1"
-																					>
-																						{cit.article_title}
-																					</a>
-																				</div>
-																				<div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium pl-6">
-																					{cit.article_author && (
-																						<span className="flex items-center gap-1">
-																							<User className="h-3 w-3" />
-																							{cit.article_author}
-																						</span>
-																					)}
-																					{cit.article_publish_date && (
-																						<span className="flex items-center gap-1 font-mono">
-																							<Calendar className="h-3 w-3" />
-																							{new Date(cit.article_publish_date).toLocaleDateString()}
-																						</span>
-																					)}
-																				</div>
-																			</div>
-
-																			<a
-																				href={cit.article_url}
-																				target="_blank"
-																				rel="noopener noreferrer"
-																				className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white hover:bg-indigo-50 text-indigo-700 font-medium border border-slate-200 hover:border-indigo-300 transition-colors self-start sm:self-auto flex-shrink-0 shadow-2xs"
-																			>
-																				<span>View Source</span>
-																				<ExternalLink className="h-3 w-3" />
-																			</a>
-																		</div>
+																			{favicon && (
+																				<img
+																					src={favicon}
+																					alt=""
+																					className="h-3.5 w-3.5 flex-shrink-0 rounded-xs object-contain"
+																					onError={(e) => {
+																						(e.target as HTMLElement).style.display = "none";
+																					}}
+																				/>
+																			)}
+																			<span className="max-w-40 truncate">{domain || cit.citation_key}</span>
+																			<ExternalLink className="h-3 w-3 flex-shrink-0" />
+																		</a>
 																	);
 																})}
-															</div>
 														</div>
 													)}
 												</CardContent>

@@ -14,7 +14,7 @@ export interface PromptDefinition {
 export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
 	stage_a_bullet: {
 		key: "stage_a_bullet",
-		name: "Stage A: Article Bullet Extraction",
+		name: "Article Summaries",
 		stage: "Extraction",
 		description: "Summarizes a single article into a 1-sentence headline bullet point.",
 		defaultSystemPrompt:
@@ -25,26 +25,26 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
 	},
 	stage_b_synthesis: {
 		key: "stage_b_synthesis",
-		name: "Stage B: Cluster Synthesis",
+		name: "Story Cluster Synthesis",
 		stage: "Cluster Synthesis",
 		description:
-			"Synthesizes clustered articles into a structured cluster summary with title and citations.",
+			"Synthesizes clustered articles into a detailed structured cluster summary with title and citations.",
 		defaultSystemPrompt:
-			"You are a news synthesis assistant. Your task is to analyze multiple articles in a cluster and generate a synthesized summary in structured JSON format matching ClusterSummaryToolSchema.",
+			"You are a news synthesis assistant. Analyze multiple articles in a cluster and produce a detailed, accurate structured JSON summary matching ClusterSummaryToolSchema. Preserve concrete facts, named actors, chronology, context, consequences, and material uncertainty or disagreement when supported by the source articles. Do not add unsupported claims or pad with generic background.",
 		defaultUserPrompt:
-			'Synthesize the following articles in this cluster into a unified summary with citations.\n\n{{articlesText}}\n\nRespond ONLY with valid JSON matching:\n{\n  "title": "Headline title summarizing cluster",\n  "summary": "3-5 sentence unified summary with [art_X] citations",\n  "citations": ["art_1", "art_2"]\n}',
+			'Synthesize the following articles in this cluster into a unified summary with citations. Write 4-6 substantive sentences that explain what happened, who is involved, the relevant context or timeline, and the likely consequence or open question when the articles support it. Attribute contested claims and cite every sentence with the relevant [art_X] references.\n\n{{articlesText}}\n\nRespond ONLY with valid JSON matching:\n{\n  "title": "Headline title summarizing cluster",\n  "summary": "4-6 sentence detailed unified summary with [art_X] citations",\n  "citations": ["art_1", "art_2"]\n}',
 		variables: ["articlesText"],
 	},
 	stage_c_assembly: {
 		key: "stage_c_assembly",
-		name: "Stage C: Digest Assembly",
+		name: "Digest Assembly",
 		stage: "Digest Assembly",
 		description:
-			"Assembles cluster summaries into the final executive briefing digest with trend bullet cards, key takeaways, and why it matters.",
+			"Assembles detailed cluster summaries into the final executive briefing digest with substantive trend bullet cards.",
 		defaultSystemPrompt:
-			"You are a professional executive editor assembling a high-level daily briefing digest. Output valid JSON matching the specified schema.",
+			"You are a professional executive editor assembling a detailed daily briefing digest. Preserve the most important concrete developments, connections, context, and implications from the supplied cluster summaries. Output valid JSON matching the specified schema without inventing facts.",
 		defaultUserPrompt:
-			'Synthesize an overall executive digest from the following cluster summaries:\n\n{{clustersText}}{{quotesText}}\n\nPlease provide a structured JSON response matching:\n{\n  "executive_summary": "Formatted bullet points for each identified key trend or major development (e.g., \'- **Trend Title**: Clear synthesis of this trend with relevant citations [art_1]\')",\n  "key_takeaways": ["3-5 key actionable takeaways across all selected news stories"],\n  "why_it_matters": "Broad significance and impact for the user\'s domain/interests"\n}',
+			'Synthesize an overall executive digest from the following cluster summaries:\n\n{{clustersText}}{{quotesText}}\n\nWrite 3-5 thematic bullets. Each bullet should be 2-4 substantive sentences covering the development, key actors or evidence, relevant context, and implication or uncertainty where supported. Cite factual claims with the supplied [art_X] references.\n\nPlease provide a structured JSON response matching:\n{\n  "executive_summary": "Formatted multi-sentence bullets for each identified key trend or major development (e.g., \'- **Trend Title**: Detailed synthesis of this trend with relevant citations [art_1]\')",\n  "key_takeaways": ["3-5 key actionable takeaways across all selected news stories"],\n  "why_it_matters": "Broad significance and impact for the user\'s domain/interests"\n}',
 		variables: ["clustersText", "quotesText"],
 	},
 	event_identity_merge: {

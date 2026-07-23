@@ -78,21 +78,21 @@ Vagus decouples global content processing from individual user profile evaluatio
 
 ---
 
-## 8-Stage Automated Pipeline
+## 8-Step Automated Pipeline
 
 ```
-[Fetch Sources] ──▶ [Extract Content] ──▶ [Stage A Headlines] ──▶ [Embed Vectors]
-                                                                        │
-[Notify User] ◄── [Format Briefing] ◄── [Stage C Assembly] ◄── [Stage B Synthesis] ◄── [Cluster & Score]
+[Fetch Sources] ──▶ [Extract Content] ──▶ [Article Summaries] ──▶ [Embed Vectors]
+                                                                         │
+[Notify User] ◄── [Format Briefing] ◄── [Digest Assembly] ◄── [Story Cluster Synthesis] ◄── [Cluster & Score]
 ```
 
 1. **Ingest (`fetch-source`)**: Fetches raw feeds with `processed_key` deduplication.
 2. **Extract (`extract-article`)**: Crawls article text, parses metadata, and calculates reading times.
-3. **Stage A (`stage_a_bullet`)**: Uses LLMs to produce concise 1-sentence headline bullets.
+3. **Article Summaries**: Uses LLMs to produce concise 1-sentence headline bullets.
 4. **Embed (`embed-article`)**: Generates dense vector embeddings using configured text embedding models.
 5. **Cluster & Score (`cluster-run` & `score-user`)**: Performs cosine similarity clustering ($\ge 0.80$) and scores candidate clusters against user interest profiles, applying source weights and preference vector adjustments.
-6. **Stage B (`synthesize-cluster`)**: Synthesizes cluster summaries and citation keys.
-7. **Stage C (`assemble-digest`)**: Assembles overall executive briefing digests with bulleted trend cards, key takeaways, and why it matters.
+6. **Story Cluster Synthesis**: Synthesizes cluster summaries and citation keys.
+7. **Digest Assembly**: Assembles overall executive briefing digests with bulleted trend cards, key takeaways, and why it matters.
 8. **Notify (`ntfy`)**: Dispatches push notifications via ntfy.sh with deep links to the Digest Reader.
 
 ---
@@ -100,7 +100,7 @@ Vagus decouples global content processing from individual user profile evaluatio
 ## System Customization & LLM Prompts
 
 - **DB-Driven Settings**: API keys, endpoints, worker concurrency, retention windows, and model routing choices are strictly database-backed.
-- **Editable LLM Prompts**: System personas and user prompt templates across all pipeline stages (`stage_a_bullet`, `stage_b_synthesis`, `stage_c_assembly`, `scoring_tiebreaker`) can be edited directly in **Admin Settings** with `{{variable}}` substitution tags and one-click resets.
+- **Editable LLM Prompts**: System personas and user prompt templates for article summaries, story cluster synthesis, digest assembly, and relevance scoring can be edited directly in **Admin Settings** with `{{variable}}` substitution tags and one-click resets.
 
 ---
 

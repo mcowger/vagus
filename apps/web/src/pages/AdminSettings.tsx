@@ -153,7 +153,7 @@ export const AdminSettings: React.FC = () => {
 	};
 
 	const handleResetPipeline = (level: "clustering" | "stage_a") => {
-		const label = level === "clustering" ? "clustering and downstream data" : "Stage A and all downstream data";
+		const label = level === "clustering" ? "clustering and downstream data" : "article summaries and all downstream data";
 		if (!window.confirm(`Clear ${label}? Raw articles and sources will be preserved.`)) return;
 		resetPipelineMutation.mutate({ level });
 	};
@@ -352,7 +352,7 @@ export const AdminSettings: React.FC = () => {
 						Clear Clustering Onward
 					</Button>
 					<Button type="button" variant="destructive" onClick={() => handleResetPipeline("stage_a")} disabled={resetPipelineMutation.isPending}>
-						Clear Stage A Onward
+						Clear Article Summaries Onward
 					</Button>
 				</CardContent>
 			</Card>

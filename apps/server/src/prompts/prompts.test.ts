@@ -24,6 +24,11 @@ describe("Prompt Management & Templates", () => {
 		expect(templates.userPromptTemplate).toBe(PROMPT_DEFINITIONS.stage_a_bullet.defaultUserPrompt);
 	});
 
+	it("asks synthesis stages for detailed summaries", () => {
+		expect(PROMPT_DEFINITIONS.stage_b_synthesis.defaultUserPrompt).toContain("Write 4-6 substantive sentences");
+		expect(PROMPT_DEFINITIONS.stage_c_assembly.defaultUserPrompt).toContain("Each bullet should be 2-4 substantive sentences");
+	});
+
 	it("renders user prompt template replacing {{variable}} placeholders", () => {
 		const template = "Title: {{title}}\nContent: {{content}}";
 		const rendered = renderPrompt(template, {
