@@ -32,9 +32,13 @@ export function createAuth(
 	const secret = options.secret ?? config.betterAuthSecret;
 	const allowedDomainsSetting =
 		options.allowedDomains ?? process.env.SIGNUP_ALLOWED_DOMAINS ?? "";
+	const isHttps = (process.env.BETTER_AUTH_URL || "").startsWith("https");
 
 	const authInstance = betterAuth({
 		trustedOrigins: ["*"],
+		advanced: {
+			useSecureCookies: isHttps,
+		},
 		database: {
 			dialect: new BunSqliteDialect({ database: sqlite }),
 			type: "sqlite",
