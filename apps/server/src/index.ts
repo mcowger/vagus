@@ -61,10 +61,26 @@ app.all("/api/auth/*", async (c) => {
 app.get("/healthz", (c) => {
 	try {
 		db.sqlite.query("SELECT 1").get();
-		return c.json({ status: "ok", db: "ok" }, 200);
+		return c.json(
+			{
+				status: "ok",
+				db: "ok",
+				version: process.env.APP_VERSION ?? "dev",
+				builtAt: process.env.BUILD_DATE ?? "unknown",
+			},
+			200,
+		);
 	} catch (err) {
 		log.error("health check failed", { error: String(err) });
-		return c.json({ status: "degraded", db: "error" }, 503);
+		return c.json(
+			{
+				status: "degraded",
+				db: "error",
+				version: process.env.APP_VERSION ?? "dev",
+				builtAt: process.env.BUILD_DATE ?? "unknown",
+			},
+			503,
+		);
 	}
 });
 

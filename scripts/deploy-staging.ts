@@ -19,8 +19,8 @@ const healthTimeout = Number.parseInt(
 const targetPlatform =
 	process.env.VAGUS_STAGING_TARGET_PLATFORM ?? "linux/amd64";
 
-const timestamp = new Date()
-	.toISOString()
+const buildDate = new Date().toISOString();
+const timestamp = buildDate
 	.replace(/[-:]/g, "")
 	.replace(/\.\d{3}Z$/, "")
 	.replace("T", "-");
@@ -135,8 +135,21 @@ if (!previous) {
 }
 
 console.log("\nBuilding image on staging context...");
-docker(
-	["build", "--platform", targetPlatform, "-t", newTag, "-t", latestTag, "."],
+	docker(
+	[
+		"build",
+		"--platform",
+		targetPlatform,
+		"--build-arg",
+		`APP_VERSION=${process.env.npm_package_version ?? "0.1.0"}`,
+		"--build-arg",
+		`BUILD_DATE=${buildDate}`,
+		"-t",
+		newTag,
+		"-t",
+		latestTag,
+		".",
+	],
 	{ stream: true },
 );
 
@@ -164,10 +177,19 @@ for (let elapsed = 1; elapsed <= healthTimeout; elapsed += 1) {
 		const response = await fetch(`${stagingUrl}/healthz`, {
 			signal: AbortSignal.timeout(5000),
 		});
-		const body = (await response.json()) as { status?: string; db?: string };
-		if (response.ok && (body.status === "ok" || body.db === "ok")) {
+		const body = (await response.json()) as {
+			status?: string;
+			db?: string;
+			version?: string;
+			builtAt?: string;
+		};
+		if (
+			response.ok &&
+			(body.status === "ok" || body.db === "ok") &&
+			body.builtAt === buildDate
+		) {
 			healthy = true;
-			console.log(`  Healthy after ${elapsed}s.`);
+			console.log(`  Healthy after ${elapsed}s: v${body.version ?? "unknown"}, built ${body.builtAt}.`);
 			break;
 		}
 	} catch {

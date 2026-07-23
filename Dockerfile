@@ -21,6 +21,10 @@ EXPOSE 3000
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV DATABASE_PATH=/app/data/vagus.sqlite
+ARG APP_VERSION=0.1.0
+ARG BUILD_DATE=unknown
+ENV APP_VERSION=$APP_VERSION
+ENV BUILD_DATE=$BUILD_DATE
 
 # Healthcheck targeting /healthz endpoint via Bun fetch
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
