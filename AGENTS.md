@@ -41,8 +41,7 @@ bun run dev:stop          # stop server process group and clean up pidfile
   - **Executive Summary**: Indigo gradient header (`from-indigo-50/50 to-white`), `Sparkles` icon (`text-indigo-600`), `border-indigo-100`.
   - **Why It Matters**: Warm Amber card header (`bg-amber-50/50`), `Lightbulb` icon (`text-amber-600`), `border-amber-100`, `text-amber-900`.
   - **Key Takeaways**: Fresh Emerald card header (`bg-emerald-50/50`), `ListChecks` icon (`text-emerald-600`), `border-emerald-100`, `text-emerald-900`, with circular numbered step pills (`bg-emerald-100 text-emerald-700`).
-  - **Key Quotes**: Slate card header (`bg-slate-50`), `Quote` icon (`text-indigo-600`), left-accented blockquote cards (`border-l-4 border-indigo-500 bg-slate-50/80`).
-  - **Story Clusters**: Slate cards with cluster badge tags (`bg-indigo-100 text-indigo-800`), collapsible deep dives, and timeline step badges.
+  - **Story Clusters**: Slate cards with cluster badge tags (`bg-indigo-100 text-indigo-800`) and collapsible deep dives.
 - **Interactive Favicon Citations (`CitationPill`)**:
   - Never display raw internal article IDs (e.g., `art_123`) in reader UI.
   - Render source citations as interactive badges (`CitationPill`) containing:

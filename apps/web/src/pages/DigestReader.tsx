@@ -10,7 +10,6 @@ import {
 	Layers,
 	ListChecks,
 	Lightbulb,
-	Quote,
 	ExternalLink,
 	Copy,
 	Check,
@@ -22,7 +21,6 @@ import {
 	Download,
 	X,
 	ChevronRight,
-	Share2,
 	ThumbsUp,
 	ThumbsDown,
 } from "lucide-react";
@@ -250,19 +248,6 @@ export const DigestReader: React.FC = () => {
 			.map((s) => s.trim())
 			.filter((s) => s.length > 5);
 	};
-
-	// Parse quote list safely
-	const normalizedQuotes = React.useMemo(() => {
-		if (!digest?.key_quotes) return [];
-		const raw = digest.key_quotes;
-		if (Array.isArray(raw)) {
-			return raw.map((item: any) => {
-				if (typeof item === "string") return { quote: item, citation: "" };
-				return { quote: item?.quote || "", citation: item?.citation || "" };
-			});
-		}
-		return [];
-	}, [digest?.key_quotes]);
 
 	// Parse takeaways safely
 	const normalizedTakeaways = React.useMemo(() => {
@@ -518,29 +503,7 @@ export const DigestReader: React.FC = () => {
 								</Card>
 							</div>
 
-							{/* Section 3: Key Quotes with Citation Badges */}
-							{normalizedQuotes.length > 0 && (
-								<Card className="border-slate-200 shadow-sm">
-									<CardHeader className="bg-slate-50 pb-3">
-										<CardTitle className="text-base font-bold flex items-center gap-2 text-slate-900">
-											<Quote className="h-5 w-5 text-indigo-600" />
-											Key Quotes
-										</CardTitle>
-									</CardHeader>
-									<CardContent className="pt-4 grid grid-cols-1 gap-3">
-										{normalizedQuotes.map((q, idx) => (
-											<blockquote
-												key={idx}
-												className="p-3.5 bg-slate-50/80 border-l-4 border-indigo-500 rounded-r-lg text-xs leading-relaxed text-slate-800 space-y-2"
-											>
-													<p className="italic font-serif text-sm text-slate-900">"{stripCitationTags(q.quote)}"</p>
-											</blockquote>
-										))}
-									</CardContent>
-								</Card>
-							)}
-
-							{/* Section 4: Story Clusters & Deep Dives */}
+							{/* Section 3: Story Clusters & Deep Dives */}
 							<div className="space-y-4 pt-2">
 								<div className="flex items-center justify-between">
 									<h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -567,14 +530,6 @@ export const DigestReader: React.FC = () => {
 
 										const parsedCluster = parseRawClusterSummary(cluster.summary);
 										const cleanSummary = parsedCluster.summary || cluster.summary;
-
-										const perspectives: string[] = Array.isArray(cluster.perspectives) && cluster.perspectives.length > 0
-											? cluster.perspectives
-											: parsedCluster.perspectives || [];
-
-										const timeline: any[] = Array.isArray(cluster.timeline) && cluster.timeline.length > 0
-											? cluster.timeline
-											: parsedCluster.timeline || [];
 
 										const clusterVote = feedbackQuery.data?.feedback?.[`cluster:${cluster.id}`] ?? 0;
 
@@ -671,56 +626,6 @@ export const DigestReader: React.FC = () => {
 																	))}
 																</div>
 															</div>
-
-															{/* Perspectives Section */}
-															{perspectives.length > 0 && (
-																<div className="p-4 bg-indigo-50/50 rounded-lg border border-indigo-100 space-y-2">
-																	<h4 className="text-xs font-bold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
-																		<Share2 className="h-3.5 w-3.5 text-indigo-600" />
-																		Key Perspectives & Viewpoints
-																	</h4>
-																	<ul className="space-y-1.5 text-xs text-indigo-950">
-																		{perspectives.map((persp, pIdx) => (
-																			<li key={pIdx} className="flex items-start gap-2">
-																				<ChevronRight className="h-3.5 w-3.5 text-indigo-500 flex-shrink-0 mt-0.5" />
-																				<span>
-																					<InlineFormattedText text={persp} />
-																				</span>
-																			</li>
-																		))}
-																	</ul>
-																</div>
-															)}
-
-															{/* Timeline Section */}
-															{timeline.length > 0 && (
-																<div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
-																	<h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-																		<Clock className="h-3.5 w-3.5 text-slate-500" />
-																		Chronological Event Timeline
-																	</h4>
-																	<div className="relative border-l-2 border-indigo-300 ml-2 pl-4 space-y-3 text-xs">
-																		{timeline.map((item, tIdx) => {
-																			const eventText = typeof item === "string" ? item : item?.event || item?.description || JSON.stringify(item);
-																			const dateText = typeof item === "object" && item?.date ? item.date : null;
-
-																			return (
-																				<div key={tIdx} className="relative">
-																					<span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-indigo-500 border-2 border-white"></span>
-																					{dateText && (
-																						<div className="font-mono text-[10px] text-slate-400 font-semibold mb-0.5">
-																							{dateText}
-																						</div>
-																					)}
-																					<div className="text-slate-800">
-																					<InlineFormattedText text={eventText} />
-																					</div>
-																				</div>
-																			);
-																		})}
-																	</div>
-																</div>
-															)}
 														</div>
 													)}
 

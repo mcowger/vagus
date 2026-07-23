@@ -28,11 +28,11 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
 		name: "Stage B: Cluster Synthesis",
 		stage: "Cluster Synthesis",
 		description:
-			"Synthesizes clustered articles into a structured cluster summary with title, perspectives, timeline, and citations.",
+			"Synthesizes clustered articles into a structured cluster summary with title and citations.",
 		defaultSystemPrompt:
 			"You are a news synthesis assistant. Your task is to analyze multiple articles in a cluster and generate a synthesized summary in structured JSON format matching ClusterSummaryToolSchema.",
 		defaultUserPrompt:
-			'Synthesize the following articles in this cluster into a unified summary with key perspectives, timeline events, and citations.\n\n{{articlesText}}\n\nRespond ONLY with valid JSON matching:\n{\n  "title": "Headline title summarizing cluster",\n  "summary": "3-5 sentence unified summary with [art_X] citations",\n  "perspectives": ["Distinct viewpoint 1", "Distinct viewpoint 2"],\n  "timeline": ["Key event 1", "Key event 2"],\n  "citations": ["art_1", "art_2"]\n}',
+			'Synthesize the following articles in this cluster into a unified summary with citations.\n\n{{articlesText}}\n\nRespond ONLY with valid JSON matching:\n{\n  "title": "Headline title summarizing cluster",\n  "summary": "3-5 sentence unified summary with [art_X] citations",\n  "citations": ["art_1", "art_2"]\n}',
 		variables: ["articlesText"],
 	},
 	stage_c_assembly: {
@@ -40,11 +40,11 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
 		name: "Stage C: Digest Assembly",
 		stage: "Digest Assembly",
 		description:
-			"Assembles cluster summaries into the final executive briefing digest with trend bullet cards, key takeaways, why it matters, and quotes.",
+			"Assembles cluster summaries into the final executive briefing digest with trend bullet cards, key takeaways, and why it matters.",
 		defaultSystemPrompt:
 			"You are a professional executive editor assembling a high-level daily briefing digest. Output valid JSON matching the specified schema.",
 		defaultUserPrompt:
-			'Synthesize an overall executive digest from the following cluster summaries, perspectives, timeline, and key quotes:\n\n{{clustersText}}{{quotesText}}\n\nPlease provide a structured JSON response matching:\n{\n  "executive_summary": "Formatted bullet points for each identified key trend or major development (e.g., \'- **Trend Title**: Clear synthesis of this trend with relevant citations [art_1]\')",\n  "key_takeaways": ["3-5 key actionable takeaways across all selected news stories"],\n  "why_it_matters": "Broad significance and impact for the user\'s domain/interests",\n  "key_quotes": [\n    {\n      "quote": "Selected verbatim quote from primary sources",\n      "citation": "Citation key like art_1"\n    }\n  ]\n}',
+			'Synthesize an overall executive digest from the following cluster summaries:\n\n{{clustersText}}{{quotesText}}\n\nPlease provide a structured JSON response matching:\n{\n  "executive_summary": "Formatted bullet points for each identified key trend or major development (e.g., \'- **Trend Title**: Clear synthesis of this trend with relevant citations [art_1]\')",\n  "key_takeaways": ["3-5 key actionable takeaways across all selected news stories"],\n  "why_it_matters": "Broad significance and impact for the user\'s domain/interests"\n}',
 		variables: ["clustersText", "quotesText"],
 	},
 	event_identity_merge: {

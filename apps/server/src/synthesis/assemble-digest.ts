@@ -114,35 +114,19 @@ export async function processAssembleDigestJob(
 			.where("citation.digest_id", "=", digestId)
 			.execute();
 
-		// Format prompt with cluster titles, summaries, perspectives, timeline, and key quotes/citations
+		// Format prompt with cluster titles and summaries
 		const clustersText = clusterRows
 			.map((row, index) => {
-				let perspectives: string[] = [];
-				try {
-					perspectives = JSON.parse(row.perspectives);
-				} catch {
-					if (row.perspectives) perspectives = [row.perspectives];
-				}
-
-				let timeline: string[] = [];
-				try {
-					timeline = JSON.parse(row.timeline);
-				} catch {
-					if (row.timeline) timeline = [row.timeline];
-				}
-
 				return `Topic Cluster ${index + 1}:
 Title: ${row.title}
-Summary: ${row.summary}
-Perspectives: ${perspectives.join("; ")}
-Timeline: ${timeline.join("; ")}`;
+Summary: ${row.summary}`;
 			})
 			.join("\n\n");
 
 		let quotesText = "";
 		if (citations.length > 0) {
 			quotesText =
-				"\n\nKey Quotes & Primary Citations:\n" +
+				"\n\nPrimary Source Citations:\n" +
 				citations
 					.map(
 						(c) =>

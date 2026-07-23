@@ -91,8 +91,8 @@ Vagus decouples global content processing from individual user profile evaluatio
 3. **Stage A (`stage_a_bullet`)**: Uses LLMs to produce concise 1-sentence headline bullets.
 4. **Embed (`embed-article`)**: Generates dense vector embeddings using configured text embedding models.
 5. **Cluster & Score (`cluster-run` & `score-user`)**: Performs cosine similarity clustering ($\ge 0.80$) and scores candidate clusters against user interest profiles, applying source weights and preference vector adjustments.
-6. **Stage B (`synthesize-cluster`)**: Synthesizes cluster summaries, multi-source perspectives, event timelines, and citation keys.
-7. **Stage C (`assemble-digest`)**: Assembles overall executive briefing digests with bulleted trend cards, key takeaways, why it matters, and quotes.
+6. **Stage B (`synthesize-cluster`)**: Synthesizes cluster summaries and citation keys.
+7. **Stage C (`assemble-digest`)**: Assembles overall executive briefing digests with bulleted trend cards, key takeaways, and why it matters.
 8. **Notify (`ntfy`)**: Dispatches push notifications via ntfy.sh with deep links to the Digest Reader.
 
 ---

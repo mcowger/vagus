@@ -33,7 +33,7 @@ const PIPELINE_TASKS: PipelineTask[] = [
 	{
 		id: "stage_b_synthesis",
 		title: "Story Cluster Synthesis",
-		description: "Synthesizes multi-article clusters into unified story overviews, timelines, and perspectives.",
+		description: "Synthesizes multi-article clusters into unified story overviews and citations.",
 		defaultModel: "gpt-4o-mini",
 	},
 	{
