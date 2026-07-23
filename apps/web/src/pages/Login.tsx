@@ -11,7 +11,17 @@ export const Login: React.FC = () => {
 		setError(null);
 		setLoading(true);
 		try {
-			await signIn.social({ provider: "google", callbackURL: "/" });
+			// better-auth resolves with an { error } object (e.g. provider not
+			// configured → 404) rather than throwing, so a successful redirect never
+			// returns here. Surface any error and reset the button.
+			const res = await signIn.social({ provider: "google", callbackURL: "/" });
+			if (res?.error) {
+				setError(
+					res.error.message ||
+						"Google sign-in is unavailable. Please contact an administrator.",
+				);
+				setLoading(false);
+			}
 		} catch (err: any) {
 			setError(err?.message || "Failed to start Google sign-in");
 			setLoading(false);

@@ -10,8 +10,19 @@ services:
       - "${PORT:-3000}:3000"
     environment:
       - PORT=3000
+      - NODE_ENV=production
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-a_very_secret_key_that_is_at_least_32_chars_long}
+      # Public base URL — required for Google OAuth callbacks and secure cookies.
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-}
       - DATABASE_PATH=/app/data/vagus.sqlite
+      # Auth: Google OAuth is the only human login. Both must be set or the
+      # /api/auth/sign-in/social route is not mounted (404).
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      # Comma-separated admin allowlist (bypasses the domain whitelist).
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
+      # Comma-separated domains allowed to create an account.
+      - SIGNUP_ALLOWED_DOMAINS=${SIGNUP_ALLOWED_DOMAINS:-}
       # Optional provider & testing credentials
       - TESTING_EMBEDDING_BASE_URL=${TESTING_EMBEDDING_BASE_URL:-}
       - TESTING_EMBEDDING_KEY=${TESTING_EMBEDDING_KEY:-}
