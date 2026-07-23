@@ -334,24 +334,69 @@ export const Profiles: React.FC = () => {
 							<p className="text-xs text-slate-500">Loading adaptation preferences...</p>
 						) : (
 							<>
-								{/* Preference Vector Active Badges */}
-								<div className="flex flex-wrap items-center gap-2">
-									{feedbackQuery.data?.hasPositiveVector ? (
-										<span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
-											<ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
-											Active Positive Preference Vector (Boosts Liked Topics)
-										</span>
-									) : null}
-									{feedbackQuery.data?.hasNegativeVector ? (
-										<span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs">
-											<ThumbsDown className="h-3.5 w-3.5 text-rose-600" />
-											Active Negative Vector (Suppresses Disliked Topics)
-										</span>
-									) : null}
-									{!feedbackQuery.data?.hasPositiveVector && !feedbackQuery.data?.hasNegativeVector && (
-										<span className="text-xs text-slate-400 italic">
-											No topic preference vectors trained yet. Vote thumbs up or down on stories in Digest Reader to adapt topic scoring.
-										</span>
+								{/* Preference Vector Active Badges & Taxonomy Projections */}
+								<div className="space-y-3">
+									<div className="flex flex-wrap items-center gap-2">
+										{feedbackQuery.data?.hasPositiveVector ? (
+											<span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+												<ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
+												Active Positive Preference Vector (Boosts Liked Topics)
+											</span>
+										) : null}
+										{feedbackQuery.data?.hasNegativeVector ? (
+											<span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs">
+												<ThumbsDown className="h-3.5 w-3.5 text-rose-600" />
+												Active Negative Vector (Suppresses Disliked Topics)
+											</span>
+										) : null}
+										{!feedbackQuery.data?.hasPositiveVector && !feedbackQuery.data?.hasNegativeVector && (
+											<span className="text-xs text-slate-400 italic">
+												No topic preference vectors trained yet. Vote thumbs up or down on stories in Digest Reader to adapt topic scoring.
+											</span>
+										)}
+									</div>
+
+									{/* Method B: Inferred Taxonomy Category Vector Projections */}
+									{((feedbackQuery.data?.positiveProjections?.length || 0) > 0 || (feedbackQuery.data?.negativeProjections?.length || 0) > 0) && (
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+											{feedbackQuery.data?.positiveProjections && feedbackQuery.data.positiveProjections.length > 0 && (
+												<div className="space-y-1.5">
+													<div className="font-bold text-emerald-900 flex items-center gap-1.5">
+														<ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
+														<span>Inferred Boosted Domains (Vector Match)</span>
+													</div>
+													<ul className="space-y-1">
+														{feedbackQuery.data.positiveProjections.slice(0, 3).map((p, idx) => (
+															<li key={idx} className="flex items-center justify-between text-slate-700 font-medium">
+																<span className="truncate mr-2">• {p.category}</span>
+																<span className="font-mono text-[11px] text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
+																	{p.matchPercentage} (+0.20)
+																</span>
+															</li>
+														))}
+													</ul>
+												</div>
+											)}
+
+											{feedbackQuery.data?.negativeProjections && feedbackQuery.data.negativeProjections.length > 0 && (
+												<div className="space-y-1.5">
+													<div className="font-bold text-rose-900 flex items-center gap-1.5">
+														<ThumbsDown className="h-3.5 w-3.5 text-rose-600" />
+														<span>Inferred Suppressed Domains (Vector Match)</span>
+													</div>
+													<ul className="space-y-1">
+														{feedbackQuery.data.negativeProjections.slice(0, 3).map((p, idx) => (
+															<li key={idx} className="flex items-center justify-between text-slate-700 font-medium">
+																<span className="truncate mr-2">• {p.category}</span>
+																<span className="font-mono text-[11px] text-rose-700 bg-rose-100/80 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
+																	{p.matchPercentage} (-0.30)
+																</span>
+															</li>
+														))}
+													</ul>
+												</div>
+											)}
+										</div>
 									)}
 								</div>
 

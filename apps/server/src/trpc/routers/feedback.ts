@@ -1,6 +1,7 @@
 import { sql } from "kysely";
 import { z } from "zod";
 import { deserializeFloat32, serializeFloat32 } from "../../embeddings/types";
+import { projectVectorToTaxonomy, TaxonomyProjectionResult } from "../../embeddings/taxonomy";
 import { generateCompletion } from "../../llm";
 import { protectedProcedure, router } from "../trpc";
 
@@ -76,6 +77,23 @@ export const feedbackRouter = router({
 			.where("user_id", "=", userId)
 			.executeTakeFirst();
 
+		let positiveProjections: TaxonomyProjectionResult[] = [];
+		let negativeProjections: TaxonomyProjectionResult[] = [];
+
+		if (profile?.positive_embedding && profile.positive_embedding.length > 0) {
+			try {
+				const posVec = deserializeFloat32(profile.positive_embedding);
+				positiveProjections = await projectVectorToTaxonomy(ctx.db, posVec);
+			} catch {}
+		}
+
+		if (profile?.negative_embedding && profile.negative_embedding.length > 0) {
+			try {
+				const negVec = deserializeFloat32(profile.negative_embedding);
+				negativeProjections = await projectVectorToTaxonomy(ctx.db, negVec);
+			} catch {}
+		}
+
 		const votesMap: Record<string, number> = {};
 		for (const row of feedbackRows) {
 			const key = `${row.target_type}:${row.target_id}`;
@@ -95,6 +113,8 @@ export const feedbackRouter = router({
 			})),
 			hasPositiveVector: !!(profile?.positive_embedding && profile.positive_embedding.length > 0),
 			hasNegativeVector: !!(profile?.negative_embedding && profile.negative_embedding.length > 0),
+			positiveProjections,
+			negativeProjections,
 		};
 	}),
 
