@@ -4,7 +4,7 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Sparkles, RotateCcw, Save, CheckCircle2, AlertCircle } from "lucide-react";
+import { Sparkles, RotateCcw, Save, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
 
 interface PromptFormState {
 	systemPrompt: string;
@@ -45,6 +45,17 @@ export const AdminSettings: React.FC = () => {
 		},
 		onError: (err, variables) => {
 			setPromptErrorMap((prev) => ({ ...prev, [variables.promptKey]: err.message || "Failed to reset prompt." }));
+		},
+	});
+
+	const resetPipelineMutation = trpc.settings.resetPipelineData.useMutation({
+		onSuccess: () => {
+			setSuccessMessage("Pipeline data cleared. Start a new run when ready.");
+			setErrorMessage("");
+		},
+		onError: (err) => {
+			setErrorMessage(err.message || "Failed to clear pipeline data.");
+			setSuccessMessage("");
 		},
 	});
 
@@ -139,6 +150,12 @@ export const AdminSettings: React.FC = () => {
 		setPromptErrorMap((prev) => ({ ...prev, [promptKey]: "" }));
 
 		resetPromptMutation.mutate({ promptKey });
+	};
+
+	const handleResetPipeline = (level: "clustering" | "stage_a") => {
+		const label = level === "clustering" ? "clustering and downstream data" : "Stage A and all downstream data";
+		if (!window.confirm(`Clear ${label}? Raw articles and sources will be preserved.`)) return;
+		resetPipelineMutation.mutate({ level });
 	};
 
 	return (
@@ -319,6 +336,24 @@ export const AdminSettings: React.FC = () => {
 							</div>
 						</form>
 					)}
+				</CardContent>
+			</Card>
+
+			<Card className="border-rose-200">
+				<CardHeader className="bg-rose-50/50 border-b border-rose-100">
+					<CardTitle className="text-lg text-rose-900 flex items-center gap-2">
+						<Trash2 className="h-5 w-5 text-rose-600" />
+						Pipeline Test Data
+					</CardTitle>
+					<CardDescription>Clear derived pipeline records without touching sources or raw articles.</CardDescription>
+				</CardHeader>
+				<CardContent className="p-5 flex flex-col sm:flex-row gap-3">
+					<Button type="button" variant="outline" onClick={() => handleResetPipeline("clustering")} disabled={resetPipelineMutation.isPending} className="border-rose-200 text-rose-700 hover:bg-rose-50">
+						Clear Clustering Onward
+					</Button>
+					<Button type="button" variant="destructive" onClick={() => handleResetPipeline("stage_a")} disabled={resetPipelineMutation.isPending}>
+						Clear Stage A Onward
+					</Button>
 				</CardContent>
 			</Card>
 

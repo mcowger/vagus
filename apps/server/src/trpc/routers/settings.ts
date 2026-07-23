@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+import { sql } from "kysely";
 import { PROMPT_DEFINITIONS } from "../../prompts/defaults";
 import { adminProcedure, router } from "../trpc";
 
@@ -118,6 +120,55 @@ export const settingsRouter = router({
 				.deleteFrom("system_setting")
 				.where("key", "in", [sysKey, userKey])
 				.execute();
+
+			return { success: true };
+		}),
+
+	resetPipelineData: adminProcedure
+		.input(z.object({ level: z.enum(["clustering", "stage_a"]) }))
+		.mutation(async ({ ctx, input }) => {
+			const runningRun = await ctx.db
+				.selectFrom("run")
+				.select("id")
+				.where("status", "=", "running")
+				.executeTakeFirst();
+			if (runningRun) {
+				throw new TRPCError({
+					code: "CONFLICT",
+					message: "Wait for the active pipeline run to finish before resetting data.",
+				});
+			}
+
+			await ctx.db.transaction().execute(async (trx) => {
+				await trx.deleteFrom("citation").execute();
+				await trx.deleteFrom("digest_cluster").execute();
+				await trx.deleteFrom("digest").execute();
+				await trx.deleteFrom("user_selected_cluster").execute();
+				await trx.deleteFrom("cluster_article").execute();
+				await trx.deleteFrom("cluster").execute();
+				await trx.deleteFrom("llm_usage").execute();
+				await trx.deleteFrom("run_stage").execute();
+				await trx.deleteFrom("run").execute();
+				const queueTables = await sql<{ name: string }>`
+					SELECT name FROM sqlite_master
+					WHERE type = 'table' AND name IN ('plainjob_jobs', 'plainjob_scheduled_jobs')
+				`.execute(trx);
+				if (queueTables.rows.some((table) => table.name === "plainjob_jobs")) {
+					await sql`DELETE FROM plainjob_jobs`.execute(trx);
+				}
+				if (queueTables.rows.some((table) => table.name === "plainjob_scheduled_jobs")) {
+					await sql`DELETE FROM plainjob_scheduled_jobs`.execute(trx);
+				}
+				if (input.level === "stage_a") {
+					await trx.deleteFrom("article_embedding").execute();
+					await trx
+						.updateTable("article")
+						.set({ run_id: null, stage_a_bullet: null })
+						.execute();
+				} else {
+					await trx.updateTable("article").set({ run_id: null }).execute();
+				}
+			});
 
 			return { success: true };
 		}),
