@@ -18,18 +18,25 @@ export const Login: React.FC = () => {
 		setError(null);
 		setLoading(true);
 
+		console.log("[Vagus Client] Attempting sign-in for:", email);
+
 		try {
 			const res = await signIn.email({
 				email,
 				password,
 			});
 
+			console.log("[Vagus Client] Sign-in response:", res);
+
 			if (res.error) {
+				console.error("[Vagus Client] Sign-in error:", res.error);
 				setError(res.error.message || "Failed to sign in");
 			} else {
+				console.log("[Vagus Client] Sign-in successful, redirecting to /");
 				window.location.href = "/";
 			}
 		} catch (err: any) {
+			console.error("[Vagus Client] Sign-in exception:", err);
 			setError(err?.message || "An unexpected error occurred");
 		} finally {
 			setLoading(false);

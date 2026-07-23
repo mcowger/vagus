@@ -59,9 +59,19 @@ export function createPlainjobConnection(sqlite: BunDatabase): Connection {
 	return conn;
 }
 
+export const quietWorkerLogger = {
+	debug: (msg: string, meta?: Record<string, unknown>) => {
+		if (msg.includes("checking for") || msg.includes("no jobs found")) return;
+		log.debug(msg, meta);
+	},
+	info: (msg: string, meta?: Record<string, unknown>) => log.info(msg, meta),
+	warn: (msg: string, meta?: Record<string, unknown>) => log.warn(msg, meta),
+	error: (msg: string, meta?: Record<string, unknown>) => log.error(msg, meta),
+};
+
 export const queue: Queue = defineQueue({
 	connection: createPlainjobConnection(db.sqlite),
-	logger: log,
+	logger: quietWorkerLogger,
 });
 
 let activeWorkers: Worker[] = [];
@@ -100,7 +110,7 @@ export async function startWorker(): Promise<void> {
 	// Noop worker (1 instance for testing/idle checks)
 	const noopWorker = defineWorker(NOOP_JOB_TYPE, noopProcessor, {
 		queue,
-		logger: log,
+		logger: quietWorkerLogger,
 		onCompleted: (job) => {
 			try {
 				const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as NoopJobData;
@@ -121,20 +131,20 @@ export async function startWorker(): Promise<void> {
 	const clusterWorker = defineWorker(
 		CLUSTER_RUN_JOB_TYPE,
 		(job) => processClusterRunJob(db.kysely, job),
-		{ queue, logger: log },
+		{ queue, logger: quietWorkerLogger },
 	);
 	activeWorkers.push(clusterWorker);
 
 	// Parallelizable worker pool instances (concurrency instances per job type)
 	for (let i = 0; i < concurrency; i++) {
 		activeWorkers.push(
-			defineWorker(FETCH_SOURCE_JOB_TYPE, (job) => processFetchSourceJob(db.kysely, job), { queue, logger: log }),
-			defineWorker(EXTRACT_ARTICLE_JOB_TYPE, (job) => processExtractArticleJob(db.kysely, job), { queue, logger: log }),
-			defineWorker(STAGE_A_BULLET_JOB_TYPE, (job) => processStageABulletJob(db.kysely, queue, job), { queue, logger: log }),
-			defineWorker(EMBED_ARTICLE_JOB_TYPE, (job) => processEmbedArticleJob(db.kysely, job), { queue, logger: log }),
-			defineWorker(SCORE_USER_JOB_TYPE, (job) => processScoreUserJob(db.kysely, job), { queue, logger: log }),
-			defineWorker(SYNTHESIZE_CLUSTER_JOB_TYPE, (job) => processSynthesizeClusterJob(db.kysely, queue, job), { queue, logger: log }),
-			defineWorker(ASSEMBLE_DIGEST_JOB_TYPE, (job) => processAssembleDigestJob(db.kysely, job), { queue, logger: log }),
+			defineWorker(FETCH_SOURCE_JOB_TYPE, (job) => processFetchSourceJob(db.kysely, job), { queue, logger: quietWorkerLogger }),
+			defineWorker(EXTRACT_ARTICLE_JOB_TYPE, (job) => processExtractArticleJob(db.kysely, job), { queue, logger: quietWorkerLogger }),
+			defineWorker(STAGE_A_BULLET_JOB_TYPE, (job) => processStageABulletJob(db.kysely, queue, job), { queue, logger: quietWorkerLogger }),
+			defineWorker(EMBED_ARTICLE_JOB_TYPE, (job) => processEmbedArticleJob(db.kysely, job), { queue, logger: quietWorkerLogger }),
+			defineWorker(SCORE_USER_JOB_TYPE, (job) => processScoreUserJob(db.kysely, job), { queue, logger: quietWorkerLogger }),
+			defineWorker(SYNTHESIZE_CLUSTER_JOB_TYPE, (job) => processSynthesizeClusterJob(db.kysely, queue, job), { queue, logger: quietWorkerLogger }),
+			defineWorker(ASSEMBLE_DIGEST_JOB_TYPE, (job) => processAssembleDigestJob(db.kysely, job), { queue, logger: quietWorkerLogger }),
 		);
 	}
 

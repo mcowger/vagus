@@ -38,8 +38,24 @@ app.use(
 	}),
 );
 
-// /api/auth/* → BetterAuth (Track A owns ./auth; stub returns 501 for now).
-app.all("/api/auth/*", (c) => auth.handler(c.req.raw));
+// /api/auth/* → BetterAuth
+app.all("/api/auth/*", async (c) => {
+	log.info("Auth API request received", {
+		method: c.req.method,
+		path: c.req.path,
+		cookieHeader: c.req.header("cookie") ? "present" : "missing",
+		origin: c.req.header("origin") || c.req.header("referer") || "none",
+		host: c.req.header("host") || "none",
+		xForwardedProto: c.req.header("x-forwarded-proto") || "none",
+	});
+	const res = await auth.handler(c.req.raw);
+	log.info("Auth API response produced", {
+		path: c.req.path,
+		status: res.status,
+		setCookieHeader: res.headers.get("set-cookie") ? "present" : "missing",
+	});
+	return res;
+});
 
 // /healthz → Track D refines (structured checks). Real liveness check with DB query.
 app.get("/healthz", (c) => {

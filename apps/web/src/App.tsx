@@ -18,7 +18,9 @@ import { AdminSettings } from "./pages/AdminSettings";
 import { UsageDashboard } from "./pages/UsageDashboard";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-	const { data: session, isPending } = useSession();
+	const { data: session, isPending, error } = useSession();
+
+	console.log("[Vagus Client] ProtectedRoute session state:", { isPending, user: session?.user?.email, error });
 
 	if (isPending) {
 		return (
@@ -29,6 +31,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 	}
 
 	if (!session?.user) {
+		console.warn("[Vagus Client] No active session found, redirecting to /login");
 		return <Navigate to="/login" replace />;
 	}
 
@@ -37,6 +40,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
 	const { data: session, isPending } = useSession();
+
+	console.log("[Vagus Client] PublicRoute session state:", { isPending, user: session?.user?.email });
 
 	if (isPending) {
 		return (
@@ -47,6 +52,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 	}
 
 	if (session?.user) {
+		console.log("[Vagus Client] User session active, redirecting from public route to /");
 		return <Navigate to="/" replace />;
 	}
 
