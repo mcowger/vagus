@@ -1,6 +1,9 @@
 {
 	"worktree": {
-		"setup": ["bun install"],
+		"setup": [
+			"bun install",
+			"cp \"$PASEO_SOURCE_CHECKOUT_PATH/.env\" \"$PWD/.env\""
+		],
 		"servicePorts": {
 			"portScript": "./scripts/paseo-port.ts"
 		}
