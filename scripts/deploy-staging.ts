@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 const context = process.env.VAGUS_STAGING_DOCKER_CONTEXT ?? "dolphin";
 const sshHost = process.env.VAGUS_STAGING_SSH_HOST ?? context;
 const stagingUrl = (
-	process.env.VAGUS_STAGING_URL ?? "https://vagus.home.cowger.us"
+	process.env.VAGUS_STAGING_URL ?? "http://localhost:5173"
 ).replace(/\/$/, "");
 const containerName = process.env.VAGUS_STAGING_CONTAINER_NAME ?? "vagus-news-digest";
 const serviceName = process.env.VAGUS_STAGING_SERVICE_NAME ?? "vagus";
