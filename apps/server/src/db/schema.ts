@@ -164,6 +164,7 @@ export interface UserFeedbackTable {
 	target_type: "source" | "cluster";
 	target_id: string;
 	vote: number; // 1 = thumbs_up, -1 = thumbs_down, 0 = neutral
+	topic_category: string | null;
 	created_at: Timestamp;
 	updated_at: Timestamp;
 }

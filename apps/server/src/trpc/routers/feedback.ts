@@ -1,6 +1,7 @@
 import { sql } from "kysely";
 import { z } from "zod";
 import { deserializeFloat32, serializeFloat32 } from "../../embeddings/types";
+import { generateCompletion } from "../../llm";
 import { protectedProcedure, router } from "../trpc";
 
 /** Blends newVector into existingVector using Exponential Moving Average */
@@ -59,6 +60,7 @@ export const feedbackRouter = router({
 				"uf.id",
 				"uf.target_id",
 				"uf.vote",
+				"uf.topic_category",
 				"uf.updated_at",
 				"dc.title as digest_title",
 				"c.summary_title as cluster_title",
@@ -88,6 +90,7 @@ export const feedbackRouter = router({
 				clusterId: r.target_id,
 				title: r.digest_title || r.cluster_title || `Story Cluster #${r.target_id}`,
 				vote: r.vote,
+				topicCategory: r.topic_category,
 				updatedAt: r.updated_at,
 			})),
 			hasPositiveVector: !!(profile?.positive_embedding && profile.positive_embedding.length > 0),
@@ -184,10 +187,44 @@ export const feedbackRouter = router({
 			const userId = ctx.user.id;
 			const now = new Date().toISOString();
 
-			// 1. Record feedback in user_feedback
+			// 1. Fetch cluster details & embedding
+			const cluster = await ctx.db
+				.selectFrom("digest_cluster as dc")
+				.leftJoin("cluster as c", "c.id", "dc.cluster_id")
+				.leftJoin("article_embedding as ae", "ae.article_id", "c.primary_article_id")
+				.select([
+					"dc.title as title",
+					"dc.summary as summary",
+					"c.primary_article_id",
+					"ae.embedding as article_embedding",
+				])
+				.where("dc.id", "=", input.clusterId)
+				.executeTakeFirst();
+
+			// 2. Extract LLM Topic Category label if voting
+			let topicCategory: string | null = null;
+			if (cluster?.title && input.vote !== 0) {
+				try {
+					const categoryPrompt = `Classify this news story into a concise 2-4 word high-level topic category (e.g. 'Personal Finance & Banking', 'Cybersecurity & Infrastructure', 'Smart Home & Hardware', 'Artificial Intelligence', 'Legal & Public Policy').
+
+Title: ${cluster.title}
+Summary: ${(cluster.summary || "").slice(0, 200)}
+
+Respond ONLY with the 2-4 word topic category name.`;
+
+					const completion = await generateCompletion("stage_a_bullet", categoryPrompt, { db: ctx.db });
+					if (completion.text?.trim()) {
+						topicCategory = completion.text.trim().replace(/^["']|["']$/g, "");
+					}
+				} catch {
+					topicCategory = cluster.title.split(":")[0]?.trim() || "General Topic";
+				}
+			}
+
+			// 3. Record feedback in user_feedback
 			const existingFeedback = await ctx.db
 				.selectFrom("user_feedback")
-				.select("id")
+				.select(["id", "topic_category"])
 				.where("user_id", "=", userId)
 				.where("target_type", "=", "cluster")
 				.where("target_id", "=", String(input.clusterId))
@@ -196,7 +233,11 @@ export const feedbackRouter = router({
 			if (existingFeedback) {
 				await ctx.db
 					.updateTable("user_feedback")
-					.set({ vote: input.vote, updated_at: now })
+					.set({
+						vote: input.vote,
+						topic_category: topicCategory ?? existingFeedback.topic_category,
+						updated_at: now,
+					})
 					.where("id", "=", existingFeedback.id)
 					.execute();
 			} else {
@@ -207,20 +248,12 @@ export const feedbackRouter = router({
 						target_type: "cluster",
 						target_id: String(input.clusterId),
 						vote: input.vote,
+						topic_category: topicCategory,
 						created_at: now,
 						updated_at: now,
 					})
 					.execute();
 			}
-
-			// 2. Fetch cluster primary article embedding
-			const cluster = await ctx.db
-				.selectFrom("digest_cluster as dc")
-				.leftJoin("cluster as c", "c.id", "dc.cluster_id")
-				.leftJoin("article_embedding as ae", "ae.article_id", "c.primary_article_id")
-				.select(["c.primary_article_id", "ae.embedding as article_embedding"])
-				.where("dc.id", "=", input.clusterId)
-				.executeTakeFirst();
 
 			if (cluster?.article_embedding) {
 				try {

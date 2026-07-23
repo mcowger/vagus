@@ -372,14 +372,19 @@ export const Profiles: React.FC = () => {
 													key={cf.id}
 													className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-white text-xs gap-3"
 												>
-													<div className="flex items-center gap-2 flex-1 min-w-0">
+													<div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
 														{cf.vote === 1 ? (
 															<span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex-shrink-0 flex items-center gap-1">
-																<ThumbsUp className="h-3 w-3" /> Boosted
+																<ThumbsUp className="h-3 w-3" /> +0.20 Boost
 															</span>
 														) : (
 															<span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200 flex-shrink-0 flex items-center gap-1">
-																<ThumbsDown className="h-3 w-3" /> Suppressed
+																<ThumbsDown className="h-3 w-3" /> -0.30 Penalty
+															</span>
+														)}
+														{cf.topicCategory && (
+															<span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200/80">
+																{cf.topicCategory}
 															</span>
 														)}
 														<span className="font-semibold text-slate-800 truncate">{cf.title}</span>
