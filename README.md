@@ -64,6 +64,20 @@ Vagus prevents repetitive digests when running multiple pipeline cycles per day:
 
 ---
 
+## Pipeline Runs & Multi-Profile Digest Production
+
+Vagus decouples global content processing from individual user profile evaluation:
+
+1. **Global Processing (Ingest → Extraction → Embedding → Clustering)**:
+   A **Pipeline Run** (`run_id`) executes centrally on a cron schedule or manual trigger. It ingests new items across all global sources, extracts article content, generates dense vector embeddings, and clusters related articles into unified **Story Clusters**.
+
+2. **Per-Profile Scoring & Conditional Digest Generation**:
+   At the scoring stage, the run fans out to evaluate every active **`(user, interest_profile)`** tuple in the system (e.g. `General News`, `Tech & AI Deep Dive`, `Personal Finance`):
+   - **Conditional Assembly**: A briefing digest is created for a profile **only if** 1 or more story clusters qualify during scoring.
+   - **Filtered Profiles**: If all candidate stories fail a profile's rules, threshold, or recency check, the run completes for that profile without creating an empty digest.
+
+---
+
 ## 8-Stage Automated Pipeline
 
 ```
