@@ -116,6 +116,16 @@ export function createAuth(
 			enabled: false,
 		},
 		socialProviders,
+		// Google verifies email ownership, so allow a Google sign-in to link into an
+		// existing account with the same email (e.g. accounts predating the switch
+		// away from email/password). Without this better-auth throws
+		// `account_not_linked`.
+		account: {
+			accountLinking: {
+				enabled: true,
+				trustedProviders: ["google"],
+			},
+		},
 		// enableSessionForAPIKeys lets robots authenticate by sending the key in the
 		// `x-api-key` header; getSession then resolves it to the owning user.
 		plugins: [apiKey({ enableSessionForAPIKeys: true }) as any],
