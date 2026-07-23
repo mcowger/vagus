@@ -150,6 +150,35 @@ describe("Scoring Module & Score User Job", () => {
 		expect(selected[0].cluster_id).toBe(cluster1.id);
 	});
 
+	test("ranks multi-article stories first in broad curator mode", async () => {
+		const { run, source, article1, cluster1, cluster2 } = await setupTestRunAndArticles();
+		const relatedArticle = await db
+			.insertInto("article")
+			.values({
+				identity_key: "art-3",
+				source_id: source.id,
+				title: "TypeScript 5.0 Release Coverage",
+				url: "https://example.com/3",
+				content: "More TypeScript release coverage.",
+				stage_a_bullet: "TypeScript release coverage",
+			})
+			.returningAll()
+			.executeTakeFirstOrThrow();
+		await db
+			.insertInto("cluster_article")
+			.values([
+				{ cluster_id: cluster1.id, article_id: article1.id, is_primary: 1 },
+				{ cluster_id: cluster1.id, article_id: relatedArticle.id, is_primary: 0 },
+				{ cluster_id: cluster2.id, article_id: cluster2.primary_article_id, is_primary: 1 },
+			])
+			.execute();
+
+		const results = await scoreClustersForUser(db, run.id, "broad-curator");
+
+		expect(results[0].clusterId).toBe(cluster1.id);
+		expect(results[0].score).toBeGreaterThan(results[1].score);
+	});
+
 	test("Calculates base score using cosine similarity when embeddings exist", async () => {
 		const { run, article1, cluster1 } = await setupTestRunAndArticles();
 
@@ -171,7 +200,7 @@ describe("Scoring Module & Score User Job", () => {
 				user_id: "user-vec",
 				name: "Vec Profile",
 				keywords: JSON.stringify([]),
-				topics: JSON.stringify([]),
+				topics: JSON.stringify(["Technology"]),
 				entities: JSON.stringify([]),
 				include_rules: JSON.stringify([]),
 				exclude_rules: JSON.stringify([]),

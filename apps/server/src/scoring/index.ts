@@ -6,6 +6,10 @@ import { generateCompletion } from "../llm";
 import { log } from "../log";
 import { getPromptTemplates, renderPrompt } from "../prompts/defaults";
 
+const BROAD_CURATOR_BASE_SCORE = 0.5;
+const BROAD_CURATOR_ARTICLE_BOOST = 0.05;
+const BROAD_CURATOR_MAX_SCORE = 0.9;
+
 function parseJsonArray(input: string | null | undefined): string[] {
 	if (!input) return [];
 	try {
@@ -149,6 +153,12 @@ export async function scoreClustersForUser(
 	const entities = parseJsonArray(profile.entities);
 	const includeRules = parseJsonArray(profile.include_rules);
 	const excludeRules = parseJsonArray(profile.exclude_rules);
+	const isBroadCurator =
+		keywords.length === 0 &&
+		topics.length === 0 &&
+		entities.length === 0 &&
+		includeRules.length === 0 &&
+		excludeRules.length === 0;
 
 	let profileVector: Float32Array | null = null;
 	if (profile.profile_embedding && profile.profile_embedding.length > 0) {
@@ -347,7 +357,13 @@ export async function scoreClustersForUser(
 			}
 		}
 
-		if (profileVector && articleVector) {
+		if (isBroadCurator) {
+			baseScore = Math.min(
+				BROAD_CURATOR_MAX_SCORE,
+				BROAD_CURATOR_BASE_SCORE +
+					Math.max(0, articleIdsInCluster.length - 1) * BROAD_CURATOR_ARTICLE_BOOST,
+			);
+		} else if (profileVector && articleVector) {
 			const sim = cosineSimilarity(profileVector, articleVector);
 			baseScore = Math.max(0, sim);
 		} else {
@@ -359,9 +375,7 @@ export async function scoreClustersForUser(
 				).length;
 				baseScore = matches / terms.length;
 			} else if (!profileVector) {
-				// No interest criteria specified at all (neither vector nor terms):
-				// Default baseline score (0.5) so all clusters qualify in broad curator mode
-				baseScore = 0.5;
+				baseScore = BROAD_CURATOR_BASE_SCORE;
 			} else {
 				baseScore = 0;
 			}
@@ -415,7 +429,7 @@ export async function scoreClustersForUser(
 		)} (${matchedBoostTerms.join(", ") || "none"})`;
 
 		// LLM Tiebreaker for borderline clusters (score between 0.5 and 0.7)
-		if (prelimScore >= 0.5 && prelimScore <= 0.7) {
+		if (!isBroadCurator && prelimScore >= 0.5 && prelimScore <= 0.7) {
 			const profileText = `Keywords: ${keywords.join(", ")}\nTopics: ${topics.join(", ")}\nEntities: ${entities.join(", ")}`;
 			const clusterTitle = title;
 			const clusterSummary = summaryTitle || content.slice(0, 300);
