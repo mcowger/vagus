@@ -124,6 +124,10 @@ export function createAuth(
 			accountLinking: {
 				enabled: true,
 				trustedProviders: ["google"],
+				// Existing accounts (e.g. from the old email/password flow) may have
+				// emailVerified=false locally. Google verifies the email and is a
+				// trusted provider, so don't require prior local verification to link.
+				requireLocalEmailVerified: false,
 			},
 		},
 		// enableSessionForAPIKeys lets robots authenticate by sending the key in the
