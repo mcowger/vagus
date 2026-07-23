@@ -27,7 +27,7 @@ export const Login: React.FC = () => {
 			if (res.error) {
 				setError(res.error.message || "Failed to sign in");
 			} else {
-				navigate("/");
+				window.location.href = "/";
 			}
 		} catch (err: any) {
 			setError(err?.message || "An unexpected error occurred");
