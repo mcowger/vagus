@@ -1,3 +1,4 @@
+import { sql } from "kysely";
 import { z } from "zod";
 import { deserializeFloat32, serializeFloat32 } from "../../embeddings/types";
 import { protectedProcedure, router } from "../trpc";
@@ -47,6 +48,32 @@ export const feedbackRouter = router({
 			.where("w.user_id", "=", userId)
 			.execute();
 
+		// Fetch cluster feedback items with story titles
+		const clusterFeedbackRows = await ctx.db
+			.selectFrom("user_feedback as uf")
+			.leftJoin("digest_cluster as dc", (join) =>
+				join.onRef("dc.id", "=", sql`CAST(uf.target_id AS INTEGER)`),
+			)
+			.leftJoin("cluster as c", "c.id", "dc.cluster_id")
+			.select([
+				"uf.id",
+				"uf.target_id",
+				"uf.vote",
+				"uf.updated_at",
+				"dc.title as digest_title",
+				"c.summary_title as cluster_title",
+			])
+			.where("uf.user_id", "=", userId)
+			.where("uf.target_type", "=", "cluster")
+			.where("uf.vote", "!=", 0)
+			.execute();
+
+		const profile = await ctx.db
+			.selectFrom("interest_profile")
+			.select(["positive_embedding", "negative_embedding"])
+			.where("user_id", "=", userId)
+			.executeTakeFirst();
+
 		const votesMap: Record<string, number> = {};
 		for (const row of feedbackRows) {
 			const key = `${row.target_type}:${row.target_id}`;
@@ -56,6 +83,15 @@ export const feedbackRouter = router({
 		return {
 			feedback: votesMap,
 			sourceWeights,
+			clusterFeedback: clusterFeedbackRows.map((r) => ({
+				id: r.id,
+				clusterId: r.target_id,
+				title: r.digest_title || r.cluster_title || `Story Cluster #${r.target_id}`,
+				vote: r.vote,
+				updatedAt: r.updated_at,
+			})),
+			hasPositiveVector: !!(profile?.positive_embedding && profile.positive_embedding.length > 0),
+			hasNegativeVector: !!(profile?.negative_embedding && profile.negative_embedding.length > 0),
 		};
 	}),
 
