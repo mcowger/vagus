@@ -7,14 +7,14 @@
 		"apps/*"
 	],
 	"scripts": {
-		"dev:foreground": "scripts/dev-server.sh start --foreground",
-		"dev:agent": "scripts/dev-server.sh start",
-		"dev:status": "scripts/dev-server.sh status",
-		"dev:stop": "scripts/dev-server.sh stop",
+		"dev:foreground": "command -v paseo >/dev/null 2>&1 && paseo script start web || scripts/dev-server.sh start --foreground",
+		"dev:agent": "command -v paseo >/dev/null 2>&1 && paseo script start web || scripts/dev-server.sh start",
+		"dev:status": "command -v paseo >/dev/null 2>&1 && paseo script ls || scripts/dev-server.sh status",
+		"dev:stop": "command -v paseo >/dev/null 2>&1 && paseo script stop web || scripts/dev-server.sh stop",
 		"port": "bun run scripts/port-allocator.ts",
-		"test": "bun test",
+		"test": "command -v paseo >/dev/null 2>&1 && paseo script start test || bun test",
 		"test:live": "RUN_LIVE_TESTS=1 bun test apps/server/src/embeddings/live.test.ts apps/server/src/llm/live.test.ts apps/server/src/adapters/rss.live.test.ts apps/server/src/adapters/brave-news.live.test.ts apps/server/src/extractor/live.test.ts apps/server/src/synthesis/live.test.ts apps/server/src/notifications/live.test.ts apps/server/src/adapters/hackernews.live.test.ts apps/server/src/adapters/github-trending.live.test.ts apps/server/src/adapters/scrape.live.test.ts",
-		"deploy:staging": "bun run scripts/deploy-staging.ts",
+		"deploy:staging": "command -v paseo >/dev/null 2>&1 && paseo script start deploy-staging || bun run scripts/deploy-staging.ts",
 		"sync:staging:dev": "timeout 15m bun run scripts/sync-staging-to-dev.ts",
 		"pipeline:dev": "timeout 15m bun run scripts/run-dev-pipeline.ts",
 		"evaluate:clustering": "timeout 5m bun run scripts/evaluate-clustering.ts",
@@ -24,7 +24,8 @@
 		"review:topics": "timeout 1m bun run scripts/generate-topic-review.ts",
 		"evaluate:topic-subclusters": "timeout 1m bun run scripts/evaluate-topic-subclusters.ts",
 		"benchmark:topic-models": "timeout 5m bun run scripts/benchmark-topic-models.ts",
-		"typecheck": "tsc --noEmit -p apps/server/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json"
+		"typecheck": "tsc --noEmit -p apps/server/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json",
+		"prepare": "command -v lefthook >/dev/null 2>&1 && lefthook install || (command -v husky >/dev/null 2>&1 && husky install || true)"
 	},
 	"devDependencies": {
 		"agent-browser": "^0.32.3",
