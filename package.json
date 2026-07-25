@@ -25,6 +25,7 @@
 		"evaluate:topic-subclusters": "timeout 1m bun run scripts/evaluate-topic-subclusters.ts",
 		"benchmark:topic-models": "timeout 5m bun run scripts/benchmark-topic-models.ts",
 		"typecheck": "tsc --noEmit -p apps/server/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json",
+		"init-worktree": "bun run scripts/init_worktree.ts",
 		"prepare": "command -v lefthook >/dev/null 2>&1 && lefthook install || (command -v husky >/dev/null 2>&1 && husky install || true)"
 	},
 	"devDependencies": {
