@@ -4,13 +4,13 @@ import { signOut, useSession } from "../lib/auth-client";
 import { Button } from "./ui/button";
 
 const navigationItems = [
+	["/digests", "Digest Reader"],
 	["/sources", "Sources"],
 	["/profiles", "Profiles"],
 	["/providers", "Providers"],
 	["/task-models", "Task Models"],
 	["/usage", "Usage & Costs"],
 	["/runs", "Runs"],
-	["/digests", "Digest Reader"],
 	["/admin/settings", "Admin Settings"],
 ] as const;
 

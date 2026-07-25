@@ -7,7 +7,6 @@ import { useSession } from "./lib/auth-client";
 import { Layout } from "./components/Layout";
 import { Login } from "./pages/Login";
 import { Profiles } from "./pages/Profiles";
-import { Dashboard } from "./pages/Dashboard";
 import { Providers } from "./pages/Providers";
 import { Runs } from "./pages/Runs";
 import { Sources } from "./pages/Sources";
@@ -86,11 +85,7 @@ export function App() {
 						<Route path="/" element={<Layout />}>
 							<Route
 								index
-								element={
-									<ProtectedRoute>
-										<Dashboard />
-									</ProtectedRoute>
-								}
+								element={<DigestReader />}
 							/>
 							<Route
 								path="sources"
