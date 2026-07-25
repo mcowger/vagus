@@ -40,11 +40,10 @@ describe("Defensive JSON Extractor & Sanitizer", () => {
 	});
 
 	it("parses digest assembly result defensively when LLM includes backticks and trailing spaces", () => {
-		const rawLlmOutput = '```json\n{\n  "executive_summary": "Top developments today.",\n  "key_takeaways": ["Takeaway 1"],\n  "why_it_matters": "High impact.",\n  "key_quotes": [{"quote": "Sample", "citation": "art_1"}]\n}\n```';
+		const rawLlmOutput = '```json\n{\n  "key_takeaways": ["Takeaway 1"],\n  "why_it_matters": "High impact.",\n  "key_quotes": [{"quote": "Sample", "citation": "art_1"}]\n}\n```';
 
 		const result = parseDigestResult(rawLlmOutput);
 
-		expect(result.executive_summary).toBe("Top developments today.");
 		expect(result.key_takeaways).toEqual(["Takeaway 1"]);
 		expect(result.why_it_matters).toBe("High impact.");
 	});

@@ -70,7 +70,6 @@ Hubble astronomers confirmed atmospheric composition measurements of WASP-96b us
 
 			const systemPrompt = `You are an executive briefing editor. Assemble topic summaries into a structured executive digest JSON:
 {
-  "executive_summary": "High-level briefing",
   "key_takeaways": ["Takeaway 1", "Takeaway 2"],
   "why_it_matters": "Strategic significance",
   "key_quotes": [{"quote": "Direct quote", "citation": "art_1"}]
@@ -94,7 +93,6 @@ Citations: art_1, art_2`;
 
 			expect(result.text).toBeTruthy();
 			const parsed = parseDigestResult(result.text);
-			expect(parsed.executive_summary).toBeTruthy();
 			expect(parsed.why_it_matters).toBeTruthy();
 			expect(Array.isArray(parsed.key_takeaways)).toBe(true);
 		},

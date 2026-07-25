@@ -73,8 +73,8 @@ export async function sendDigestNotification(
 		return { sent: false, skipped: true, reason: "Digest not found" };
 	}
 
-	let bodyText = digest.executive_summary?.trim() || "";
-	if (!bodyText && digest.key_takeaways) {
+	let bodyText = "";
+	if (digest.key_takeaways) {
 		try {
 			const takeaways = JSON.parse(digest.key_takeaways);
 			if (Array.isArray(takeaways) && takeaways.length > 0) {

@@ -118,8 +118,8 @@ describe("ntfy notification client", () => {
 				.values({
 					run_id: run.id,
 					user_id: userId,
-					executive_summary: "Major AI breakthrough released today — Café 🚀",
-					key_takeaways: "[]",
+					executive_summary: "",
+					key_takeaways: JSON.stringify(["Major AI breakthrough released today — Café 🚀"]),
 					why_it_matters: "High impact",
 					key_quotes: "[]",
 				})

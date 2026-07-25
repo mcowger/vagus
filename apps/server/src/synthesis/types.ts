@@ -22,9 +22,6 @@ export const DigestQuoteSchema = Type.Object({
 });
 
 export const DigestToolSchema = Type.Object({
-	executive_summary: Type.String({
-		description: "High-level summary overview of all selected topics in this digest",
-	}),
 	key_takeaways: Type.Array(Type.String(), {
 		description: "3-5 key actionable takeaways across all selected news stories",
 	}),

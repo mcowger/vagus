@@ -19,7 +19,7 @@ describe("Stage C Assemble Digest Worker", () => {
 		await migrateToLatest(db);
 		globalThis.fetch = (async () =>
 			new Response(JSON.stringify({
-				choices: [{ message: { content: JSON.stringify({ executive_summary: "Test executive summary.", key_takeaways: [], why_it_matters: "Test significance.", key_quotes: [] }) } }],
+				choices: [{ message: { content: JSON.stringify({ key_takeaways: [], why_it_matters: "Test significance.", key_quotes: [] }) } }],
 				usage: { prompt_tokens: 10, completion_tokens: 5 },
 			}))) as unknown as typeof fetch;
 		await db.insertInto("provider_config").values({ provider: "test-llm", api_key: "test-key", enabled: 1, config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }) }).execute();
@@ -34,14 +34,12 @@ describe("Stage C Assemble Digest Worker", () => {
 	describe("parseDigestResult", () => {
 		test("parses valid JSON response", () => {
 			const json = JSON.stringify({
-				executive_summary: "Exec Summary Test",
 				key_takeaways: ["Takeaway 1", "Takeaway 2"],
 				why_it_matters: "Why it matters test",
 				key_quotes: [{ quote: "Sample quote", citation: "art_1" }],
 			});
 
 			const res = parseDigestResult(json);
-			expect(res.executive_summary).toBe("Exec Summary Test");
 			expect(res.key_takeaways).toEqual(["Takeaway 1", "Takeaway 2"]);
 			expect(res.why_it_matters).toBe("Why it matters test");
 			expect(res.key_quotes).toEqual([{ quote: "Sample quote", citation: "art_1" }]);
@@ -49,22 +47,18 @@ describe("Stage C Assemble Digest Worker", () => {
 
 		test("strips markdown code blocks before parsing", () => {
 			const raw = "```json\n" + JSON.stringify({
-				executive_summary: "Markdown Summary",
 				key_takeaways: ["Item 1"],
 				why_it_matters: "Important",
 				key_quotes: [],
 			}) + "\n```";
 
 			const res = parseDigestResult(raw);
-			expect(res.executive_summary).toBe("Markdown Summary");
 			expect(res.key_takeaways).toEqual(["Item 1"]);
 			expect(res.why_it_matters).toBe("Important");
 		});
 
 		test("returns fallback object when text is not valid JSON", () => {
-			const plainText = "Plain text completion output";
-			const res = parseDigestResult(plainText);
-			expect(res.executive_summary).toBe(plainText);
+			const res = parseDigestResult("Plain text completion output");
 			expect(res.key_takeaways).toEqual([]);
 			expect(res.why_it_matters).toBe("Key developments matching your specified interest profile.");
 			expect(res.key_quotes).toEqual([]);
@@ -191,7 +185,7 @@ describe("Stage C Assemble Digest Worker", () => {
 				.where("id", "=", digest.id)
 				.executeTakeFirstOrThrow();
 
-			expect(updatedDigest.executive_summary).not.toBe("");
+			expect(updatedDigest.executive_summary).toBe("");
 			expect(updatedDigest.key_takeaways).not.toBe("");
 			expect(JSON.parse(updatedDigest.key_takeaways)).toBeArray();
 

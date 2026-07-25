@@ -11,7 +11,6 @@ export const digestRouter = router({
 				.select([
 					"d.id",
 					"d.run_id",
-					"d.executive_summary",
 					"d.created_at",
 					"p.name as profile_name",
 				])
@@ -30,7 +29,6 @@ export const digestRouter = router({
 				.select([
 					"d.id",
 					"d.run_id",
-					"d.executive_summary",
 					"d.key_takeaways",
 					"d.why_it_matters",
 					"d.key_quotes",

@@ -24,9 +24,9 @@ describe("Prompt Management & Templates", () => {
 		expect(templates.userPromptTemplate).toBe(PROMPT_DEFINITIONS.stage_a_bullet.defaultUserPrompt);
 	});
 
-	it("asks synthesis stages for detailed summaries", () => {
+	it("asks synthesis stages for detailed cluster summaries and digest takeaways", () => {
 		expect(PROMPT_DEFINITIONS.stage_b_synthesis.defaultUserPrompt).toContain("Write 6-8 substantive sentences");
-		expect(PROMPT_DEFINITIONS.stage_c_assembly.defaultUserPrompt).toContain("Each bullet should be 3-5 substantive sentences");
+		expect(PROMPT_DEFINITIONS.stage_c_assembly.defaultUserPrompt).toContain("3-5 most important actionable takeaways");
 	});
 
 	it("renders user prompt template replacing {{variable}} placeholders", () => {

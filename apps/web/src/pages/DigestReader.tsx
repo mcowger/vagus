@@ -13,7 +13,6 @@ import {
 	Copy,
 	Check,
 	Code,
-	Sparkles,
 	Clock,
 	Calendar,
 	Download,
@@ -137,51 +136,6 @@ function InlineFormattedText({ text }: { text: string }) {
 				return <React.Fragment key={idx}>{part}</React.Fragment>;
 			})}
 		</span>
-	);
-}
-
-/** Renders Executive Summary as structured trend bullet cards */
-function ExecutiveSummaryContent({
-	text,
-}: { text: string }) {
-	if (!text) return null;
-
-	let lines: string[] = [];
-
-	if (text.includes("\n") || /[•\-\*]\s+/.test(text)) {
-		lines = text
-			.split(/\n+|\s*(?=[•\-\*]\s+)/)
-			.map((l) => l.trim())
-			.filter((l) => l.length > 0);
-	} else {
-		// Split multi-sentence summary into trend bullet cards
-		const introAndSentences = text.split(/(?<=\.)\s+(?=[A-Z])/);
-		lines = introAndSentences.map((s) => s.trim()).filter((s) => s.length > 0);
-	}
-
-	if (lines.length === 0) return null;
-
-	return (
-		<div className="space-y-2.5">
-			{lines.map((line, idx) => {
-				const cleanLine = line.replace(/^[•\-\*]\s*|^\d+\.\s*/, "").trim();
-				if (!cleanLine) return null;
-
-				return (
-					<div
-						key={idx}
-						className="flex items-start gap-3 p-3 rounded-lg bg-indigo-50/25 border border-indigo-100/80 hover:bg-indigo-50/50 hover:border-indigo-200 transition-all shadow-2xs"
-					>
-						<div className="flex-shrink-0 mt-0.5 h-5 w-5 rounded-md bg-indigo-100 border border-indigo-200 text-indigo-700 flex items-center justify-center font-bold text-xs shadow-2xs">
-							{idx + 1}
-						</div>
-						<div className="leading-relaxed text-sm text-slate-800 flex-1">
-							<InlineFormattedText text={cleanLine} />
-						</div>
-					</div>
-				);
-			})}
-		</div>
 	);
 }
 
@@ -348,10 +302,7 @@ export const DigestReader: React.FC = () => {
 											<span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-100/80 text-indigo-800 border border-indigo-200/60 inline-block mb-1">
 												{d.profile_name || "General News"}
 											</span>
-											<p className="text-xs text-slate-700 font-medium line-clamp-2">
-												{d.executive_summary || "Executive summary unavailable"}
-											</p>
-										</div>
+									</div>
 										<div className="flex items-center gap-1 text-[11px] text-slate-400 mt-2">
 											<Clock className="h-3 w-3" />
 											<span>{createdDate}</span>
@@ -403,19 +354,6 @@ export const DigestReader: React.FC = () => {
 									<span>{new Date(digest.created_at).toLocaleString()}</span>
 								</div>
 							</div>
-
-							{/* Section 1: Executive Summary */}
-							<Card className="border-indigo-100 shadow-sm">
-								<CardHeader className="bg-gradient-to-r from-indigo-50/50 to-white pb-3">
-									<CardTitle className="text-base font-bold flex items-center gap-2 text-indigo-900">
-										<Sparkles className="h-5 w-5 text-indigo-600" />
-										Executive Summary
-									</CardTitle>
-								</CardHeader>
-								<CardContent className="pt-4 text-slate-800 leading-relaxed text-sm">
-									<ExecutiveSummaryContent text={digest.executive_summary} />
-								</CardContent>
-							</Card>
 
 							{/* Story Clusters & Deep Dives */}
 							<div className="space-y-4 pt-2">

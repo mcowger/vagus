@@ -232,7 +232,7 @@ describe("Milestone 7 Multi-Tenant E2E Test (Source Breadth, Usage & Admin Setti
 			} as unknown as Job);
 
 			const digest = await db.selectFrom("digest").selectAll().where("user_id", "=", userId).executeTakeFirstOrThrow();
-			expect(digest.executive_summary).toBeTruthy();
+			expect(digest.why_it_matters).toBeTruthy();
 
 			// 3. Verify tRPC Usage Router
 			const caller = appRouter.createCaller({

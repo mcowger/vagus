@@ -44,8 +44,10 @@ test("lists and retrieves published digests without authentication", async () =>
 	const publishedDigest = await caller.digest.getPublicById({ id: digest.id });
 
 	expect(digests).toHaveLength(1);
-	expect(digests[0]).toMatchObject({ id: digest.id, executive_summary: "Published executive summary." });
+	expect(digests[0]).toMatchObject({ id: digest.id });
 	expect(digests[0]).not.toHaveProperty("user_id");
-	expect(publishedDigest).toMatchObject({ id: digest.id, executive_summary: "Published executive summary." });
+	expect(digests[0]).not.toHaveProperty("executive_summary");
+	expect(publishedDigest).toMatchObject({ id: digest.id });
 	expect(publishedDigest).not.toHaveProperty("user_id");
+	expect(publishedDigest).not.toHaveProperty("executive_summary");
 });

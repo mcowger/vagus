@@ -13,11 +13,6 @@ export function parseDigestResult(text: string): DigestResult {
 	const parsed = extractJsonFromText(text);
 
 	if (typeof parsed === "object" && parsed !== null) {
-		const executive_summary =
-			typeof parsed.executive_summary === "string"
-				? sanitizeTextContent(parsed.executive_summary)
-				: sanitizeTextContent(text);
-
 		const key_takeaways = Array.isArray(parsed.key_takeaways)
 			? parsed.key_takeaways.map((item: any) => sanitizeTextContent(String(item)))
 			: [];
@@ -37,7 +32,6 @@ export function parseDigestResult(text: string): DigestResult {
 			: [];
 
 		return {
-			executive_summary,
 			key_takeaways,
 			why_it_matters,
 			key_quotes,
@@ -45,7 +39,6 @@ export function parseDigestResult(text: string): DigestResult {
 	}
 
 	return {
-		executive_summary: sanitizeTextContent(text),
 		key_takeaways: [],
 		why_it_matters: "Key developments matching your specified interest profile.",
 		key_quotes: [],
@@ -155,7 +148,6 @@ Summary: ${row.summary}`;
 		await database
 			.updateTable("digest")
 			.set({
-				executive_summary: digestResult.executive_summary,
 				key_takeaways: JSON.stringify(digestResult.key_takeaways),
 				why_it_matters: digestResult.why_it_matters,
 				key_quotes: JSON.stringify(digestResult.key_quotes),

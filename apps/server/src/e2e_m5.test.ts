@@ -216,7 +216,6 @@ describe("Milestone 5 Multi-Tenant E2E Test (Synthesis, Digests & Citations)", (
 			.where("user_id", "=", userSpaceId)
 			.executeTakeFirstOrThrow();
 
-		expect(digestSpace.executive_summary).toBeTruthy();
 		expect(digestSpace.why_it_matters).toBeTruthy();
 
 		const clustersSpace = await db
@@ -245,7 +244,7 @@ describe("Milestone 5 Multi-Tenant E2E Test (Synthesis, Digests & Citations)", (
 			.where("user_id", "=", userQuantumId)
 			.executeTakeFirstOrThrow();
 
-		expect(digestQuantum.executive_summary).toBeTruthy();
+		expect(digestQuantum.why_it_matters).toBeTruthy();
 
 		const clustersQuantum = await db
 			.selectFrom("digest_cluster")
