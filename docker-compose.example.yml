@@ -13,6 +13,10 @@ services:
       - PORT=3000
       - BETTER_AUTH_SECRET=change_me_to_a_secure_random_string_at_least_32_chars
       - DATABASE_PATH=/app/data/vagus.sqlite
+      # Notifications: ntfy base URL & App public URL for deep links
+      # - NTFY_BASE_URL=https://ntfy.sh
+      # - APP_BASE_URL=https://vagus.example.com
+
 
       # Optional pre-configured provider keys
       # - TESTING_EMBEDDING_BASE_URL=https://api.openai.com/v1

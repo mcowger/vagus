@@ -36,20 +36,49 @@ export async function sendDigestNotification(
 	userId: string,
 	customTitle?: string,
 ): Promise<SendNotificationResult> {
-	// 1. Read ntfy_topic from interest_profile
-	const profile = await db
-		.selectFrom("interest_profile")
-		.select(["ntfy_topic"])
-		.where("user_id", "=", userId)
+	// 1. Fetch digest details for notification body
+	const digest = await db
+		.selectFrom("digest")
+		.selectAll()
+		.where("id", "=", digestId)
 		.executeTakeFirst();
 
-	if (!profile || !profile.ntfy_topic || profile.ntfy_topic.trim() === "") {
+	if (!digest) {
+		return { sent: false, skipped: true, reason: "Digest not found" };
+	}
+
+	// 2. Read ntfy_topic from interest_profile (check digest's profile_id first, then user's active topics)
+	let topic: string | null = null;
+
+	if (digest.profile_id) {
+		const profile = await db
+			.selectFrom("interest_profile")
+			.select(["ntfy_topic"])
+			.where("id", "=", digest.profile_id)
+			.executeTakeFirst();
+		if (profile?.ntfy_topic && profile.ntfy_topic.trim() !== "") {
+			topic = profile.ntfy_topic.trim();
+		}
+	}
+
+	if (!topic) {
+		const profile = await db
+			.selectFrom("interest_profile")
+			.select(["ntfy_topic"])
+			.where("user_id", "=", userId)
+			.where("ntfy_topic", "is not", null)
+			.where("ntfy_topic", "!=", "")
+			.executeTakeFirst();
+		if (profile?.ntfy_topic && profile.ntfy_topic.trim() !== "") {
+			topic = profile.ntfy_topic.trim();
+		}
+	}
+
+	if (!topic) {
 		return { sent: false, skipped: true, reason: "No ntfy_topic configured" };
 	}
 
-	const topic = profile.ntfy_topic.trim();
-
-	// 2. Debounce: Check if notification was already successfully sent for this digest/user
+	// 3. Debounce: Check if notification was already successfully sent for this digest/user
 	const existingSent = await db
 		.selectFrom("notification_log")
 		.select("id")
@@ -60,17 +89,6 @@ export async function sendDigestNotification(
 
 	if (existingSent) {
 		return { sent: false, skipped: true, reason: "Already sent" };
-	}
-
-	// 3. Fetch digest details for notification body
-	const digest = await db
-		.selectFrom("digest")
-		.selectAll()
-		.where("id", "=", digestId)
-		.executeTakeFirst();
-
-	if (!digest) {
-		return { sent: false, skipped: true, reason: "Digest not found" };
 	}
 
 	let bodyText = "";
@@ -95,7 +113,7 @@ export async function sendDigestNotification(
 		.where("key", "=", "ntfy_base_url")
 		.executeTakeFirst();
 
-	const baseUrl = (ntfySetting?.value || "https://ntfy.sh").trim();
+	const baseUrl = (ntfySetting?.value || process.env.NTFY_BASE_URL || "https://ntfy.sh").trim();
 
 	const appSetting = await db
 		.selectFrom("system_setting")
@@ -103,7 +121,12 @@ export async function sendDigestNotification(
 		.where("key", "=", "app_base_url")
 		.executeTakeFirst();
 
-	const appBaseUrl = (appSetting?.value || process.env.APP_BASE_URL || "http://localhost:5173").trim();
+	const appBaseUrl = (
+		appSetting?.value ||
+		process.env.APP_BASE_URL ||
+		process.env.BETTER_AUTH_URL ||
+		"http://localhost:5173"
+	).trim();
 
 	const cleanBaseUrl = baseUrl.replace(/\/+$/, "");
 	const cleanTopic = topic.replace(/^\/+/, "");

@@ -8,6 +8,7 @@ import { advanceStage, failStage } from "../queue/coordinator";
 import type { AssembleDigestJobData } from "../queue/synthesis-contracts";
 import { extractJsonFromText, sanitizeTextContent } from "../utils/json";
 import type { DigestResult } from "./types";
+import { sendDigestNotification } from "../notifications/ntfy";
 
 export function parseDigestResult(text: string): DigestResult {
 	const parsed = extractJsonFromText(text);
@@ -162,6 +163,29 @@ Summary: ${row.summary}`;
 			runId,
 			digestId,
 		});
+
+		// Trigger ntfy push notification for generated digest
+		try {
+			const notifResult = await sendDigestNotification(database, digestId, userId);
+			log.info("Digest notification result for assemble-digest job", {
+				jobId: job.id,
+				userId,
+				runId,
+				digestId,
+				sent: notifResult.sent,
+				skipped: notifResult.skipped,
+				reason: notifResult.reason,
+				error: notifResult.error,
+			});
+		} catch (notifErr) {
+			log.error("Failed sending digest notification", {
+				jobId: job.id,
+				userId,
+				runId,
+				digestId,
+				error: String(notifErr),
+			});
+		}
 	} catch (err) {
 		log.error("Failed assemble-digest job execution", {
 			jobId: job.id,

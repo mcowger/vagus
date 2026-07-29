@@ -4,6 +4,7 @@ import { Kysely } from "kysely";
 import { BunSqliteDialect } from "kysely-bun-sqlite";
 import type { Database } from "../db/schema";
 import { migrateToLatest } from "../db/migrate";
+import type { Job } from "plainjob";
 import { ASSEMBLE_DIGEST_JOB_TYPE, type AssembleDigestJobData } from "../queue/synthesis-contracts";
 import { parseDigestResult, processAssembleDigestJob } from "./assemble-digest";
 
@@ -206,6 +207,165 @@ describe("Stage C Assemble Digest Worker", () => {
 
 			expect(updatedStage.completed).toBe(1);
 			expect(updatedStage.status).toBe("complete");
+		});
+		test("dispatches ntfy notification when user has configured ntfy_topic", async () => {
+			const userId = "user-notif-auto";
+			const now = new Date().toISOString();
+
+			// Set up user profile with ntfy_topic
+			await db
+				.insertInto("interest_profile")
+				.values({
+					user_id: userId,
+					name: "Notifier Profile",
+					keywords: "[]",
+					topics: "[]",
+					entities: "[]",
+					include_rules: "[]",
+					exclude_rules: "[]",
+					ntfy_topic: "my-test-ntfy-topic",
+					is_default: 1,
+					created_at: now,
+					updated_at: now,
+				})
+				.execute();
+
+			const run = await db
+				.insertInto("run")
+				.values({ started_at: now, status: "running", trigger: "manual" })
+				.returningAll()
+				.executeTakeFirstOrThrow();
+			const source = await db
+				.insertInto("source")
+				.values({
+					type: "rss",
+					name: "News Source",
+					url: "https://example.com/rss",
+					enabled: 1,
+					owner_user_id: null,
+				})
+				.returningAll()
+				.executeTakeFirstOrThrow();
+
+			const article = await db
+				.insertInto("article")
+				.values({
+					identity_key: "key-art1",
+					source_id: source.id,
+					title: "Article Title",
+					url: "https://example.com/art1",
+					content: "Content",
+					created_at: now,
+				})
+				.returningAll()
+				.executeTakeFirstOrThrow();
+
+
+			const stage = await db
+				.insertInto("run_stage")
+				.values({
+					run_id: run.id,
+					stage: "assemble",
+					expected: 1,
+					completed: 0,
+					status: "running",
+				})
+				.returningAll()
+				.executeTakeFirstOrThrow();
+
+			const digest = await db
+				.insertInto("digest")
+				.values({
+					run_id: run.id,
+					user_id: userId,
+					executive_summary: "Test Summary",
+					why_it_matters: "Test Importance",
+					key_takeaways: "[]",
+					key_quotes: "[]",
+					created_at: now,
+				})
+				.returningAll()
+				.executeTakeFirstOrThrow();
+
+			const cluster = await db
+				.insertInto("cluster")
+				.values({
+					run_id: run.id,
+					primary_article_id: article.id,
+					summary_title: "Sample Cluster Title",
+					created_at: now,
+				})
+				.returningAll()
+				.executeTakeFirstOrThrow();
+
+			await db
+				.insertInto("digest_cluster")
+				.values({
+					digest_id: digest.id,
+					cluster_id: cluster.id,
+					title: "Sample Cluster Title",
+					summary: "Sample Cluster Summary",
+					perspectives: "[]",
+					timeline: "[]",
+					created_at: now,
+				})
+				.execute();
+
+			const sentUrls: string[] = [];
+			const origFetch = globalThis.fetch;
+			globalThis.fetch = (async (url: string | URL | Request) => {
+				const urlStr = String(url);
+				if (urlStr.includes("ntfy")) {
+					sentUrls.push(urlStr);
+					return new Response("ok", { status: 200 });
+				}
+				return new Response(
+					JSON.stringify({
+						choices: [
+							{
+								message: {
+									content: JSON.stringify({
+										key_takeaways: ["Takeaway 1"],
+										why_it_matters: "Matter 1",
+										key_quotes: [],
+									}),
+								},
+							},
+						],
+					}),
+					{ status: 200 },
+				);
+			}) as unknown as typeof fetch;
+
+			try {
+				const jobData: AssembleDigestJobData = {
+					runId: run.id,
+					stageId: stage.id,
+					userId,
+				};
+
+				await processAssembleDigestJob(db, {
+					id: 101,
+					type: ASSEMBLE_DIGEST_JOB_TYPE,
+					data: JSON.stringify(jobData),
+					status: "pending",
+				} as unknown as Job);
+
+				expect(sentUrls.length).toBe(1);
+				expect(sentUrls[0]).toBe("https://ntfy.sh/my-test-ntfy-topic");
+
+				const logs = await db
+					.selectFrom("notification_log")
+					.selectAll()
+					.where("digest_id", "=", digest.id)
+					.execute();
+
+				expect(logs.length).toBe(1);
+				expect(logs[0].status).toBe("sent");
+				expect(logs[0].topic).toBe("my-test-ntfy-topic");
+			} finally {
+				globalThis.fetch = origFetch;
+			}
 		});
 
 		test("fails the stage when digest clusters are missing", async () => {
