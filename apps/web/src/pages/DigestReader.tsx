@@ -20,6 +20,8 @@ import {
 	ChevronRight,
 	ThumbsUp,
 	ThumbsDown,
+	Compass,
+	History,
 } from "lucide-react";
 
 function getDomainFromUrl(url?: string | null): string {
@@ -382,7 +384,19 @@ export const DigestReader: React.FC = () => {
 
 										const parsedCluster = parseRawClusterSummary(cluster.summary);
 										const cleanSummary = parsedCluster.summary || cluster.summary;
+										const rawPerspectives = "perspectives" in cluster && Array.isArray(cluster.perspectives) ? cluster.perspectives : undefined;
+										const perspectives = (
+											rawPerspectives && rawPerspectives.length > 0
+												? rawPerspectives
+												: parsedCluster.perspectives || []
+										).filter((p: unknown): p is string => typeof p === "string" && p.trim().length > 0);
 
+										const rawTimeline = "timeline" in cluster && Array.isArray(cluster.timeline) ? cluster.timeline : undefined;
+										const timeline = (
+											rawTimeline && rawTimeline.length > 0
+												? rawTimeline
+												: parsedCluster.timeline || []
+										).filter((t: unknown): t is string => typeof t === "string" && t.trim().length > 0);
 										const clusterVote = feedbackQuery.data?.feedback?.[`cluster:${cluster.id}`] ?? 0;
 
 										return (
@@ -479,6 +493,46 @@ export const DigestReader: React.FC = () => {
 																	))}
 																</div>
 															</div>
+
+															{/* Perspectives & Angles */}
+															{perspectives.length > 0 && (
+																<div className="space-y-2 pt-3 border-t border-slate-100">
+																	<h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+																		<Compass className="h-3.5 w-3.5 text-indigo-600" />
+																		<span>Perspectives & Key Viewpoints</span>
+																	</h4>
+																	<ul className="space-y-1.5">
+																		{perspectives.map((persp, pIdx) => (
+																			<li key={pIdx} className="flex items-start gap-2 text-sm text-slate-700 leading-relaxed bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
+																				<span className="text-indigo-500 font-bold">•</span>
+																				<div>
+																					<InlineFormattedText text={persp} />
+																				</div>
+																			</li>
+																		))}
+																	</ul>
+																</div>
+															)}
+
+															{/* Chronology & Timeline */}
+															{timeline.length > 0 && (
+																<div className="space-y-2 pt-3 border-t border-slate-100">
+																	<h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+																		<History className="h-3.5 w-3.5 text-indigo-600" />
+																		<span>Chronology & Timeline</span>
+																	</h4>
+																	<ul className="space-y-1.5">
+																		{timeline.map((event, tIdx) => (
+																			<li key={tIdx} className="flex items-start gap-2 text-sm text-slate-700 leading-relaxed bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
+																				<span className="text-indigo-600 font-bold font-mono text-xs mt-0.5">[{tIdx + 1}]</span>
+																				<div>
+																					<InlineFormattedText text={event} />
+																				</div>
+																			</li>
+																		))}
+																	</ul>
+																</div>
+															)}
 														</div>
 													)}
 
