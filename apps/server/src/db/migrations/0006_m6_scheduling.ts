@@ -32,6 +32,9 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 			{ key: "article_retention_days", value: "30" },
 			{ key: "digest_retention_days", value: "90" },
 			{ key: "ntfy_base_url", value: "https://ntfy.sh" },
+			{ key: "app_base_url", value: "http://localhost:5173" },
+			{ key: "notification_max_takeaways", value: "2" },
+			{ key: "notification_max_characters", value: "300" },
 			{ key: "cron_schedule", value: "0 * * * *" },
 		])
 		.execute();

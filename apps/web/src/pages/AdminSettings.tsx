@@ -65,6 +65,8 @@ export const AdminSettings: React.FC = () => {
 	const [cronSchedule, setCronSchedule] = useState("0 * * * *");
 	const [ntfyBaseUrl, setNtfyBaseUrl] = useState("https://ntfy.sh");
 	const [appBaseUrl, setAppBaseUrl] = useState("http://localhost:5173");
+	const [notificationMaxTakeaways, setNotificationMaxTakeaways] = useState("2");
+	const [notificationMaxCharacters, setNotificationMaxCharacters] = useState("300");
 	const [workerConcurrency, setWorkerConcurrency] = useState("5");
 	const [clusteringSimilarityThreshold, setClusteringSimilarityThreshold] = useState("0.8");
 	const [clusteringLlmMergeMinSimilarity, setClusteringLlmMergeMinSimilarity] = useState("0.45");
@@ -87,7 +89,10 @@ export const AdminSettings: React.FC = () => {
 			if (s.digest_retention_days !== undefined) setDigestRetentionDays(s.digest_retention_days);
 			if (s.cron_schedule !== undefined) setCronSchedule(s.cron_schedule);
 			if (s.ntfy_base_url !== undefined) setNtfyBaseUrl(s.ntfy_base_url);
-			if (s.app_base_url !== undefined) setAppBaseUrl(s.app_base_url);
+			if (s.notification_base_url !== undefined) setAppBaseUrl(s.notification_base_url);
+			else if (s.app_base_url !== undefined) setAppBaseUrl(s.app_base_url);
+			if (s.notification_max_takeaways !== undefined) setNotificationMaxTakeaways(s.notification_max_takeaways);
+			if (s.notification_max_characters !== undefined) setNotificationMaxCharacters(s.notification_max_characters);
 			if (s.worker_concurrency !== undefined) setWorkerConcurrency(s.worker_concurrency);
 			if (s.clustering_similarity_threshold !== undefined) setClusteringSimilarityThreshold(s.clustering_similarity_threshold);
 			if (s.clustering_llm_merge_min_similarity !== undefined) setClusteringLlmMergeMinSimilarity(s.clustering_llm_merge_min_similarity);
@@ -122,6 +127,9 @@ export const AdminSettings: React.FC = () => {
 			cron_schedule: cronSchedule,
 			ntfy_base_url: ntfyBaseUrl,
 			app_base_url: appBaseUrl,
+			notification_base_url: appBaseUrl,
+			notification_max_takeaways: notificationMaxTakeaways,
+			notification_max_characters: notificationMaxCharacters,
 			worker_concurrency: workerConcurrency,
 			clustering_similarity_threshold: clusteringSimilarityThreshold,
 			clustering_llm_merge_min_similarity: clusteringLlmMergeMinSimilarity,
@@ -315,7 +323,7 @@ export const AdminSettings: React.FC = () => {
 								</div>
 
 								<div className="space-y-2">
-									<Label htmlFor="appBaseUrl">Application Base URL</Label>
+									<Label htmlFor="appBaseUrl">Notification Application Base URL</Label>
 									<Input
 										id="appBaseUrl"
 										type="url"
@@ -325,7 +333,41 @@ export const AdminSettings: React.FC = () => {
 										required
 									/>
 									<p className="text-xs text-slate-500">
-										Public URL used for links embedded in push notifications.
+										Public URL used for links embedded in push notifications (e.g. <code>https://vagus.example.com</code>).
+									</p>
+								</div>
+							</div>
+
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+								<div className="space-y-2">
+									<Label htmlFor="notificationMaxTakeaways">Notification Max Takeaways</Label>
+									<Input
+										id="notificationMaxTakeaways"
+										type="number"
+										min="0"
+										max="10"
+										value={notificationMaxTakeaways}
+										onChange={(e) => setNotificationMaxTakeaways(e.target.value)}
+										required
+									/>
+									<p className="text-xs text-slate-500">
+										Maximum key takeaways included in notification body (0 for all).
+									</p>
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="notificationMaxCharacters">Notification Max Characters</Label>
+									<Input
+										id="notificationMaxCharacters"
+										type="number"
+										min="0"
+										max="2000"
+										value={notificationMaxCharacters}
+										onChange={(e) => setNotificationMaxCharacters(e.target.value)}
+										required
+									/>
+									<p className="text-xs text-slate-500">
+										Maximum character length before body truncation with '...' (0 for unlimited).
 									</p>
 								</div>
 							</div>

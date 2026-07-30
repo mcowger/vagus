@@ -181,6 +181,9 @@ export const settingsRouter = router({
 				ntfy_base_url: z.string().optional(),
 				cron_schedule: z.string().optional(),
 				app_base_url: z.string().optional(),
+				notification_base_url: z.string().optional(),
+				notification_max_takeaways: z.union([z.string(), z.number()]).optional(),
+				notification_max_characters: z.union([z.string(), z.number()]).optional(),
 				worker_concurrency: z.union([z.string(), z.number()]).optional(),
 				clustering_similarity_threshold: z.union([z.string(), z.number()]).optional(),
 				clustering_llm_merge_min_similarity: z.union([z.string(), z.number()]).optional(),
@@ -192,7 +195,16 @@ export const settingsRouter = router({
 		)
 		.mutation(async ({ ctx, input }) => {
 			const now = new Date().toISOString();
-			const entries = Object.entries(input);
+			const payload = { ...input };
+
+			// Keep app_base_url and notification_base_url in sync if one is provided
+			if (payload.app_base_url !== undefined && payload.notification_base_url === undefined) {
+				payload.notification_base_url = payload.app_base_url;
+			} else if (payload.notification_base_url !== undefined && payload.app_base_url === undefined) {
+				payload.app_base_url = payload.notification_base_url;
+			}
+
+			const entries = Object.entries(payload);
 
 			for (const [key, value] of entries) {
 				if (value !== undefined) {

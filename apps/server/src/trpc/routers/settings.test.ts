@@ -51,6 +51,8 @@ test("updateSettings updates retention periods, cron schedule, and ntfy endpoint
 		cron_schedule: "*/15 * * * *",
 		ntfy_base_url: "https://custom-ntfy.example.com",
 		app_base_url: "https://app.example.com",
+		notification_max_takeaways: 3,
+		notification_max_characters: 250,
 	});
 
 	expect(updateRes.success).toBe(true);
@@ -61,6 +63,9 @@ test("updateSettings updates retention periods, cron schedule, and ntfy endpoint
 	expect(updatedSettings.cron_schedule).toBe("*/15 * * * *");
 	expect(updatedSettings.ntfy_base_url).toBe("https://custom-ntfy.example.com");
 	expect(updatedSettings.app_base_url).toBe("https://app.example.com");
+	expect(updatedSettings.notification_base_url).toBe("https://app.example.com");
+	expect(updatedSettings.notification_max_takeaways).toBe("3");
+	expect(updatedSettings.notification_max_characters).toBe("250");
 });
 
 test("non-admin user is forbidden from accessing settings", async () => {
