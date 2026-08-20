@@ -1,14 +1,12 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { Cron } from "croner";
 import { protectedProcedure, router } from "../trpc";
 import { serializeFloat32 } from "../../embeddings/types";
 import { getEmbedder } from "../../queue/embed-job";
 
 function isValidCron(cronStr: string): boolean {
 	try {
-		new Cron(cronStr);
-		return true;
+		return Bun.cron.parse(cronStr) !== null;
 	} catch {
 		return false;
 	}
