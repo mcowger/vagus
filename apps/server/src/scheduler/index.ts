@@ -1,14 +1,13 @@
 import type { Kysely } from "kysely";
 import type { Queue } from "plainjob";
-import { Cron } from "croner";
 import type { Database } from "../db/schema";
 import { log } from "../log";
 import { startProfileRun, startRun, type StartProfileRunResult, type StartRunResult } from "../queue/coordinator";
 
 let schedulerInterval: Timer | ReturnType<typeof setInterval> | null = null;
-let schedulerCron: Cron | null = null;
+let schedulerCron: Bun.CronJob | null = null;
 let profileSyncInterval: Timer | ReturnType<typeof setInterval> | null = null;
-const profileCrons = new Map<number, Cron>();
+const profileCrons = new Map<number, Bun.CronJob>();
 const profileScheduleKeys = new Map<number, string>();
 
 const SCHEDULER_TIMEZONE = "America/Los_Angeles";
@@ -43,7 +42,7 @@ export function parseScheduleInterval(schedule: string): number | null {
 }
 
 export function getNextCronRun(schedule: string, startFrom: Date): Date | null {
-	return new Cron(schedule, { timezone: SCHEDULER_TIMEZONE, paused: true }).nextRun(startFrom);
+	return Bun.cron.parse(schedule, startFrom, { tz: SCHEDULER_TIMEZONE });
 }
 
 async function triggerScheduledRun(db: Kysely<Database>, queue: Queue): Promise<void> {
@@ -96,9 +95,11 @@ async function syncProfileSchedulers(db: Kysely<Database>, queue: Queue): Promis
 
 		profileCrons.get(profile.id)?.stop();
 		try {
-			const cron = new Cron(schedule, { timezone, protect: true }, () => {
-				void triggerScheduledProfileRun(db, queue, profile.id);
-			});
+			const cron = Bun.cron(
+				schedule,
+				() => triggerScheduledProfileRun(db, queue, profile.id),
+				{ tz: timezone },
+			);
 			profileCrons.set(profile.id, cron);
 			profileScheduleKeys.set(profile.id, scheduleKey);
 			log.info("Profile scheduler started", { profileId: profile.id, schedule, timezone });
@@ -166,15 +167,15 @@ export async function startScheduler(
 		return;
 	}
 
-	schedulerCron = new Cron(
+	schedulerCron = Bun.cron(
 		cronSchedule,
-		{ timezone: SCHEDULER_TIMEZONE, protect: true },
 		() => triggerScheduledRun(db, queue),
+		{ tz: SCHEDULER_TIMEZONE },
 	);
 	log.info("Scheduler started with cron", {
 		schedule: cronSchedule,
 		timezone: SCHEDULER_TIMEZONE,
-		nextRun: schedulerCron.nextRun()?.toISOString(),
+		nextRun: Bun.cron.parse(cronSchedule, Date.now(), { tz: SCHEDULER_TIMEZONE })?.toISOString(),
 	});
 }
 
