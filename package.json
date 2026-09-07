@@ -32,7 +32,7 @@
 		"prepare": "command -v lefthook >/dev/null 2>&1 && lefthook install || (command -v husky >/dev/null 2>&1 && husky install || true)"
 	},
 	"devDependencies": {
-		"agent-browser": "^0.32.3",
+		"agent-browser": "^0.35.1",
 		"bun-plugin-tailwind": "^0.1.2",
 		"typescript": "^7.0.2"
 	},
