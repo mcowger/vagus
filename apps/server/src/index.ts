@@ -18,6 +18,24 @@ import { appRouter } from "./trpc/router";
 // --- Hono app: API surface (TECHNICAL_DESIGN §2) --------------------------
 const app = new Hono();
 
+const webPublicDirectory = new URL("../../web/public/", import.meta.url);
+const faviconAssets = {
+	"/favicon.ico": { file: "favicon.ico", contentType: "image/x-icon" },
+	"/favicon-16.png": { file: "favicon-16.png", contentType: "image/png" },
+	"/favicon-32.png": { file: "favicon-32.png", contentType: "image/png" },
+	"/favicon-48.png": { file: "favicon-48.png", contentType: "image/png" },
+	"/apple-touch-icon.png": {
+		file: "apple-touch-icon.png",
+		contentType: "image/png",
+	},
+	"/icon-192.png": { file: "icon-192.png", contentType: "image/png" },
+	"/icon-512.png": { file: "icon-512.png", contentType: "image/png" },
+	"/site.webmanifest": {
+		file: "site.webmanifest",
+		contentType: "application/manifest+json",
+	},
+} as const;
+
 app.use("*", requestLogger());
 app.use(
 	"*",
@@ -26,6 +44,15 @@ app.use(
 		credentials: true,
 	}),
 );
+
+for (const [path, asset] of Object.entries(faviconAssets)) {
+	app.get(path, (c) => {
+		c.header("Cache-Control", "public, max-age=31536000, immutable");
+		return new Response(Bun.file(new URL(asset.file, webPublicDirectory)), {
+			headers: { "Content-Type": asset.contentType },
+		});
+	});
+}
 
 app.use(
 	"/trpc/*",
@@ -130,6 +157,14 @@ async function main(): Promise<void> {
 			// so this 404s in production.
 			"/dev/login": (req) => app.fetch(req),
 			"/healthz": (req) => app.fetch(req),
+			"/favicon.ico": (req) => app.fetch(req),
+			"/favicon-16.png": (req) => app.fetch(req),
+			"/favicon-32.png": (req) => app.fetch(req),
+			"/favicon-48.png": (req) => app.fetch(req),
+			"/apple-touch-icon.png": (req) => app.fetch(req),
+			"/icon-192.png": (req) => app.fetch(req),
+			"/icon-512.png": (req) => app.fetch(req),
+			"/site.webmanifest": (req) => app.fetch(req),
 			"/*": index,
 		},
 	});

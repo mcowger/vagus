@@ -8,4 +8,5 @@ data/
 .dev-server.log
 .dev-api-key
 *.png
+!apps/web/public/*.png
 
