@@ -3,7 +3,7 @@ import { appRouter } from "../router";
 import { createDb } from "../../db/connection";
 import { migrateToLatest } from "../../db/migrate";
 import { getSupportedThinkingLevels } from "@earendil-works/pi-ai";
-import { getBuiltinModels } from "@earendil-works/pi-ai/providers/all";
+import { getBuiltinModels, getBuiltinProviders } from "@earendil-works/pi-ai/providers/all";
 import type { Kysely } from "kysely";
 import type { Database } from "../../db/schema";
 
@@ -54,6 +54,40 @@ test("getThinkingEfforts returns catalog-supported efforts and defaults when non
 			modelName: "custom-model",
 		}),
 	).toEqual(["Default"]);
+});
+
+test("getThinkingEfforts resolves catalog models selected through a custom provider", async () => {
+	const caller = createCaller();
+	const catalogModels = getBuiltinProviders().flatMap((provider) => getBuiltinModels(provider));
+
+	for (const modelName of ["muse-spark-1.3", "gpt-6-luna"]) {
+		const model = catalogModels.find((candidate) => candidate.id === modelName);
+		expect(model).toBeDefined();
+
+		const expectedEfforts = getSupportedThinkingLevels(model!).filter((level) => level !== "off");
+		expect(
+			await caller.taskModels.getThinkingEfforts({ provider: "Plexus", modelName }),
+		).toEqual(expectedEfforts);
+	}
+});
+
+test("setTaskModel accepts thinking efforts for catalog models behind custom providers", async () => {
+	const caller = createCaller();
+
+	const result = await caller.taskModels.setTaskModel({
+		taskName: "stage_b_synthesis",
+		provider: "Plexus",
+		modelName: "muse-spark-1.3",
+		thinkingEffort: "high",
+	});
+	const taskModel = await db
+		.selectFrom("task_model")
+		.selectAll()
+		.where("id", "=", result.id)
+		.executeTakeFirstOrThrow();
+
+	expect(result.success).toBe(true);
+	expect(taskModel.thinking_effort).toBe("high");
 });
 
 test("setTaskModel inserts and updates task model config", async () => {

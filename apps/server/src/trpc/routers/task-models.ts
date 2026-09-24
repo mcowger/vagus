@@ -6,13 +6,16 @@ import { adminProcedure, router } from "../trpc";
 
 export function getTaskModelThinkingEfforts(provider: string, modelName: string): string[] {
 	const builtinProviders = getBuiltinProviders();
-	if (!builtinProviders.includes(provider as (typeof builtinProviders)[number])) {
-		return ["Default"];
-	}
-
-	const model = getBuiltinModels(provider as (typeof builtinProviders)[number]).find(
-		(candidate) => candidate.id === modelName,
+	const providerIsBuiltin = builtinProviders.includes(
+		provider as (typeof builtinProviders)[number],
 	);
+	const model = providerIsBuiltin
+		? getBuiltinModels(provider as (typeof builtinProviders)[number]).find(
+				(candidate) => candidate.id === modelName,
+			)
+		: builtinProviders
+				.flatMap((builtinProvider) => getBuiltinModels(builtinProvider))
+				.find((candidate) => candidate.id === modelName);
 	if (!model?.reasoning) {
 		return ["Default"];
 	}
