@@ -2,6 +2,8 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { appRouter } from "../router";
 import { createDb } from "../../db/connection";
 import { migrateToLatest } from "../../db/migrate";
+import { getSupportedThinkingLevels } from "@earendil-works/pi-ai";
+import { getBuiltinModels } from "@earendil-works/pi-ai/providers/all";
 import type { Kysely } from "kysely";
 import type { Database } from "../../db/schema";
 
@@ -38,6 +40,22 @@ test("getTaskModels returns no implicit task models", async () => {
 	expect(models).toEqual([]);
 });
 
+test("getThinkingEfforts returns catalog-supported efforts and defaults when none exist", async () => {
+	const caller = createCaller();
+	const gpt5 = getBuiltinModels("openai").find((model) => model.id === "gpt-5");
+
+	const expectedEfforts = getSupportedThinkingLevels(gpt5!).filter((level) => level !== "off");
+	expect(
+		await caller.taskModels.getThinkingEfforts({ provider: "openai", modelName: "gpt-5" }),
+	).toEqual(expectedEfforts);
+	expect(
+		await caller.taskModels.getThinkingEfforts({
+			provider: "openai",
+			modelName: "custom-model",
+		}),
+	).toEqual(["Default"]);
+});
+
 test("setTaskModel inserts and updates task model config", async () => {
 	const caller = createCaller("admin");
 
@@ -54,19 +72,31 @@ test("setTaskModel inserts and updates task model config", async () => {
 	expect(synth).toBeDefined();
 	expect(synth?.provider).toBe("openai");
 	expect(synth?.model_name).toBe("gpt-4o-mini");
+	expect(synth?.thinking_effort).toBeNull();
 
 	// Update existing task model
 	const res2 = await caller.taskModels.setTaskModel({
 		taskName: "stage_b_synthesis",
-		provider: "anthropic",
-		modelName: "claude-3-5-sonnet",
+		provider: "openai",
+		modelName: "gpt-5",
+		thinkingEffort: "high",
 	});
 	expect(res2.success).toBe(true);
 
 	models = await caller.taskModels.getTaskModels();
 	synth = models.find((m) => m.task_name === "stage_b_synthesis");
-	expect(synth?.provider).toBe("anthropic");
-	expect(synth?.model_name).toBe("claude-3-5-sonnet");
+	expect(synth?.provider).toBe("openai");
+	expect(synth?.model_name).toBe("gpt-5");
+	expect(synth?.thinking_effort).toBe("high");
+
+	await expect(
+		caller.taskModels.setTaskModel({
+			taskName: "stage_b_synthesis",
+			provider: "openai",
+			modelName: "gpt-4o-mini",
+			thinkingEffort: "high",
+		}),
+	).rejects.toThrow("Unsupported thinking effort");
 });
 
 test("getLlmUsage returns usage rows and summary", async () => {

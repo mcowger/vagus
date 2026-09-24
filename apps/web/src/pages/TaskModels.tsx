@@ -63,8 +63,12 @@ function TaskRow({
 }: {
 	task: PipelineTask;
 	configuredProviders: string[];
-	existingModel?: { provider: string; model_name: string };
-	onSave: (taskName: string, provider: string, modelName: string) => void;
+	existingModel?: {
+		provider: string;
+		model_name: string;
+		thinking_effort: string | null;
+	};
+	onSave: (taskName: string, provider: string, modelName: string, thinkingEffort: string) => void;
 	isPending: boolean;
 }) {
 	const defaultProvider = configuredProviders[0] || "openai";
@@ -74,6 +78,9 @@ function TaskRow({
 	const [modelInput, setModelName] = useState(
 		existingModel?.model_name || task.defaultModel,
 	);
+	const [thinkingEffort, setThinkingEffort] = useState(
+		existingModel?.thinking_effort || "Default",
+	);
 	const [isCustomInput, setIsCustomInput] = useState(false);
 	const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -82,6 +89,11 @@ function TaskRow({
 		{ provider: selectedProvider },
 		{ enabled: !!selectedProvider },
 	);
+	const thinkingEffortsQuery = trpc.taskModels.getThinkingEfforts.useQuery(
+		{ provider: selectedProvider, modelName: modelInput },
+		{ enabled: !!selectedProvider && !!modelInput },
+	);
+	const thinkingEfforts = thinkingEffortsQuery.data || ["Default"];
 
 	// Filter fetched models based on task modality (embedding vs completion)
 	const filteredModels = useMemo(() => {
@@ -104,10 +116,17 @@ function TaskRow({
 		if (existingModel) {
 			setSelectedProvider(existingModel.provider);
 			setModelName(existingModel.model_name);
+			setThinkingEffort(existingModel.thinking_effort || "Default");
 		} else if (configuredProviders.length > 0 && !configuredProviders.includes(selectedProvider)) {
 			setSelectedProvider(configuredProviders[0]);
 		}
 	}, [existingModel, configuredProviders]);
+
+	useEffect(() => {
+		if (!thinkingEffortsQuery.isPending && !thinkingEfforts.includes(thinkingEffort)) {
+			setThinkingEffort("Default");
+		}
+	}, [thinkingEfforts, thinkingEffortsQuery.isPending, thinkingEffort]);
 
 	// Auto-select first matching model from /models endpoint when switching providers
 	useEffect(() => {
@@ -146,7 +165,7 @@ function TaskRow({
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!selectedProvider || !modelInput.trim()) return;
-		onSave(task.id, selectedProvider, modelInput.trim());
+		onSave(task.id, selectedProvider, modelInput.trim(), thinkingEffort);
 		setSavedSuccess(true);
 		setTimeout(() => setSavedSuccess(false), 2500);
 	};
@@ -220,8 +239,28 @@ function TaskRow({
 				)}
 			</td>
 
+			<td className="py-4 px-4 align-top w-40">
+				<select
+					value={thinkingEffort}
+					onChange={(e) => setThinkingEffort(e.target.value)}
+					disabled={thinkingEffortsQuery.isPending}
+					className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors font-medium text-slate-800 disabled:opacity-60"
+				>
+					{thinkingEfforts.map((effort) => (
+						<option key={effort} value={effort}>
+							{effort === "Default" ? effort : effort[0].toUpperCase() + effort.slice(1)}
+						</option>
+					))}
+				</select>
+			</td>
+
 			<td className="py-4 px-4 align-top text-right w-32">
-				<Button size="sm" onClick={handleSubmit} disabled={isPending} className="w-full">
+				<Button
+					size="sm"
+					onClick={handleSubmit}
+					disabled={isPending || thinkingEffortsQuery.isPending}
+					className="w-full"
+				>
 					{isPending ? "Saving..." : savedSuccess ? "Saved ✓" : "Save"}
 				</Button>
 			</td>
@@ -248,8 +287,13 @@ export const TaskModels: React.FC = () => {
 			.map((p) => p.provider);
 	}, [providersQuery.data]);
 
-	const handleSaveTaskModel = (taskName: string, provider: string, modelName: string) => {
-		setTaskModelMutation.mutate({ taskName, provider, modelName });
+	const handleSaveTaskModel = (
+		taskName: string,
+		provider: string,
+		modelName: string,
+		thinkingEffort: string,
+	) => {
+		setTaskModelMutation.mutate({ taskName, provider, modelName, thinkingEffort });
 	};
 
 	const summary = llmUsageQuery.data?.summary;
@@ -321,6 +365,7 @@ export const TaskModels: React.FC = () => {
 										<th className="px-4 py-3">Task Name</th>
 										<th className="px-4 py-3">Provider</th>
 										<th className="px-4 py-3">Model Selection</th>
+										<th className="px-4 py-3">Thinking Effort</th>
 										<th className="px-4 py-3 text-right">Action</th>
 									</tr>
 								</thead>

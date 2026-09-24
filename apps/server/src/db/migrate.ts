@@ -16,6 +16,7 @@ import * as m0013 from "./migrations/0013_m11_clustering";
 import * as m0014 from "./migrations/0014_m11_article_eligibility";
 import * as m0015 from "./migrations/0015_m11_topic_clustering";
 import * as m0016 from "./migrations/0016_m12_profile_scheduling";
+import * as m0017 from "./migrations/0017_task_model_thinking_effort";
 
 // Explicit in-code migration registry. We deliberately avoid filesystem
 // globbing so migrations resolve deterministically under Bun bundling. Add new
@@ -37,6 +38,7 @@ const migrations: Record<string, Migration> = {
 	"0014_m11_article_eligibility": m0014,
 	"0015_m11_topic_clustering": m0015,
 	"0016_m12_profile_scheduling": m0016,
+	"0017_task_model_thinking_effort": m0017,
 };
 
 class StaticMigrationProvider implements MigrationProvider {

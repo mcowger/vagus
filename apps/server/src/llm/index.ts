@@ -14,6 +14,7 @@ export interface LlmCompletionResult {
 export interface TaskModelConfig {
 	provider: string;
 	modelName: string;
+	thinkingEffort: string | null;
 }
 
 export interface LlmCallOptions {
@@ -23,6 +24,7 @@ export interface LlmCallOptions {
 	prompt: string;
 	systemPrompt?: string;
 	temperature?: number;
+	thinkingEffort?: string | null;
 }
 
 export async function callLlmCompletion(options: LlmCallOptions): Promise<LlmCompletionResult> {
@@ -33,6 +35,7 @@ export async function callLlmCompletion(options: LlmCallOptions): Promise<LlmCom
 		prompt,
 		systemPrompt,
 		temperature = 0.3,
+		thinkingEffort,
 	} = options;
 
 	let promptTokens = Math.ceil((prompt.length + (systemPrompt?.length || 0)) / 4);
@@ -63,6 +66,9 @@ export async function callLlmCompletion(options: LlmCallOptions): Promise<LlmCom
 				model: modelName,
 				messages,
 				temperature,
+				...(thinkingEffort && thinkingEffort !== "Default"
+					? { reasoning_effort: thinkingEffort }
+					: {}),
 			}),
 		});
 
@@ -105,6 +111,7 @@ export async function getTaskModel(
 		return {
 			provider: row.provider,
 			modelName: row.model_name,
+			thinkingEffort: row.thinking_effort,
 		};
 	}
 
@@ -147,6 +154,7 @@ export async function generateCompletion(
 		baseUrl,
 		apiKey: pConfig.api_key ?? undefined,
 		modelName: config.modelName,
+		thinkingEffort: config.thinkingEffort,
 		prompt,
 		systemPrompt: options?.systemPrompt,
 	});

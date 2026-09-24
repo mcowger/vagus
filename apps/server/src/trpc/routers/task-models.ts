@@ -1,5 +1,25 @@
+import { getSupportedThinkingLevels } from "@earendil-works/pi-ai";
+import { getBuiltinModels, getBuiltinProviders } from "@earendil-works/pi-ai/providers/all";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { adminProcedure, router } from "../trpc";
+
+export function getTaskModelThinkingEfforts(provider: string, modelName: string): string[] {
+	const builtinProviders = getBuiltinProviders();
+	if (!builtinProviders.includes(provider as (typeof builtinProviders)[number])) {
+		return ["Default"];
+	}
+
+	const model = getBuiltinModels(provider as (typeof builtinProviders)[number]).find(
+		(candidate) => candidate.id === modelName,
+	);
+	if (!model?.reasoning) {
+		return ["Default"];
+	}
+
+	const efforts = getSupportedThinkingLevels(model).filter((level) => level !== "off");
+	return efforts.length > 0 ? efforts : ["Default"];
+}
 
 export const taskModelsRouter = router({
 	getTaskModels: adminProcedure.query(async ({ ctx }) => {
@@ -10,15 +30,28 @@ export const taskModelsRouter = router({
 			.execute();
 	}),
 
+	getThinkingEfforts: adminProcedure
+		.input(z.object({ provider: z.string(), modelName: z.string() }))
+		.query(({ input }) => getTaskModelThinkingEfforts(input.provider, input.modelName)),
+
 	setTaskModel: adminProcedure
 		.input(
 			z.object({
 				taskName: z.string().min(1),
 				provider: z.string().min(1),
 				modelName: z.string().min(1),
+				thinkingEffort: z.string().min(1).optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
+			const thinkingEffort = input.thinkingEffort ?? "Default";
+			if (!getTaskModelThinkingEfforts(input.provider, input.modelName).includes(thinkingEffort)) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: `Unsupported thinking effort "${thinkingEffort}" for ${input.provider}/${input.modelName}`,
+				});
+			}
+			const storedThinkingEffort = thinkingEffort === "Default" ? null : thinkingEffort;
 			const now = new Date().toISOString();
 			const existing = await ctx.db
 				.selectFrom("task_model")
@@ -32,6 +65,7 @@ export const taskModelsRouter = router({
 					.set({
 						provider: input.provider,
 						model_name: input.modelName,
+						thinking_effort: storedThinkingEffort,
 						updated_at: now,
 					})
 					.where("id", "=", existing.id)
@@ -46,6 +80,7 @@ export const taskModelsRouter = router({
 					task_name: input.taskName,
 					provider: input.provider,
 					model_name: input.modelName,
+					thinking_effort: storedThinkingEffort,
 					created_at: now,
 					updated_at: now,
 				})

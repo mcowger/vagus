@@ -101,6 +101,7 @@ export interface TaskModelTable {
 	task_name: string; // e.g. "stage_a_bullet", "stage_b_synthesis"
 	provider: string; // e.g. "openai", "anthropic"
 	model_name: string; // e.g. "gpt-4o-mini"
+	thinking_effort: string | null;
 	created_at: Timestamp;
 	updated_at: Timestamp;
 }
