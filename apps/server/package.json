@@ -15,7 +15,7 @@
     "kysely": "^0.29.5",
     "kysely-bun-sqlite": "^0.4.0",
     "linkedom": "^0.18.13",
-    "pi-ai": "^0.0.1",
+    "@earendil-works/pi-ai": "^0.87.1",
     "plainjob": "^0.0.14",
     "rss-parser": "^3.13.0",
     "zod": "^4.4.3"
