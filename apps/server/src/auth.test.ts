@@ -72,6 +72,53 @@ describe("Auth instance", () => {
 		).rejects.toThrow();
 	});
 
+	test("auth migrations preserve existing account rows without an issuer column", async () => {
+		testDb.sqlite.exec(`
+			CREATE TABLE account (
+				id TEXT PRIMARY KEY NOT NULL,
+				accountId TEXT NOT NULL,
+				providerId TEXT NOT NULL,
+				userId TEXT NOT NULL,
+				accessToken TEXT,
+				refreshToken TEXT,
+				idToken TEXT,
+				accessTokenExpiresAt date,
+				refreshTokenExpiresAt date,
+				scope TEXT,
+				password TEXT,
+				createdAt date NOT NULL,
+				updatedAt date NOT NULL
+			)
+		`);
+		testDb.sqlite
+			.query(
+				`INSERT INTO account
+					(id, accountId, providerId, userId, createdAt, updatedAt)
+					VALUES (?, ?, ?, ?, ?, ?)`,
+			)
+			.run(
+				"account-1",
+				"google-account-1",
+				"google",
+				"user-1",
+				new Date().toISOString(),
+				new Date().toISOString(),
+			);
+
+		const authInstance = createAuth(testDb.sqlite);
+		await initAuthSchema(authInstance);
+
+		const account = testDb.sqlite
+			.query("SELECT id, providerId FROM account WHERE id = ?")
+			.get("account-1") as { id: string; providerId: string } | null;
+		const accountColumns = testDb.sqlite
+			.query("PRAGMA table_info(account)")
+			.all() as { name: string }[];
+
+		expect(account).toEqual({ id: "account-1", providerId: "google" });
+		expect(accountColumns.map(({ name }) => name)).not.toContain("issuer");
+	});
+
 	test("Google provider is registered only when both creds are present", () => {
 		const withCreds = createAuth(testDb.sqlite, {
 			googleClientId: "id",

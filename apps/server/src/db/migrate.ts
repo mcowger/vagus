@@ -1,5 +1,9 @@
-import { type Kysely } from "kysely";
-import { Migrator, type Migration, type MigrationProvider } from "kysely/migration";
+import {
+	Migrator,
+	type Kysely,
+	type Migration,
+	type MigrationProvider,
+} from "kysely";
 import * as m0001 from "./migrations/0001_init";
 import * as m0002 from "./migrations/0002_m2_sources";
 import * as m0003 from "./migrations/0003_m3_extraction";
