@@ -8,10 +8,7 @@ import { ScrapeAdapter } from "./scrape";
 
 describe("ScrapeAdapter", () => {
 	test("parses HTML article fixture correctly", async () => {
-		const htmlFixture = readFileSync(
-			join(__dirname, "fixtures/scrape_article.html"),
-			"utf-8",
-		);
+		const htmlFixture = readFileSync(join(__dirname, "fixtures/scrape_article.html"), "utf-8");
 
 		const targetUrl = "https://example.com/articles/ai-architectures";
 		const originalFetch = globalThis.fetch;
@@ -46,7 +43,9 @@ describe("ScrapeAdapter", () => {
 			expect(item.url).toBe(targetUrl);
 			expect(item.author).toBe("Alex Rivera");
 			expect(item.publishDate).toBe("2026-03-15T10:00:00Z");
-			expect(item.content).toContain("Autonomous agent architectures in particular enable complex multi-step reasoning");
+			expect(item.content).toContain(
+				"Autonomous agent architectures in particular enable complex multi-step reasoning",
+			);
 			expect(item.imageUrl).toBe("https://example.com/images/ai-arch.jpg");
 		} finally {
 			globalThis.fetch = originalFetch;

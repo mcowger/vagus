@@ -14,9 +14,7 @@ export class GitHubTrendingAdapter implements SourceAdapter {
 			if (source.config) {
 				try {
 					const config =
-						typeof source.config === "string"
-							? JSON.parse(source.config)
-							: source.config;
+						typeof source.config === "string" ? JSON.parse(source.config) : source.config;
 					if (config && typeof config.language === "string" && config.language.trim()) {
 						language = config.language.trim();
 					}
@@ -43,9 +41,7 @@ export class GitHubTrendingAdapter implements SourceAdapter {
 			});
 
 			if (!res.ok) {
-				throw new Error(
-					`Failed to fetch GitHub Trending from ${targetUrl}: HTTP ${res.status}`,
-				);
+				throw new Error(`Failed to fetch GitHub Trending from ${targetUrl}: HTTP ${res.status}`);
 			}
 
 			const htmlText = await res.text();

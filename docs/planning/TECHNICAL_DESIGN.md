@@ -6,20 +6,20 @@
 
 ## 1. Decision Summary
 
-| # | Decision | Choice |
-|---|---|---|
-| T1 | Project structure | **Solar-style monorepo**: `apps/server` + `apps/web`, Bun workspace |
-| T2 | Vector similarity | **In-process brute force** over Float32 BLOBs, **behind an interface** |
-| T3 | Run orchestration | **DB-backed job/step queue** (off-the-shelf, not hand-rolled) |
-| T4 | Queue library | **plainjob** (bun:sqlite adapter, built-in cron) |
-| T5 | Job granularity | **Fine-grained** — one job per unit of work |
-| T6 | Configuration | **DB-first** (Solar-style), edited live in admin UI |
-| T7 | Secrets at rest | **Plaintext in DB, no encryption** (risk explicitly accepted) |
-| T8 | Parsing stack | **linkedom + @mozilla/readability + rss-parser**, fetch-based API clients |
-| T9 | Frontend | tRPC + **@tanstack/react-query**, a router, **Tailwind + shadcn/ui** |
-| T10 | LLM structured output | **Tool-calling as structured output** (TypeBox + `validateToolCall`) |
-| T11 | Outbound fetching | **Basic** (User-Agent + timeout + per-stage concurrency) |
-| T12 | Dev/test | **Full fakes + fixtures**, offline deterministic E2E |
+| #   | Decision              | Choice                                                                    |
+| --- | --------------------- | ------------------------------------------------------------------------- |
+| T1  | Project structure     | **Solar-style monorepo**: `apps/server` + `apps/web`, Bun workspace       |
+| T2  | Vector similarity     | **In-process brute force** over Float32 BLOBs, **behind an interface**    |
+| T3  | Run orchestration     | **DB-backed job/step queue** (off-the-shelf, not hand-rolled)             |
+| T4  | Queue library         | **plainjob** (bun:sqlite adapter, built-in cron)                          |
+| T5  | Job granularity       | **Fine-grained** — one job per unit of work                               |
+| T6  | Configuration         | **DB-first** (Solar-style), edited live in admin UI                       |
+| T7  | Secrets at rest       | **Plaintext in DB, no encryption** (risk explicitly accepted)             |
+| T8  | Parsing stack         | **linkedom + @mozilla/readability + rss-parser**, fetch-based API clients |
+| T9  | Frontend              | tRPC + **@tanstack/react-query**, a router, **Tailwind + shadcn/ui**      |
+| T10 | LLM structured output | **Tool-calling as structured output** (TypeBox + `validateToolCall`)      |
+| T11 | Outbound fetching     | **Basic** (User-Agent + timeout + per-stage concurrency)                  |
+| T12 | Dev/test              | **Full fakes + fixtures**, offline deterministic E2E                      |
 
 ## 2. Runtime Topology
 
@@ -46,7 +46,7 @@ Bun.serve ──> Hono app
 
 - **One SQLite file, one connection**, shared by Kysely + BetterAuth + plainjob
   (Solar's co-location principle). plainjob's `bun(new Database(...))` adapter wraps
-  the *same* Database instance we hand to Kysely's `BunSqliteDialect` and BetterAuth's
+  the _same_ Database instance we hand to Kysely's `BunSqliteDialect` and BetterAuth's
   dialect. `PRAGMA journal_mode=WAL`, `PRAGMA foreign_keys=ON`.
 - **Migrations**: numbered Kysely migrations via `migrateToLatest()` for app tables;
   BetterAuth migrates its own tables; plainjob creates its own tables on init. Run on
@@ -104,17 +104,17 @@ N+1". Approach:
 
 ### 4.2 Job types (fine-grained)
 
-| Job | Fan-out | Notes |
-|---|---|---|
-| `fetch-source` | per enabled source (deduped by identity) | external, retryable |
-| `extract-article` | per fetched item | linkedom + Readability |
-| `embed-article` | per extracted article | BYO embeddings, retryable |
-| `cluster` | 1 per run (global) | in-process brute force |
-| `score-user` | per user | hybrid relevance selection (§7.1) |
-| `prune` | 1, scheduled (own cron) | enforce retention (30d/90d), keep idempotency keys |
-| `synthesize-cluster` | per (user × selected cluster) | LLM tool-call, retryable |
-| `assemble-digest` | per user | Stage C, builds combined digest |
-| `notify-user` | per user | debounced ntfy |
+| Job                  | Fan-out                                  | Notes                                              |
+| -------------------- | ---------------------------------------- | -------------------------------------------------- |
+| `fetch-source`       | per enabled source (deduped by identity) | external, retryable                                |
+| `extract-article`    | per fetched item                         | linkedom + Readability                             |
+| `embed-article`      | per extracted article                    | BYO embeddings, retryable                          |
+| `cluster`            | 1 per run (global)                       | in-process brute force                             |
+| `score-user`         | per user                                 | hybrid relevance selection (§7.1)                  |
+| `prune`              | 1, scheduled (own cron)                  | enforce retention (30d/90d), keep idempotency keys |
+| `synthesize-cluster` | per (user × selected cluster)            | LLM tool-call, retryable                           |
+| `assemble-digest`    | per user                                 | Stage C, builds combined digest                    |
+| `notify-user`        | per user                                 | debounced ntfy                                     |
 
 - **Retry/backoff**: plainjob per-job retries; expensive/flaky external + LLM jobs get
   more attempts. Timeout re-queues jobs whose worker died.
@@ -181,7 +181,7 @@ hand-rolled cron loop. Manual trigger enqueues the same run-start job.
 - **pi-ai** (`@earendil-works/pi-ai`) for all chat/synthesis; providers/models
   configured in DB and registered into a pi-ai `Models` collection at runtime.
 - **Structured output via tool-calling**: each synthesis stage defines a TypeBox
-  "submit" tool whose parameters *are* the output schema, e.g.
+  "submit" tool whose parameters _are_ the output schema, e.g.
   `submit_cluster_summary({ summary, bullets: [{ claim, sourceArticleIds }], perspectives, timeline })`
   and `submit_digest({ execSummary, takeaways, whyItMatters, quotes })`.
 - Validate the tool call with pi-ai's `validateToolCall`; on validation failure, return
@@ -276,7 +276,7 @@ per-user synthesis. Degrades to keyword-only scoring when embeddings are unavail
 ### 13.1 Dev ports (Paseo + branch-stable allocator)
 
 - **The server just accepts `$PORT` (or `--port`)** like any conventional server — it
-  does **not** import the allocator. Port *selection* lives in the `bun run dev` target,
+  does **not** import the allocator. Port _selection_ lives in the `bun run dev` target,
   which inlines the shared allocator CLI:
   ```jsonc
   // package.json (M1)

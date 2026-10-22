@@ -71,19 +71,12 @@ export async function initAuthSchema(authInstance: AuthInstance) {
 	}
 }
 
-export function createAuth(
-	sqlite: BunDatabase,
-	options: CreateAuthOptions = {},
-) {
+export function createAuth(sqlite: BunDatabase, options: CreateAuthOptions = {}) {
 	const secret = options.secret ?? config.betterAuthSecret;
-	const allowedDomainsSetting =
-		options.allowedDomains ?? process.env.SIGNUP_ALLOWED_DOMAINS ?? "";
-	const adminEmailsSetting =
-		options.adminEmails ?? process.env.ADMIN_EMAILS ?? "";
-	const googleClientId =
-		options.googleClientId ?? process.env.GOOGLE_CLIENT_ID;
-	const googleClientSecret =
-		options.googleClientSecret ?? process.env.GOOGLE_CLIENT_SECRET;
+	const allowedDomainsSetting = options.allowedDomains ?? process.env.SIGNUP_ALLOWED_DOMAINS ?? "";
+	const adminEmailsSetting = options.adminEmails ?? process.env.ADMIN_EMAILS ?? "";
+	const googleClientId = options.googleClientId ?? process.env.GOOGLE_CLIENT_ID;
+	const googleClientSecret = options.googleClientSecret ?? process.env.GOOGLE_CLIENT_SECRET;
 	const isHttps = (process.env.BETTER_AUTH_URL || "").startsWith("https");
 
 	// Google is the only human login path; register it only when both creds are
@@ -108,10 +101,7 @@ export function createAuth(
 			type: "sqlite",
 		},
 		secret,
-		baseURL:
-			options.baseURL ??
-			process.env.BETTER_AUTH_URL ??
-			`http://localhost:${config.port}`,
+		baseURL: options.baseURL ?? process.env.BETTER_AUTH_URL ?? `http://localhost:${config.port}`,
 		emailAndPassword: {
 			enabled: false,
 		},
@@ -151,11 +141,7 @@ export function createAuth(
 			user: {
 				create: {
 					before: async (user) => {
-						const role = resolveSignupRole(
-							user.email,
-							allowedDomainsSetting,
-							adminEmailsSetting,
-						);
+						const role = resolveSignupRole(user.email, allowedDomainsSetting, adminEmailsSetting);
 
 						return {
 							data: {

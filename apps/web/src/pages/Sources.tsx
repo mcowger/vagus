@@ -147,7 +147,9 @@ export const Sources: React.FC = () => {
 						) : (
 							<div className="space-y-3">
 								{sourcesQuery.data?.map((s) => {
-									const sourceWeightRow = feedbackQuery.data?.sourceWeights?.find((sw) => sw.source_id === s.id);
+									const sourceWeightRow = feedbackQuery.data?.sourceWeights?.find(
+										(sw) => sw.source_id === s.id,
+									);
 									const currentWeight = sourceWeightRow?.weight ?? 1.0;
 									const sourceVote = feedbackQuery.data?.feedback?.[`source:${s.id}`] ?? 0;
 
@@ -181,7 +183,9 @@ export const Sources: React.FC = () => {
 															Private
 														</span>
 													)}
-													<span className={`text-[11px] px-2 py-0.5 rounded-full border ${weightColor}`}>
+													<span
+														className={`text-[11px] px-2 py-0.5 rounded-full border ${weightColor}`}
+													>
 														{weightLabel}
 													</span>
 												</div>

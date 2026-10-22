@@ -27,10 +27,7 @@ const adapters: Record<string, SourceAdapter> = {
 	scrape: new ScrapeAdapter(),
 };
 
-export async function processFetchSourceJob(
-	db: Kysely<Database>,
-	job: Job,
-): Promise<void> {
+export async function processFetchSourceJob(db: Kysely<Database>, job: Job): Promise<void> {
 	let data: FetchSourceJobData;
 	if (typeof job.data === "string") {
 		data = JSON.parse(job.data) as FetchSourceJobData;

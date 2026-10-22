@@ -68,7 +68,8 @@ describe("Milestone 4 — Multi-Tenant E2E Clustering & Scoring", () => {
 				source_id: source.id,
 				title: "NASA Space Telescope Finds Earth-like Exoplanet Orbiting Distant Star",
 				url: "https://example.com/space-2",
-				content: "Astronomers at NASA confirmed an Earth-sized exoplanet discovery using deep space telescope imagery.",
+				content:
+					"Astronomers at NASA confirmed an Earth-sized exoplanet discovery using deep space telescope imagery.",
 				publish_date: new Date().toISOString(),
 			})
 			.returning(["id"])
@@ -82,7 +83,8 @@ describe("Milestone 4 — Multi-Tenant E2E Clustering & Scoring", () => {
 				source_id: source.id,
 				title: "Breakthrough in Fault-Tolerant Quantum Computing Chips",
 				url: "https://example.com/quantum-1",
-				content: "Engineers successfully demonstrated a 100-qubit fault-tolerant quantum computing processor.",
+				content:
+					"Engineers successfully demonstrated a 100-qubit fault-tolerant quantum computing processor.",
 				publish_date: new Date().toISOString(),
 			})
 			.returning(["id"])
@@ -119,10 +121,7 @@ describe("Milestone 4 — Multi-Tenant E2E Clustering & Scoring", () => {
 
 		expect(clusters.length).toBe(2); // Space articles collapsed into 1 cluster, Quantum in 2nd cluster
 
-		const clusterArticles = await db
-			.selectFrom("cluster_article")
-			.selectAll()
-			.execute();
+		const clusterArticles = await db.selectFrom("cluster_article").selectAll().execute();
 
 		expect(clusterArticles.length).toBe(3);
 

@@ -8,12 +8,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 		.addColumn("api_key", "text")
 		.addColumn("enabled", "integer", (c) => c.notNull().defaultTo(1))
 		.addColumn("config", "text")
-		.addColumn("created_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
-		.addColumn("updated_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("created_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
+		.addColumn("updated_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	await db.schema
@@ -25,12 +21,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 		.addColumn("config", "text")
 		.addColumn("enabled", "integer", (c) => c.notNull().defaultTo(1))
 		.addColumn("owner_user_id", "text")
-		.addColumn("created_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
-		.addColumn("updated_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("created_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
+		.addColumn("updated_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	await db.schema
@@ -40,9 +32,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 		.addColumn("source_id", "integer", (c) =>
 			c.notNull().references("source.id").onDelete("cascade"),
 		)
-		.addColumn("processed_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("processed_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	await db.schema
@@ -66,12 +56,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 		.addColumn("image_url", "text")
 		.addColumn("reading_time_minutes", "integer")
 		.addColumn("stage_a_bullet", "text")
-		.addColumn("fetched_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
-		.addColumn("created_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("fetched_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
+		.addColumn("created_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	await db.schema

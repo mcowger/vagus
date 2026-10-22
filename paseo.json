@@ -1,8 +1,6 @@
 {
 	"worktree": {
-		"setup": [
-			"bun run init-worktree"
-		],
+		"setup": ["bun run init-worktree"],
 		"servicePorts": {
 			"portScript": "./scripts/paseo-port.ts"
 		}

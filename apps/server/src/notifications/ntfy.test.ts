@@ -32,7 +32,9 @@ describe("ntfy notification client", () => {
 		});
 
 		test("replaces smart quotes and apostrophes", () => {
-			expect(sanitizeAsciiHeader("“Hello” and ‘World’ - It’s fine")).toBe('"Hello" and \'World\' - It\'s fine');
+			expect(sanitizeAsciiHeader("“Hello” and ‘World’ - It’s fine")).toBe(
+				"\"Hello\" and 'World' - It's fine",
+			);
 		});
 
 		test("replaces em-dashes and en-dashes", () => {
@@ -58,7 +60,9 @@ describe("ntfy notification client", () => {
 		});
 
 		test("removes bracketed numbers and collapses extra spaces", () => {
-			expect(stripCitations("Headline news [1] [23]   announced.")).toBe("Headline news announced.");
+			expect(stripCitations("Headline news [1] [23]   announced.")).toBe(
+				"Headline news announced.",
+			);
 		});
 
 		test("handles text without citations or empty string", () => {
@@ -92,10 +96,7 @@ describe("ntfy notification client", () => {
 			expect(result.skipped).toBe(true);
 			expect(result.sent).toBe(false);
 
-			const logRows = await db
-				.selectFrom("notification_log")
-				.selectAll()
-				.execute();
+			const logRows = await db.selectFrom("notification_log").selectAll().execute();
 			expect(logRows.length).toBe(0);
 		});
 
@@ -154,7 +155,12 @@ describe("ntfy notification client", () => {
 				return new Response("OK", { status: 200 });
 			}) as unknown as typeof fetch;
 
-			const result = await sendDigestNotification(db, digest.id, userId, "Custom Header Title — 🚀");
+			const result = await sendDigestNotification(
+				db,
+				digest.id,
+				userId,
+				"Custom Header Title — 🚀",
+			);
 
 			expect(result.sent).toBe(true);
 			expect(result.skipped).toBe(false);
@@ -292,7 +298,8 @@ describe("ntfy notification client", () => {
 				.executeTakeFirstOrThrow();
 
 			// Test 1: Successful response recorded as "sent"
-			globalThis.fetch = (async () => new Response("OK", { status: 200 })) as unknown as typeof fetch;
+			globalThis.fetch = (async () =>
+				new Response("OK", { status: 200 })) as unknown as typeof fetch;
 
 			const successRes = await sendDigestNotification(db, digest1.id, userId);
 			expect(successRes.sent).toBe(true);
@@ -309,7 +316,8 @@ describe("ntfy notification client", () => {
 			expect(successLogs[0].error).toBeNull();
 
 			// Test 2: Failed HTTP response recorded as "failed"
-			globalThis.fetch = (async () => new Response("Internal Server Error", { status: 500 })) as unknown as typeof fetch;
+			globalThis.fetch = (async () =>
+				new Response("Internal Server Error", { status: 500 })) as unknown as typeof fetch;
 
 			const failRes = await sendDigestNotification(db, digest2.id, userId);
 			expect(failRes.sent).toBe(false);
@@ -337,7 +345,9 @@ describe("ntfy notification client", () => {
 					{ key: "notification_max_takeaways", value: "2" },
 					{ key: "notification_max_characters", value: "100" },
 				])
-				.onConflict((oc) => oc.column("key").doUpdateSet({ value: (eb) => eb.ref("excluded.value") }))
+				.onConflict((oc) =>
+					oc.column("key").doUpdateSet({ value: (eb) => eb.ref("excluded.value") }),
+				)
 				.execute();
 
 			await db

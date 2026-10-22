@@ -27,22 +27,20 @@ describe("Ingestion Core & Idempotency", () => {
 			connection: createPlainjobConnection(sqlite),
 		});
 
-		worker = defineWorker(
-			FETCH_SOURCE_JOB_TYPE,
-			(job) => processFetchSourceJob(db, job),
-			{
-				queue,
-				pollIntervall: 50,
-				onCompleted: (job: any) => {
-					try {
-						const data = (typeof job.data === "string" ? JSON.parse(job.data) : job.data) as FetchSourceJobData;
-						if (data?.stageId) {
-							void advanceStage(db, data.stageId, job.id);
-						}
-					} catch {}
-				},
-			} as any,
-		);
+		worker = defineWorker(FETCH_SOURCE_JOB_TYPE, (job) => processFetchSourceJob(db, job), {
+			queue,
+			pollIntervall: 50,
+			onCompleted: (job: any) => {
+				try {
+					const data = (
+						typeof job.data === "string" ? JSON.parse(job.data) : job.data
+					) as FetchSourceJobData;
+					if (data?.stageId) {
+						void advanceStage(db, data.stageId, job.id);
+					}
+				} catch {}
+			},
+		} as any);
 		void worker.start();
 	});
 

@@ -15,9 +15,7 @@ function parseJsonArray(input: string | null | undefined): string[] {
 	try {
 		const parsed = JSON.parse(input);
 		if (Array.isArray(parsed)) {
-			return parsed
-				.map((item) => String(item).trim())
-				.filter((item) => item.length > 0);
+			return parsed.map((item) => String(item).trim()).filter((item) => item.length > 0);
 		}
 	} catch {
 		// Ignore invalid JSON
@@ -40,10 +38,7 @@ export async function scoreClustersForUser(
 	const database = getDb(db);
 
 	// 1. Fetch user's interest_profile
-	let query = database
-		.selectFrom("interest_profile")
-		.selectAll()
-		.where("user_id", "=", userId);
+	let query = database.selectFrom("interest_profile").selectAll().where("user_id", "=", userId);
 
 	if (profileId) {
 		query = query.where("id", "=", profileId);
@@ -278,7 +273,9 @@ export async function scoreClustersForUser(
 					...entities,
 					...includeRules,
 					...excludeRules,
-				].filter(Boolean).join(" ");
+				]
+					.filter(Boolean)
+					.join(" ");
 
 				profileVector = await embedder.embedText(textToEmbed || profile.name || "default");
 				await database
@@ -290,7 +287,10 @@ export async function scoreClustersForUser(
 					.where("user_id", "=", userId)
 					.execute();
 			} catch (err) {
-				log.warn("Failed to re-embed interest profile with matching dimension", { userId, error: String(err) });
+				log.warn("Failed to re-embed interest profile with matching dimension", {
+					userId,
+					error: String(err),
+				});
 			}
 		}
 
@@ -307,9 +307,7 @@ export async function scoreClustersForUser(
 			// Fallback: title keyword overlap
 			const terms = keywords.length > 0 ? keywords : [...topics, ...entities];
 			if (terms.length > 0) {
-				const matches = terms.filter((term) =>
-					lowerTitle.includes(term.toLowerCase()),
-				).length;
+				const matches = terms.filter((term) => lowerTitle.includes(term.toLowerCase())).length;
 				baseScore = matches / terms.length;
 			} else if (!profileVector) {
 				baseScore = BROAD_CURATOR_BASE_SCORE;
@@ -345,7 +343,7 @@ export async function scoreClustersForUser(
 		if (articleVector && positiveVector && articleVector.length === positiveVector.length) {
 			const posSim = cosineSimilarity(positiveVector, articleVector);
 			if (posSim > 0.5) {
-				feedbackBoost += posSim * 0.20;
+				feedbackBoost += posSim * 0.2;
 			}
 		}
 
@@ -353,7 +351,7 @@ export async function scoreClustersForUser(
 		if (articleVector && negativeVector && articleVector.length === negativeVector.length) {
 			const negSim = cosineSimilarity(negativeVector, articleVector);
 			if (negSim > 0.5) {
-				feedbackPenalty += negSim * 0.30;
+				feedbackPenalty += negSim * 0.3;
 			}
 		}
 
@@ -372,7 +370,10 @@ export async function scoreClustersForUser(
 			const clusterSummary = summaryTitle || content.slice(0, 300);
 
 			try {
-				const { systemPrompt, userPromptTemplate } = await getPromptTemplates(database, "scoring_tiebreaker");
+				const { systemPrompt, userPromptTemplate } = await getPromptTemplates(
+					database,
+					"scoring_tiebreaker",
+				);
 				const tiebreakerPrompt = renderPrompt(userPromptTemplate, {
 					profileText,
 					title: clusterTitle,
@@ -424,14 +425,17 @@ export async function scoreClustersForUser(
 	let finalSelected = selected;
 
 	if (selected.length < minCount) {
-		log.info("Digest creation suppressed: qualified clusters count is below profile minimum threshold", {
-			runId,
-			userId,
-			profileId: profile.id,
-			profileName: profile.name,
-			qualifiedCount: selected.length,
-			requiredMinCount: minCount,
-		});
+		log.info(
+			"Digest creation suppressed: qualified clusters count is below profile minimum threshold",
+			{
+				runId,
+				userId,
+				profileId: profile.id,
+				profileName: profile.name,
+				qualifiedCount: selected.length,
+				requiredMinCount: minCount,
+			},
+		);
 		finalSelected = [];
 	}
 

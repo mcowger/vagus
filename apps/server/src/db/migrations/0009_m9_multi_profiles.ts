@@ -22,12 +22,8 @@ export async function up(db: Kysely<any>): Promise<void> {
 		.addColumn("max_cluster_cap", "integer", (c) => c.notNull().defaultTo(10))
 		.addColumn("ntfy_topic", "text")
 		.addColumn("is_default", "integer", (c) => c.notNull().defaultTo(0))
-		.addColumn("created_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
-		.addColumn("updated_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("created_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
+		.addColumn("updated_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	// 3. Copy data from old table
@@ -48,15 +44,9 @@ export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema.dropTable("interest_profile_old").execute();
 
 	// 5. Add profile_id to user_selected_cluster and digest tables
-	await db.schema
-		.alterTable("user_selected_cluster")
-		.addColumn("profile_id", "integer")
-		.execute();
+	await db.schema.alterTable("user_selected_cluster").addColumn("profile_id", "integer").execute();
 
-	await db.schema
-		.alterTable("digest")
-		.addColumn("profile_id", "integer")
-		.execute();
+	await db.schema.alterTable("digest").addColumn("profile_id", "integer").execute();
 }
 
 export async function down(db: Kysely<unknown>): Promise<void> {

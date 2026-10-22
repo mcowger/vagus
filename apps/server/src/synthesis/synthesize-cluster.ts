@@ -5,7 +5,10 @@ import { generateCompletion } from "../llm";
 import { log } from "../log";
 import { getPromptTemplates, renderPrompt } from "../prompts/defaults";
 import { advanceStage, failStage } from "../queue/coordinator";
-import { SYNTHESIZE_CLUSTER_JOB_TYPE, type SynthesizeClusterJobData } from "../queue/synthesis-contracts";
+import {
+	SYNTHESIZE_CLUSTER_JOB_TYPE,
+	type SynthesizeClusterJobData,
+} from "../queue/synthesis-contracts";
 import { extractJsonFromText, sanitizeTextContent } from "../utils/json";
 import { ClusterSummaryResult, validateAndFilterCitations } from "./types";
 
@@ -84,7 +87,14 @@ export async function processSynthesizeClusterJob(
 
 	const { runId, stageId, userId, profileId, clusterId } = data;
 
-	log.info("Starting synthesize-cluster job", { jobId: job.id, runId, stageId, userId, profileId, clusterId });
+	log.info("Starting synthesize-cluster job", {
+		jobId: job.id,
+		runId,
+		stageId,
+		userId,
+		profileId,
+		clusterId,
+	});
 
 	const database = getDb(db);
 
@@ -124,7 +134,10 @@ Key Bullet: ${article.stage_a_bullet || "N/A"}
 Content: ${article.content || "N/A"}\n\n`;
 		}
 
-		const { systemPrompt, userPromptTemplate } = await getPromptTemplates(database, "stage_b_synthesis");
+		const { systemPrompt, userPromptTemplate } = await getPromptTemplates(
+			database,
+			"stage_b_synthesis",
+		);
 		const prompt = renderPrompt(userPromptTemplate, {
 			articlesText,
 		});
@@ -136,9 +149,15 @@ Content: ${article.content || "N/A"}\n\n`;
 		});
 
 		const fallbackTitle =
-			articles.find((a) => a.is_primary === 1)?.title || articles[0]?.title || `Cluster ${clusterId}`;
+			articles.find((a) => a.is_primary === 1)?.title ||
+			articles[0]?.title ||
+			`Cluster ${clusterId}`;
 
-		const parsedResult = parseClusterSummaryResponse(completion.text, validArticleKeys, fallbackTitle);
+		const parsedResult = parseClusterSummaryResponse(
+			completion.text,
+			validArticleKeys,
+			fallbackTitle,
+		);
 
 		const validCitations = validateAndFilterCitations(parsedResult.citations, validArticleKeys);
 

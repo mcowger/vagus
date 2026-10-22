@@ -17,19 +17,17 @@ export const UsageDashboard: React.FC = () => {
 	const byProvider = usageQuery.data?.byProvider ?? [];
 	const byTaskModel = usageQuery.data?.byTaskModel ?? [];
 
-	const promptPct = totals.totalTokens > 0
-		? Math.round((totals.promptTokens / totals.totalTokens) * 100)
-		: 0;
+	const promptPct =
+		totals.totalTokens > 0 ? Math.round((totals.promptTokens / totals.totalTokens) * 100) : 0;
 	const completionPct = totals.totalTokens > 0 ? 100 - promptPct : 0;
 
 	return (
 		<div className="space-y-8">
 			<div>
-				<h1 className="text-3xl font-bold tracking-tight text-slate-900">
-					Usage & Cost Dashboard
-				</h1>
+				<h1 className="text-3xl font-bold tracking-tight text-slate-900">Usage & Cost Dashboard</h1>
 				<p className="text-slate-500 mt-1">
-					Monitor LLM token consumption, estimated costs, and model performance across pipeline runs.
+					Monitor LLM token consumption, estimated costs, and model performance across pipeline
+					runs.
 				</p>
 			</div>
 
@@ -96,8 +94,12 @@ export const UsageDashboard: React.FC = () => {
 					{/* Progress bar visual */}
 					<div className="space-y-1.5">
 						<div className="flex justify-between text-xs font-medium text-slate-600">
-							<span>Prompt: {totals.promptTokens.toLocaleString()} ({promptPct}%)</span>
-							<span>Completion: {totals.completionTokens.toLocaleString()} ({completionPct}%)</span>
+							<span>
+								Prompt: {totals.promptTokens.toLocaleString()} ({promptPct}%)
+							</span>
+							<span>
+								Completion: {totals.completionTokens.toLocaleString()} ({completionPct}%)
+							</span>
 						</div>
 						<div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden flex">
 							<div
@@ -170,9 +172,7 @@ export const UsageDashboard: React.FC = () => {
 									<tbody className="divide-y divide-slate-200">
 										{byProvider.map((p) => (
 											<tr key={p.provider} className="hover:bg-slate-50">
-												<td className="px-3 py-2.5 font-semibold text-slate-800">
-													{p.provider}
-												</td>
+												<td className="px-3 py-2.5 font-semibold text-slate-800">{p.provider}</td>
 												<td className="px-3 py-2.5 text-right font-mono text-xs">
 													{p.totalTokens.toLocaleString()}
 												</td>
@@ -282,15 +282,17 @@ export const UsageDashboard: React.FC = () => {
 											className="hover:bg-slate-50"
 										>
 											<td className="px-4 py-3 font-mono font-medium text-slate-700">
-												{g.run_id !== null ? `#${g.run_id}` : <span className="text-slate-400 font-sans italic">N/A</span>}
+												{g.run_id !== null ? (
+													`#${g.run_id}`
+												) : (
+													<span className="text-slate-400 font-sans italic">N/A</span>
+												)}
 											</td>
 											<td className="px-4 py-3 font-mono font-medium text-slate-800">
 												{g.task_name}
 											</td>
 											<td className="px-4 py-3 text-slate-600">{g.provider}</td>
-											<td className="px-4 py-3 font-mono text-xs text-slate-600">
-												{g.model_name}
-											</td>
+											<td className="px-4 py-3 font-mono text-xs text-slate-600">{g.model_name}</td>
 											<td className="px-4 py-3 text-right font-mono text-xs text-slate-700">
 												{g.prompt_tokens.toLocaleString()}
 											</td>

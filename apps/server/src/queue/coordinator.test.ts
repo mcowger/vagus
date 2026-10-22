@@ -249,7 +249,13 @@ test("startProfileRun handles profile not found, bounds, and profile overlap", a
 	// Add source, article, and embedding
 	const source = await db.kysely
 		.insertInto("source")
-		.values({ type: "rss", name: "Source 1", enabled: 1, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+		.values({
+			type: "rss",
+			name: "Source 1",
+			enabled: 1,
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString(),
+		})
 		.returningAll()
 		.executeTakeFirstOrThrow();
 

@@ -5,9 +5,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 		.createTable("system_setting")
 		.addColumn("key", "text", (c) => c.primaryKey())
 		.addColumn("value", "text", (c) => c.notNull())
-		.addColumn("updated_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("updated_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	await db.schema
@@ -20,9 +18,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 		.addColumn("topic", "text", (c) => c.notNull())
 		.addColumn("status", "text", (c) => c.notNull())
 		.addColumn("error", "text")
-		.addColumn("sent_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("sent_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	// Seed default retention settings

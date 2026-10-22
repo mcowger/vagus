@@ -40,7 +40,10 @@ function normalizeArrayInput(input: string[] | string | undefined | null): strin
 			// fallback to split
 		}
 	}
-	return trimmed.split(",").map((s) => s.trim()).filter(Boolean);
+	return trimmed
+		.split(",")
+		.map((s) => s.trim())
+		.filter(Boolean);
 }
 
 function parseArray(val: string | string[] | null | undefined): string[] {
@@ -50,7 +53,10 @@ function parseArray(val: string | string[] | null | undefined): string[] {
 		const parsed = JSON.parse(val);
 		if (Array.isArray(parsed)) return parsed.map(String);
 	} catch {
-		return val.split(",").map((s) => s.trim()).filter(Boolean);
+		return val
+			.split(",")
+			.map((s) => s.trim())
+			.filter(Boolean);
 	}
 	return [];
 }
@@ -197,7 +203,9 @@ export const profilesRouter = router({
 				...entityList,
 				...incList,
 				...excList,
-			].filter(Boolean).join(" ");
+			]
+				.filter(Boolean)
+				.join(" ");
 
 			const embedder = await getEmbedder(ctx.db);
 			const vec = await embedder.embedText(textToEmbed || input.name);
@@ -308,62 +316,62 @@ export const profilesRouter = router({
 
 			const name = input.name !== undefined ? input.name : existing.name;
 
-			const kwList = input.keywords !== undefined
-				? normalizeArrayInput(input.keywords)
-				: parseArray(existing.keywords);
+			const kwList =
+				input.keywords !== undefined
+					? normalizeArrayInput(input.keywords)
+					: parseArray(existing.keywords);
 
-			const topicList = input.topics !== undefined
-				? normalizeArrayInput(input.topics)
-				: parseArray(existing.topics);
+			const topicList =
+				input.topics !== undefined
+					? normalizeArrayInput(input.topics)
+					: parseArray(existing.topics);
 
-			const entityList = input.entities !== undefined
-				? normalizeArrayInput(input.entities)
-				: parseArray(existing.entities);
+			const entityList =
+				input.entities !== undefined
+					? normalizeArrayInput(input.entities)
+					: parseArray(existing.entities);
 
-			const incList = input.include_rules !== undefined
-				? normalizeArrayInput(input.include_rules)
-				: parseArray(existing.include_rules);
+			const incList =
+				input.include_rules !== undefined
+					? normalizeArrayInput(input.include_rules)
+					: parseArray(existing.include_rules);
 
-			const excList = input.exclude_rules !== undefined
-				? normalizeArrayInput(input.exclude_rules)
-				: parseArray(existing.exclude_rules);
+			const excList =
+				input.exclude_rules !== undefined
+					? normalizeArrayInput(input.exclude_rules)
+					: parseArray(existing.exclude_rules);
 
-			const similarityThreshold = input.similarity_threshold !== undefined
-				? input.similarity_threshold
-				: existing.similarity_threshold;
+			const similarityThreshold =
+				input.similarity_threshold !== undefined
+					? input.similarity_threshold
+					: existing.similarity_threshold;
 
-			const maxClusterCap = input.max_cluster_cap !== undefined
-				? input.max_cluster_cap
-				: existing.max_cluster_cap;
+			const maxClusterCap =
+				input.max_cluster_cap !== undefined ? input.max_cluster_cap : existing.max_cluster_cap;
 
-			const minClusterCount = input.min_cluster_count !== undefined
-				? input.min_cluster_count
-				: existing.min_cluster_count;
+			const minClusterCount =
+				input.min_cluster_count !== undefined
+					? input.min_cluster_count
+					: existing.min_cluster_count;
 
-			const scheduleEnabled = input.schedule_enabled !== undefined
-				? toScheduleEnabled(input.schedule_enabled)
-				: existing.schedule_enabled;
+			const scheduleEnabled =
+				input.schedule_enabled !== undefined
+					? toScheduleEnabled(input.schedule_enabled)
+					: existing.schedule_enabled;
 
-			const scheduleCron = input.schedule_cron !== undefined
-				? input.schedule_cron
-				: existing.schedule_cron;
+			const scheduleCron =
+				input.schedule_cron !== undefined ? input.schedule_cron : existing.schedule_cron;
 
-			const scheduleTimezone = input.schedule_timezone !== undefined
-				? input.schedule_timezone
-				: existing.schedule_timezone;
+			const scheduleTimezone =
+				input.schedule_timezone !== undefined
+					? input.schedule_timezone
+					: existing.schedule_timezone;
 
-			const ntfyTopic = input.ntfy_topic !== undefined
-				? input.ntfy_topic
-				: existing.ntfy_topic;
+			const ntfyTopic = input.ntfy_topic !== undefined ? input.ntfy_topic : existing.ntfy_topic;
 
-			const textToEmbed = [
-				name,
-				...kwList,
-				...topicList,
-				...entityList,
-				...incList,
-				...excList,
-			].filter(Boolean).join(" ");
+			const textToEmbed = [name, ...kwList, ...topicList, ...entityList, ...incList, ...excList]
+				.filter(Boolean)
+				.join(" ");
 
 			const embedder = await getEmbedder(ctx.db);
 			const vec = await embedder.embedText(textToEmbed || name || "default");

@@ -9,24 +9,18 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 		)
 		.addColumn("embedding", "blob", (c) => c.notNull())
 		.addColumn("model_name", "text", (c) => c.notNull())
-		.addColumn("created_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("created_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	await db.schema
 		.createTable("cluster")
 		.addColumn("id", "integer", (c) => c.primaryKey().autoIncrement())
-		.addColumn("run_id", "integer", (c) =>
-			c.notNull().references("run.id").onDelete("cascade"),
-		)
+		.addColumn("run_id", "integer", (c) => c.notNull().references("run.id").onDelete("cascade"))
 		.addColumn("primary_article_id", "integer", (c) =>
 			c.notNull().references("article.id").onDelete("cascade"),
 		)
 		.addColumn("summary_title", "text")
-		.addColumn("created_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("created_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	await db.schema
@@ -39,9 +33,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 			c.notNull().references("article.id").onDelete("cascade"),
 		)
 		.addColumn("is_primary", "integer", (c) => c.notNull().defaultTo(0))
-		.addColumn("created_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("created_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	await db.schema
@@ -58,29 +50,21 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 		.addColumn("similarity_threshold", "real", (c) => c.notNull().defaultTo(0.65))
 		.addColumn("max_cluster_cap", "integer", (c) => c.notNull().defaultTo(10))
 		.addColumn("ntfy_topic", "text")
-		.addColumn("created_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
-		.addColumn("updated_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("created_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
+		.addColumn("updated_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	await db.schema
 		.createTable("user_selected_cluster")
 		.addColumn("id", "integer", (c) => c.primaryKey().autoIncrement())
-		.addColumn("run_id", "integer", (c) =>
-			c.notNull().references("run.id").onDelete("cascade"),
-		)
+		.addColumn("run_id", "integer", (c) => c.notNull().references("run.id").onDelete("cascade"))
 		.addColumn("user_id", "text", (c) => c.notNull())
 		.addColumn("cluster_id", "integer", (c) =>
 			c.notNull().references("cluster.id").onDelete("cascade"),
 		)
 		.addColumn("score", "real", (c) => c.notNull())
 		.addColumn("reason", "text")
-		.addColumn("created_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("created_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 }
 

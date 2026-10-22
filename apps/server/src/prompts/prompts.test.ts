@@ -25,8 +25,12 @@ describe("Prompt Management & Templates", () => {
 	});
 
 	it("asks synthesis stages for detailed cluster summaries and digest takeaways", () => {
-		expect(PROMPT_DEFINITIONS.stage_b_synthesis.defaultUserPrompt).toContain("Write 6-8 substantive sentences");
-		expect(PROMPT_DEFINITIONS.stage_c_assembly.defaultUserPrompt).toContain("3-5 most important actionable takeaways");
+		expect(PROMPT_DEFINITIONS.stage_b_synthesis.defaultUserPrompt).toContain(
+			"Write 6-8 substantive sentences",
+		);
+		expect(PROMPT_DEFINITIONS.stage_c_assembly.defaultUserPrompt).toContain(
+			"3-5 most important actionable takeaways",
+		);
 	});
 
 	it("renders user prompt template replacing {{variable}} placeholders", () => {
@@ -47,7 +51,11 @@ describe("Prompt Management & Templates", () => {
 			.insertInto("system_setting")
 			.values([
 				{ key: "prompt_stage_a_bullet_system", value: "Custom Editor Persona", updated_at: now },
-				{ key: "prompt_stage_a_bullet_user", value: "Custom User Template: {{title}}", updated_at: now },
+				{
+					key: "prompt_stage_a_bullet_user",
+					value: "Custom User Template: {{title}}",
+					updated_at: now,
+				},
 			])
 			.execute();
 

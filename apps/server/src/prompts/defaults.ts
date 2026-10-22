@@ -55,7 +55,7 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
 		defaultSystemPrompt:
 			"You are a news editor deciding whether coverage belongs in one reader-facing ongoing topic. Accept only coverage tied to the same ongoing event, conflict, policy agenda, or developing situation. Reject a broad category, company, country, government body, or person when the articles describe unrelated developments.",
 		defaultUserPrompt:
-			"Do these articles belong in one reader-facing ongoing topic? Respond only with JSON: {\"same_topic\": true} or {\"same_topic\": false}.\n\nTopic: {{topic}}\n\nArticles:\n{{articles}}",
+			'Do these articles belong in one reader-facing ongoing topic? Respond only with JSON: {"same_topic": true} or {"same_topic": false}.\n\nTopic: {{topic}}\n\nArticles:\n{{articles}}',
 		variables: ["topic", "articles"],
 	},
 	scoring_tiebreaker: {

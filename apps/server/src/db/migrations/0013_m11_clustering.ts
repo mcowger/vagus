@@ -24,11 +24,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 		.expression((expression) =>
 			expression
 				.selectFrom("task_model")
-				.select([
-					expression.val("event_identity_merge").as("task_name"),
-					"provider",
-					"model_name",
-				])
+				.select([expression.val("event_identity_merge").as("task_name"), "provider", "model_name"])
 				.where("task_name", "=", "stage_b_synthesis"),
 		)
 		.onConflict((conflict) => conflict.column("task_name").doNothing())

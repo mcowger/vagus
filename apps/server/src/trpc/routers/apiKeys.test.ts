@@ -56,9 +56,9 @@ test("createApiKey returns a raw key owned by the admin", async () => {
 	expect(created.key).toBeString();
 	expect(created.key.length).toBeGreaterThan(10);
 
-	const row = dbObj.sqlite
-		.query("SELECT referenceId FROM apikey WHERE id = ?")
-		.get(created.id) as { referenceId: string };
+	const row = dbObj.sqlite.query("SELECT referenceId FROM apikey WHERE id = ?").get(created.id) as {
+		referenceId: string;
+	};
 	expect(row.referenceId).toBe(ADMIN_ID);
 });
 

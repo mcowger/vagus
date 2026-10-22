@@ -6,10 +6,7 @@ import { adminProcedure, router } from "../trpc";
 
 export const settingsRouter = router({
 	getSettings: adminProcedure.query(async ({ ctx }) => {
-		const rows = await ctx.db
-			.selectFrom("system_setting")
-			.selectAll()
-			.execute();
+		const rows = await ctx.db.selectFrom("system_setting").selectAll().execute();
 
 		const settingsMap: Record<string, string> = {};
 		for (const row of rows) {
@@ -116,10 +113,7 @@ export const settingsRouter = router({
 			const sysKey = `prompt_${input.promptKey}_system`;
 			const userKey = `prompt_${input.promptKey}_user`;
 
-			await ctx.db
-				.deleteFrom("system_setting")
-				.where("key", "in", [sysKey, userKey])
-				.execute();
+			await ctx.db.deleteFrom("system_setting").where("key", "in", [sysKey, userKey]).execute();
 
 			return { success: true };
 		}),
@@ -161,10 +155,7 @@ export const settingsRouter = router({
 				}
 				if (input.level === "stage_a") {
 					await trx.deleteFrom("article_embedding").execute();
-					await trx
-						.updateTable("article")
-						.set({ run_id: null, stage_a_bullet: null })
-						.execute();
+					await trx.updateTable("article").set({ run_id: null, stage_a_bullet: null }).execute();
 				} else {
 					await trx.updateTable("article").set({ run_id: null }).execute();
 				}
@@ -200,7 +191,10 @@ export const settingsRouter = router({
 			// Keep app_base_url and notification_base_url in sync if one is provided
 			if (payload.app_base_url !== undefined && payload.notification_base_url === undefined) {
 				payload.notification_base_url = payload.app_base_url;
-			} else if (payload.notification_base_url !== undefined && payload.app_base_url === undefined) {
+			} else if (
+				payload.notification_base_url !== undefined &&
+				payload.app_base_url === undefined
+			) {
 				payload.app_base_url = payload.notification_base_url;
 			}
 

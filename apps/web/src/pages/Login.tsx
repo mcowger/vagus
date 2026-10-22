@@ -17,8 +17,7 @@ export const Login: React.FC = () => {
 			const res = await signIn.social({ provider: "google", callbackURL: "/" });
 			if (res?.error) {
 				setError(
-					res.error.message ||
-						"Google sign-in is unavailable. Please contact an administrator.",
+					res.error.message || "Google sign-in is unavailable. Please contact an administrator.",
 				);
 				setLoading(false);
 			}
@@ -33,9 +32,7 @@ export const Login: React.FC = () => {
 			<Card className="w-full max-w-md shadow-lg">
 				<CardHeader className="space-y-1">
 					<CardTitle className="text-2xl font-bold">Sign in to vagus</CardTitle>
-					<CardDescription>
-						Use your Google account to access your news digests.
-					</CardDescription>
+					<CardDescription>Use your Google account to access your news digests.</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					{error && (
@@ -43,12 +40,7 @@ export const Login: React.FC = () => {
 							{error}
 						</div>
 					)}
-					<Button
-						type="button"
-						className="w-full"
-						onClick={handleGoogleSignIn}
-						disabled={loading}
-					>
+					<Button type="button" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
 						{loading ? "Redirecting..." : "Sign in with Google"}
 					</Button>
 				</CardContent>

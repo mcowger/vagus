@@ -121,9 +121,7 @@ export async function sendDigestNotification(
 	const settingsMap = new Map(settingsRows.map((r) => [r.key, r.value]));
 	const ntfyBaseVal = settingsMap.get("ntfy_base_url");
 	const baseUrl = (ntfyBaseVal || process.env.NTFY_BASE_URL || "https://ntfy.sh").trim();
-	const appBaseVal =
-		settingsMap.get("notification_base_url") ||
-		settingsMap.get("app_base_url");
+	const appBaseVal = settingsMap.get("notification_base_url") || settingsMap.get("app_base_url");
 
 	const appBaseUrl = (
 		appBaseVal ||
@@ -135,15 +133,11 @@ export async function sendDigestNotification(
 
 	const rawMaxTakeaways = settingsMap.get("notification_max_takeaways");
 	const maxTakeaways =
-		rawMaxTakeaways !== undefined && rawMaxTakeaways !== ""
-			? parseInt(rawMaxTakeaways, 10)
-			: 2;
+		rawMaxTakeaways !== undefined && rawMaxTakeaways !== "" ? parseInt(rawMaxTakeaways, 10) : 2;
 
 	const rawMaxChars = settingsMap.get("notification_max_characters");
 	const maxChars =
-		rawMaxChars !== undefined && rawMaxChars !== ""
-			? parseInt(rawMaxChars, 10)
-			: 300;
+		rawMaxChars !== undefined && rawMaxChars !== "" ? parseInt(rawMaxChars, 10) : 300;
 
 	let bodyText = "";
 	let items: string[] = [];

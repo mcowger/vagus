@@ -76,7 +76,9 @@ export async function extractArticleContent(
 			},
 		});
 		if (!response.ok) {
-			throw new Error(`Failed to fetch article from ${article.url}: ${response.status} ${response.statusText}`);
+			throw new Error(
+				`Failed to fetch article from ${article.url}: ${response.status} ${response.statusText}`,
+			);
 		}
 		html = await response.text();
 	}
@@ -92,24 +94,31 @@ export async function extractArticleContent(
 		'meta[property="article:author"]',
 		'meta[name="twitter:creator"]',
 	]);
-	const imageUrl = getMetaContent(document as unknown as Document, [
-		'meta[property="og:image"]',
-		'meta[name="twitter:image"]',
-		'link[rel="image_src"]',
-	]) || article.imageUrl?.trim() || null;
-	const publishDate = getMetaContent(document as unknown as Document, [
-		'meta[property="article:published_time"]',
-		'meta[property="og:article:published_time"]',
-		'meta[name="publication_date"]',
-		'meta[name="pubdate"]',
-		'meta[name="dc.date"]',
-		'meta[name="date"]',
-	]) || article.publishDate?.trim() || null;
+	const imageUrl =
+		getMetaContent(document as unknown as Document, [
+			'meta[property="og:image"]',
+			'meta[name="twitter:image"]',
+			'link[rel="image_src"]',
+		]) ||
+		article.imageUrl?.trim() ||
+		null;
+	const publishDate =
+		getMetaContent(document as unknown as Document, [
+			'meta[property="article:published_time"]',
+			'meta[property="og:article:published_time"]',
+			'meta[name="publication_date"]',
+			'meta[name="pubdate"]',
+			'meta[name="dc.date"]',
+			'meta[name="date"]',
+		]) ||
+		article.publishDate?.trim() ||
+		null;
 
 	const reader = new Readability(document as unknown as Document);
 	const parsed = reader.parse();
 
-	const title = parsed?.title?.trim() || metaTitle || document.title?.trim() || article.title?.trim() || "";
+	const title =
+		parsed?.title?.trim() || metaTitle || document.title?.trim() || article.title?.trim() || "";
 	const author = parsed?.byline?.trim() || metaAuthor || article.author?.trim() || null;
 	const rawContent = parsed?.textContent?.trim() || document.body?.textContent?.trim() || "";
 	const cleaned = cleanContent(rawContent);

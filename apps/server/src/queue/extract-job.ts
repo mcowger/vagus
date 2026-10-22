@@ -4,10 +4,7 @@ import { getDb, type Database } from "../db";
 import { extractArticleContent } from "../extractor";
 import { log } from "../log";
 import { advanceStage } from "./coordinator";
-import {
-	EXTRACT_ARTICLE_JOB_TYPE,
-	type ExtractArticleJobData,
-} from "./extraction-contracts";
+import { EXTRACT_ARTICLE_JOB_TYPE, type ExtractArticleJobData } from "./extraction-contracts";
 
 export async function processExtractArticleJob(
 	dbOrJob: Kysely<Database> | Job,

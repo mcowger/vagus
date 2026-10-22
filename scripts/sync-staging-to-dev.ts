@@ -10,7 +10,9 @@ function copyStagingData(dev: Sqlite): void {
 	dev.exec(`ATTACH DATABASE '${STAGING_DB_PATH.replaceAll("'", "''")}' AS staging`);
 	dev.exec("BEGIN IMMEDIATE");
 	try {
-		console.log("[sync] Clearing local sources, articles, pipeline output, and model configuration...");
+		console.log(
+			"[sync] Clearing local sources, articles, pipeline output, and model configuration...",
+		);
 		dev.exec(`
 			DELETE FROM citation; DELETE FROM digest_cluster; DELETE FROM digest;
 			DELETE FROM user_selected_cluster; DELETE FROM cluster_article; DELETE FROM cluster;
@@ -18,7 +20,9 @@ function copyStagingData(dev: Sqlite): void {
 			DELETE FROM user_source_weight; DELETE FROM source; DELETE FROM llm_usage;
 			DELETE FROM run_stage; DELETE FROM run; DELETE FROM provider_config; DELETE FROM task_model;
 		`);
-		console.log("[sync] Copying 25 staging sources, article records with article summaries, and provider configuration...");
+		console.log(
+			"[sync] Copying 25 staging sources, article records with article summaries, and provider configuration...",
+		);
 		dev.exec(`
 			INSERT INTO source (id, type, name, url, config, enabled, owner_user_id, created_at, updated_at)
 			SELECT id, type, name, url, config, enabled, owner_user_id, created_at, updated_at FROM staging.source;
@@ -35,8 +39,14 @@ function copyStagingData(dev: Sqlite): void {
 			ON CONFLICT(task_name) DO NOTHING;
 		`);
 		dev.exec("COMMIT");
-		const counts = dev.query("SELECT (SELECT count(*) FROM source) AS sources, (SELECT count(*) FROM article) AS articles, (SELECT count(*) FROM provider_config) AS providers").get() as Record<string, number>;
-		console.log(`[sync] Complete: ${counts.sources} sources, ${counts.articles} articles, ${counts.providers} provider configurations copied.`);
+		const counts = dev
+			.query(
+				"SELECT (SELECT count(*) FROM source) AS sources, (SELECT count(*) FROM article) AS articles, (SELECT count(*) FROM provider_config) AS providers",
+			)
+			.get() as Record<string, number>;
+		console.log(
+			`[sync] Complete: ${counts.sources} sources, ${counts.articles} articles, ${counts.providers} provider configurations copied.`,
+		);
 	} catch (error) {
 		dev.exec("ROLLBACK");
 		console.error("[sync] Failed; local changes were rolled back.");

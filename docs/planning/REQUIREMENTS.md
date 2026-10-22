@@ -1,8 +1,8 @@
 # News Digest Generator — Requirements
 
 > Status: **Draft v0.2** — product behavior & requirements. Technology choices are
-> fixed by the constraints below, but this document describes *what the system does*,
-> not *how it is coded*. Tenancy and pipeline decisions in §9 are now resolved and
+> fixed by the constraints below, but this document describes _what the system does_,
+> not _how it is coded_. Tenancy and pipeline decisions in §9 are now resolved and
 > folded into the requirements.
 
 ## 1. Overview
@@ -21,18 +21,18 @@ idempotency, scheduling, and notification patterns follow
 
 ### 1.1 Fixed technology constraints
 
-| Concern | Choice |
-|---|---|
-| Runtime / language | Bun + TypeScript |
-| Web server | Hono |
-| Frontend ↔ backend | tRPC (`@hono/trpc-server`) |
-| Auth | BetterAuth (Google OAuth + API keys, same SQLite DB) |
-| LLM access | `@earendil-works/pi-ai` |
-| Storage | SQLite |
-| Query builder | Kysely (`kysely-bun-sqlite`) |
-| Notifications | ntfy |
-| Web UI | React SPA served by the Bun process |
-| HTML extraction | `@mozilla/readability` |
+| Concern            | Choice                                               |
+| ------------------ | ---------------------------------------------------- |
+| Runtime / language | Bun + TypeScript                                     |
+| Web server         | Hono                                                 |
+| Frontend ↔ backend | tRPC (`@hono/trpc-server`)                           |
+| Auth               | BetterAuth (Google OAuth + API keys, same SQLite DB) |
+| LLM access         | `@earendil-works/pi-ai`                              |
+| Storage            | SQLite                                               |
+| Query builder      | Kysely (`kysely-bun-sqlite`)                         |
+| Notifications      | ntfy                                                 |
+| Web UI             | React SPA served by the Bun process                  |
+| HTML extraction    | `@mozilla/readability`                               |
 
 ### 1.2 Key design decision — embeddings
 
@@ -103,12 +103,14 @@ interval** covering all their interests. See §9 for the full set of resolved de
 ### 3.3 Processing & Analysis Pipeline
 
 **Stage 1 — Extraction & Standardization**
+
 - **FR-10** Clean raw HTML/text into a standard article object:
   `{ title, author, source, url, content, publish_date, image_url }`.
 - **FR-11** Extract metadata and estimate reading time. HTML pages use
   `@mozilla/readability`.
 
 **Stage 2 — Deduplication & Semantic Clustering**
+
 - **FR-12** Compute embeddings for article titles/summaries (separate embedding
   provider, §1.2).
 - **FR-13** Group articles covering the same event using cosine-similarity
@@ -119,6 +121,7 @@ interval** covering all their interests. See §9 for the full set of resolved de
   unavailable.
 
 **Stage 3 — Filtering & Scoring**
+
 - **FR-16** Filter out clickbait, low-quality, and promotional content.
 - **FR-17** Score relevance **per user** against that user's interest profile
   (keywords, topics, named entities, subscribed sources), using a **hybrid mechanism**:
@@ -132,6 +135,7 @@ interval** covering all their interests. See §9 for the full set of resolved de
 ### 3.4 LLM Synthesis & Summarization (pi-ai)
 
 Hierarchical processing:
+
 - **FR-19 (Stage A, article-level)** One-sentence bullet per article using a
   lightweight/cheap model. **Shared** — computed once per article, reused across users.
 - **FR-20 (Stage B, cluster-level)** Multi-document synthesis **per user** for the
@@ -147,6 +151,7 @@ Hierarchical processing:
   model selected from pi-ai's providers, with sensible defaults.
 
 **Guardrails**
+
 - **FR-23 Citation preservation** — every claim/bullet maps back to its source
   URL(s). The digest UI displays sources as usable inline chips + a per-story
   source list (Solar's cited-sources UX).

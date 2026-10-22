@@ -1,15 +1,21 @@
 {
-  "$schema": "https://raw.githubusercontent.com/gotgenes/pi-autoformat/main/schemas/pi-autoformat.schema.json",
-  "formatters": {
-    "biome": {
-      "command": ["bunx", "biome", "format", "--write"]
-    }
-  },
-  "chains": {
-    ".ts": ["biome"],
-    ".tsx": ["biome"],
-    ".js": ["biome"],
-    ".jsx": ["biome"],
-    ".json": ["biome"]
-  }
+	"$schema": "https://raw.githubusercontent.com/gotgenes/pi-autoformat/main/schemas/pi-autoformat.schema.json",
+	"formatters": {
+		"bun": {
+			"command": ["bun", "fmt"]
+		}
+	},
+	"chains": {
+		".ts": ["bun"],
+		".tsx": ["bun"],
+		".js": ["bun"],
+		".jsx": ["bun"],
+		".json": ["bun"],
+		".css": ["bun"],
+		".html": ["bun"],
+		".md": ["bun"],
+		".toml": ["bun"],
+		".yaml": ["bun"],
+		".yml": ["bun"]
+	}
 }

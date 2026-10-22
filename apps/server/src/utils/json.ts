@@ -46,8 +46,10 @@ export function extractJsonFromText<T = any>(text: string): T | null {
 	}
 
 	// 4. Fallback Regex Extraction for common JSON object fields (summary, title, etc.)
-	const summaryMatch = text.match(/(?:"summary"|summary)\s*:\s*"(.*?)"\s*,\s*(?:"perspectives"|perspectives|timeline|"timeline")/s)
-		|| text.match(/(?:"summary"|summary)\s*:\s*"((?:[^"\\]|\\.)*)"/s);
+	const summaryMatch =
+		text.match(
+			/(?:"summary"|summary)\s*:\s*"(.*?)"\s*,\s*(?:"perspectives"|perspectives|timeline|"timeline")/s,
+		) || text.match(/(?:"summary"|summary)\s*:\s*"((?:[^"\\]|\\.)*)"/s);
 
 	if (summaryMatch && summaryMatch[1]) {
 		const extractedSummary = summaryMatch[1].replace(/\\"/g, '"').replace(/\\n/g, "\n").trim();
@@ -94,7 +96,10 @@ export function sanitizeTextContent(str: string | null | undefined): string {
 			if (typeof (parsed as any).summary === "string" && (parsed as any).summary.trim()) {
 				return (parsed as any).summary.trim();
 			}
-			if (typeof (parsed as any).executive_summary === "string" && (parsed as any).executive_summary.trim()) {
+			if (
+				typeof (parsed as any).executive_summary === "string" &&
+				(parsed as any).executive_summary.trim()
+			) {
 				return (parsed as any).executive_summary.trim();
 			}
 			if (typeof (parsed as any).text === "string" && (parsed as any).text.trim()) {

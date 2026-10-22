@@ -51,8 +51,8 @@ export const ApiKeysPanel: React.FC = () => {
 					<KeyRound className="h-5 w-5" /> API Keys
 				</CardTitle>
 				<CardDescription>
-					Create keys for robot/API access. Keys act as the admin who created them.
-					Send the key in the <code>x-api-key</code> header.
+					Create keys for robot/API access. Keys act as the admin who created them. Send the key in
+					the <code>x-api-key</code> header.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-6">
@@ -65,9 +65,7 @@ export const ApiKeysPanel: React.FC = () => {
 
 				{newKey && (
 					<div className="p-3 rounded-md bg-amber-50 border border-amber-200 text-amber-900 text-sm space-y-2">
-						<div className="font-semibold">
-							Copy your new key now — it won't be shown again.
-						</div>
+						<div className="font-semibold">Copy your new key now — it won't be shown again.</div>
 						<div className="flex items-center gap-2">
 							<code className="flex-1 break-all rounded bg-white px-2 py-1 border border-amber-200">
 								{newKey}
@@ -87,12 +85,7 @@ export const ApiKeysPanel: React.FC = () => {
 								{copied ? "Copied" : "Copy"}
 							</Button>
 						</div>
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							onClick={() => setNewKey(null)}
-						>
+						<Button type="button" variant="ghost" size="sm" onClick={() => setNewKey(null)}>
 							Dismiss
 						</Button>
 					</div>
@@ -114,9 +107,7 @@ export const ApiKeysPanel: React.FC = () => {
 				</form>
 
 				<div className="space-y-2">
-					{keysQuery.isLoading && (
-						<p className="text-sm text-slate-500">Loading keys...</p>
-					)}
+					{keysQuery.isLoading && <p className="text-sm text-slate-500">Loading keys...</p>}
 					{keysQuery.data?.length === 0 && (
 						<p className="text-sm text-slate-500">No API keys yet.</p>
 					)}
@@ -126,9 +117,7 @@ export const ApiKeysPanel: React.FC = () => {
 							className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2"
 						>
 							<div className="min-w-0">
-								<div className="font-medium text-slate-900 truncate">
-									{k.name ?? "(unnamed)"}
-								</div>
+								<div className="font-medium text-slate-900 truncate">{k.name ?? "(unnamed)"}</div>
 								<div className="text-xs text-slate-500">
 									{k.start ? `${k.start}…` : "—"} · created{" "}
 									{new Date(k.createdAt).toLocaleDateString()}

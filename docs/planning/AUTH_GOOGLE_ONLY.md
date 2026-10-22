@@ -51,7 +51,7 @@ All gated by **`DEV_AUTH_ENABLED=true` AND `NODE_ENV !== "production"`**. In
 production these code paths are never mounted.
 
 - **`POST /dev/login { email }`**: simulates Google sign-in. Runs the email
-  through the *same* allowlist rules (`ADMIN_EMAILS` / `SIGNUP_ALLOWED_DOMAINS`),
+  through the _same_ allowlist rules (`ADMIN_EMAILS` / `SIGNUP_ALLOWED_DOMAINS`),
   creates the user if allowed (like a first Google login), then mints a real
   better-auth session cookie. Rejects disallowed emails exactly as Google would.
   Safety property: **cannot create any account Google OAuth couldn't** — it only
@@ -65,19 +65,20 @@ production these code paths are never mounted.
 - **`.gitignore`**: add `.dev-api-key`.
 
 Agent workflow in dev:
+
 - UI navigation: `POST /dev/login` → cookie → browse.
 - Robot/API: read `.dev-api-key`, send as `x-api-key`.
 - Rejection path: `POST /dev/login` with a non-whitelisted email → expect reject.
 
 ## Env vars
 
-| Var | Purpose | Notes |
-| --- | --- | --- |
-| `GOOGLE_CLIENT_ID` | Google OAuth client id | provider skipped if unset |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | provider skipped if unset |
-| `ADMIN_EMAILS` | comma-sep admin allowlist | case-insensitive; bypasses domain check |
-| `SIGNUP_ALLOWED_DOMAINS` | comma-sep domain whitelist | existing; unchanged semantics |
-| `DEV_AUTH_ENABLED` | enable dev login + seed | ignored when `NODE_ENV=production` |
+| Var                      | Purpose                    | Notes                                   |
+| ------------------------ | -------------------------- | --------------------------------------- |
+| `GOOGLE_CLIENT_ID`       | Google OAuth client id     | provider skipped if unset               |
+| `GOOGLE_CLIENT_SECRET`   | Google OAuth client secret | provider skipped if unset               |
+| `ADMIN_EMAILS`           | comma-sep admin allowlist  | case-insensitive; bypasses domain check |
+| `SIGNUP_ALLOWED_DOMAINS` | comma-sep domain whitelist | existing; unchanged semantics           |
+| `DEV_AUTH_ENABLED`       | enable dev login + seed    | ignored when `NODE_ENV=production`      |
 
 ## Work breakdown & parallelization
 
@@ -86,6 +87,7 @@ shared seam. The seam is: the exported auth instance shape, the `x-api-key`
 resolution in tRPC context, and the authorization-rule hook.
 
 ### Stream 0 — Core auth (BLOCKING; do first)
+
 - `apps/server/src/auth.ts`: disable email/password; add Google provider
   (conditional); configure `apiKey()` header resolution; rewrite user-create hook
   for `ADMIN_EMAILS` + domain whitelist; drop first-user-admin.
@@ -96,11 +98,13 @@ resolution in tRPC context, and the authorization-rule hook.
 Everything below depends only on the seam above and can then proceed in parallel:
 
 ### Stream A — API-key management [P]
+
 - New `apps/server/src/trpc/routers/apiKeys.ts` (`adminProcedure` create/list/revoke).
 - Register router in the tRPC app router.
 - Tests for the router.
 
 ### Stream B — Web UI [P]
+
 - `apps/web/src/pages/Login.tsx` → Google button only.
 - Remove `apps/web/src/pages/Signup.tsx`, its route + links in `App.tsx`.
 - `apps/web/src/lib/auth-client.ts`: drop `signUp`.
@@ -108,15 +112,18 @@ Everything below depends only on the seam above and can then proceed in parallel
   the static UI/layout can start immediately, wiring lands after A).
 
 ### Stream C — Dev/test tooling [P]
+
 - `POST /dev/login` endpoint (mounted only under `DEV_AUTH_ENABLED` + non-prod).
 - `scripts/seed-dev.ts`.
 - `scripts/dev-server.sh` wiring + `.gitignore`.
 
 ### Integration (after A/B/C)
+
 - Full typecheck/lint/test pass across server + web.
 - Manual smoke of `/dev/login` + `.dev-api-key`.
 
 ## Out of scope
+
 - Preserving/migrating existing email accounts.
 - Data-loss / disaster-recovery hardening.
 - Robot/service-account role abstraction.

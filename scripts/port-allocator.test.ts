@@ -16,12 +16,9 @@ describe("parseRange", () => {
 		expect(parseRange("  3000 - 4000 ")).toEqual({ start: 3000, end: 4000 });
 	});
 
-	test.each(["", "abc", "4000", "5000-4000", "0-10", "70000-80000"])(
-		"rejects %p",
-		(spec) => {
-			expect(() => parseRange(spec)).toThrow();
-		},
-	);
+	test.each(["", "abc", "4000", "5000-4000", "0-10", "70000-80000"])("rejects %p", (spec) => {
+		expect(() => parseRange(spec)).toThrow();
+	});
 });
 
 describe("resolveRange", () => {
@@ -57,8 +54,8 @@ describe("allocatePort", () => {
 
 	test("different branches generally get different ports", () => {
 		const ports = new Set(
-			["main", "feature/auth", "fix/bug", "docs/readme", "chore/deps"].map(
-				(branch) => allocatePort({ service: "web", branch, range }),
+			["main", "feature/auth", "fix/bug", "docs/readme", "chore/deps"].map((branch) =>
+				allocatePort({ service: "web", branch, range }),
 			),
 		);
 		// Not guaranteed unique, but a decent hash should spread these out.

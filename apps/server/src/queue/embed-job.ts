@@ -6,10 +6,7 @@ import type { Embedder } from "../embeddings/types";
 import { normalizeFloat32, serializeFloat32 } from "../embeddings/types";
 import { log } from "../log";
 import { advanceStage } from "./coordinator";
-import {
-	EMBED_ARTICLE_JOB_TYPE,
-	type EmbedArticleJobData,
-} from "./clustering-contracts";
+import { EMBED_ARTICLE_JOB_TYPE, type EmbedArticleJobData } from "./clustering-contracts";
 
 export async function getEmbedder(db?: Kysely<Database>): Promise<Embedder> {
 	if (db) {
@@ -18,10 +15,7 @@ export async function getEmbedder(db?: Kysely<Database>): Promise<Embedder> {
 				.selectFrom("task_model")
 				.selectAll()
 				.where((eb) =>
-					eb.or([
-						eb("task_name", "=", "article_embedding"),
-						eb("task_name", "=", "embedding"),
-					]),
+					eb.or([eb("task_name", "=", "article_embedding"), eb("task_name", "=", "embedding")]),
 				)
 				.executeTakeFirst();
 
@@ -50,10 +44,15 @@ export async function getEmbedder(db?: Kysely<Database>): Promise<Embedder> {
 				baseUrl,
 			});
 		} catch (err) {
-			log.warn("Failed to check provider_config or task_model for embedder", { error: String(err) });
+			log.warn("Failed to check provider_config or task_model for embedder", {
+				error: String(err),
+			});
 		}
 	}
-	return new OpenAiEmbedder({ apiKey: process.env.OPENAI_API_KEY, modelName: "text-embedding-3-small" });
+	return new OpenAiEmbedder({
+		apiKey: process.env.OPENAI_API_KEY,
+		modelName: "text-embedding-3-small",
+	});
 }
 
 export async function processEmbedArticleJob(

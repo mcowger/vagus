@@ -19,12 +19,35 @@ describe("Stage C Assemble Digest Worker", () => {
 		});
 		await migrateToLatest(db);
 		globalThis.fetch = (async () =>
-			new Response(JSON.stringify({
-				choices: [{ message: { content: JSON.stringify({ key_takeaways: [], why_it_matters: "Test significance.", key_quotes: [] }) } }],
-				usage: { prompt_tokens: 10, completion_tokens: 5 },
-			}))) as unknown as typeof fetch;
-		await db.insertInto("provider_config").values({ provider: "test-llm", api_key: "test-key", enabled: 1, config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }) }).execute();
-		await db.insertInto("task_model").values({ task_name: "stage_c_assembly", provider: "test-llm", model_name: "test-model" }).execute();
+			new Response(
+				JSON.stringify({
+					choices: [
+						{
+							message: {
+								content: JSON.stringify({
+									key_takeaways: [],
+									why_it_matters: "Test significance.",
+									key_quotes: [],
+								}),
+							},
+						},
+					],
+					usage: { prompt_tokens: 10, completion_tokens: 5 },
+				}),
+			)) as unknown as typeof fetch;
+		await db
+			.insertInto("provider_config")
+			.values({
+				provider: "test-llm",
+				api_key: "test-key",
+				enabled: 1,
+				config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }),
+			})
+			.execute();
+		await db
+			.insertInto("task_model")
+			.values({ task_name: "stage_c_assembly", provider: "test-llm", model_name: "test-model" })
+			.execute();
 	});
 
 	afterEach(async () => {
@@ -47,11 +70,14 @@ describe("Stage C Assemble Digest Worker", () => {
 		});
 
 		test("strips markdown code blocks before parsing", () => {
-			const raw = "```json\n" + JSON.stringify({
-				key_takeaways: ["Item 1"],
-				why_it_matters: "Important",
-				key_quotes: [],
-			}) + "\n```";
+			const raw =
+				"```json\n" +
+				JSON.stringify({
+					key_takeaways: ["Item 1"],
+					why_it_matters: "Important",
+					key_quotes: [],
+				}) +
+				"\n```";
 
 			const res = parseDigestResult(raw);
 			expect(res.key_takeaways).toEqual(["Item 1"]);
@@ -149,7 +175,10 @@ describe("Stage C Assemble Digest Worker", () => {
 					cluster_id: cluster.id,
 					title: "Major AI Breakthrough",
 					summary: "New AI model sets benchmarks across standard tests.",
-					perspectives: JSON.stringify(["Consensus on efficiency gains", "Concerns on open weights"]),
+					perspectives: JSON.stringify([
+						"Consensus on efficiency gains",
+						"Concerns on open weights",
+					]),
 					timeline: JSON.stringify(["July 2026: Benchmark released"]),
 				})
 				.returningAll()
@@ -259,7 +288,6 @@ describe("Stage C Assemble Digest Worker", () => {
 				})
 				.returningAll()
 				.executeTakeFirstOrThrow();
-
 
 			const stage = await db
 				.insertInto("run_stage")

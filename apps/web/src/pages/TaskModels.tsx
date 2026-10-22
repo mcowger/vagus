@@ -15,19 +15,22 @@ const PIPELINE_TASKS: PipelineTask[] = [
 	{
 		id: "stage_a_bullet",
 		title: "Article Summarization",
-		description: "Generates 1-2 sentence key bullet points per article for embedding generation and scoring.",
+		description:
+			"Generates 1-2 sentence key bullet points per article for embedding generation and scoring.",
 		defaultModel: "gpt-4o-mini",
 	},
 	{
 		id: "article_embedding",
 		title: "Vector Embedding Generation",
-		description: "Generates dense vector representations of articles for story clustering and interest profile scoring.",
+		description:
+			"Generates dense vector representations of articles for story clustering and interest profile scoring.",
 		defaultModel: "text-embedding-3-small",
 	},
 	{
 		id: "event_identity_merge",
 		title: "Broad Topic Validation",
-		description: "Validates whether related coverage belongs in one reader-facing ongoing story, rather than a broad category or entity.",
+		description:
+			"Validates whether related coverage belongs in one reader-facing ongoing story, rather than a broad category or entity.",
 		defaultModel: "gpt-4o-mini",
 	},
 	{
@@ -39,7 +42,8 @@ const PIPELINE_TASKS: PipelineTask[] = [
 	{
 		id: "stage_c_assembly",
 		title: "Executive Digest Assembly",
-		description: "Assembles executive briefing summaries, why-it-matters strategic analysis, and key takeaways.",
+		description:
+			"Assembles executive briefing summaries, why-it-matters strategic analysis, and key takeaways.",
 		defaultModel: "gpt-4o-mini",
 	},
 ];
@@ -75,12 +79,8 @@ function TaskRow({
 	const [selectedProvider, setSelectedProvider] = useState(
 		existingModel?.provider || defaultProvider,
 	);
-	const [modelInput, setModelName] = useState(
-		existingModel?.model_name || task.defaultModel,
-	);
-	const [thinkingEffort, setThinkingEffort] = useState(
-		existingModel?.thinking_effort || "Default",
-	);
+	const [modelInput, setModelName] = useState(existingModel?.model_name || task.defaultModel);
+	const [thinkingEffort, setThinkingEffort] = useState(existingModel?.thinking_effort || "Default");
 	const [isCustomInput, setIsCustomInput] = useState(false);
 	const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -214,7 +214,9 @@ function TaskRow({
 							<option value="__custom__">⚙ Custom Model ID...</option>
 						</select>
 						<div className="text-[10px] text-slate-400 font-mono">
-							Fetched {filteredModels.length} {task.id === "article_embedding" ? "embedding" : "text"} model{filteredModels.length > 1 ? "s" : ""} from endpoint
+							Fetched {filteredModels.length}{" "}
+							{task.id === "article_embedding" ? "embedding" : "text"} model
+							{filteredModels.length > 1 ? "s" : ""} from endpoint
 						</div>
 					</div>
 				) : (
@@ -302,9 +304,7 @@ export const TaskModels: React.FC = () => {
 	return (
 		<div className="space-y-8 max-w-5xl">
 			<div>
-				<h1 className="text-3xl font-bold tracking-tight text-slate-900">
-					Pipeline Task Models
-				</h1>
+				<h1 className="text-3xl font-bold tracking-tight text-slate-900">Pipeline Task Models</h1>
 				<p className="text-slate-500 mt-1">
 					Assign specific AI models and providers to each core stage of the intelligence pipeline.
 				</p>
@@ -371,9 +371,7 @@ export const TaskModels: React.FC = () => {
 								</thead>
 								<tbody className="divide-y divide-slate-200">
 									{PIPELINE_TASKS.map((task) => {
-										const existing = taskModelsQuery.data?.find(
-											(m) => m.task_name === task.id,
-										);
+										const existing = taskModelsQuery.data?.find((m) => m.task_name === task.id);
 										return (
 											<TaskRow
 												key={task.id}
@@ -396,7 +394,9 @@ export const TaskModels: React.FC = () => {
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">LLM Token Usage Log</CardTitle>
-					<CardDescription>Detailed token consumption and cost breakdown by task call</CardDescription>
+					<CardDescription>
+						Detailed token consumption and cost breakdown by task call
+					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					{llmUsageQuery.isLoading ? (

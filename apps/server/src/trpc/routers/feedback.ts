@@ -232,7 +232,9 @@ Summary: ${(cluster.summary || "").slice(0, 200)}
 
 Respond ONLY with the 2-4 word topic category name.`;
 
-					const completion = await generateCompletion("stage_a_bullet", categoryPrompt, { db: ctx.db });
+					const completion = await generateCompletion("stage_a_bullet", categoryPrompt, {
+						db: ctx.db,
+					});
 					if (completion.text?.trim()) {
 						topicCategory = completion.text.trim().replace(/^["']|["']$/g, "");
 					}
@@ -286,7 +288,9 @@ Respond ONLY with the 2-4 word topic category name.`;
 
 					if (profile) {
 						if (input.vote === 1) {
-							const existingPos = profile.positive_embedding ? deserializeFloat32(profile.positive_embedding) : null;
+							const existingPos = profile.positive_embedding
+								? deserializeFloat32(profile.positive_embedding)
+								: null;
 							const updatedPos = blendVectors(existingPos, clusterVec, 0.25);
 							await ctx.db
 								.updateTable("interest_profile")
@@ -294,7 +298,9 @@ Respond ONLY with the 2-4 word topic category name.`;
 								.where("id", "=", profile.id)
 								.execute();
 						} else if (input.vote === -1) {
-							const existingNeg = profile.negative_embedding ? deserializeFloat32(profile.negative_embedding) : null;
+							const existingNeg = profile.negative_embedding
+								? deserializeFloat32(profile.negative_embedding)
+								: null;
 							const updatedNeg = blendVectors(existingNeg, clusterVec, 0.25);
 							await ctx.db
 								.updateTable("interest_profile")

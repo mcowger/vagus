@@ -61,9 +61,7 @@ app.use(
 		// @hono/trpc-server types createContext as returning a plain record; our
 		// Context is structurally compatible (the router binds its real type).
 		createContext: (_opts, c) =>
-			createContext({ req: c.req.raw }) as unknown as Promise<
-				Record<string, unknown>
-			>,
+			createContext({ req: c.req.raw }) as unknown as Promise<Record<string, unknown>>,
 	}),
 );
 

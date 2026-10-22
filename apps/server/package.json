@@ -1,28 +1,28 @@
 {
-  "name": "@vagus/server",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "@better-auth/api-key": "^1.7.3",
-    "@hono/trpc-server": "^0.4.2",
-    "@mozilla/readability": "^0.6.0",
-    "@sinclair/typebox": "^0.34.52",
-    "@trpc/server": "^11.18.0",
-    "better-auth": "^1.7.3",
-    "bun-plugin-tailwind": "^0.1.2",
-    "hono": "^4.13.5",
-    "kysely": "^0.28.17",
-    "kysely-bun-sqlite": "^0.4.0",
-    "linkedom": "^0.18.13",
-    "@earendil-works/pi-ai": "^0.87.1",
-    "plainjob": "^0.0.14",
-    "rss-parser": "^3.13.0",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@types/bun": "^1.4.0",
-    "@types/mozilla__readability": "^0.4.2",
-    "bun-types": "1.4.0"
-  }
+	"name": "@vagus/server",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"dependencies": {
+		"@better-auth/api-key": "^1.7.3",
+		"@hono/trpc-server": "^0.4.2",
+		"@mozilla/readability": "^0.6.0",
+		"@sinclair/typebox": "^0.34.52",
+		"@trpc/server": "^11.18.0",
+		"better-auth": "^1.7.3",
+		"bun-plugin-tailwind": "^0.1.2",
+		"hono": "^4.13.5",
+		"kysely": "^0.28.17",
+		"kysely-bun-sqlite": "^0.4.0",
+		"linkedom": "^0.18.13",
+		"@earendil-works/pi-ai": "^0.87.1",
+		"plainjob": "^0.0.14",
+		"rss-parser": "^3.13.0",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@types/bun": "^1.4.3",
+		"@types/mozilla__readability": "^0.4.2",
+		"bun-types": "1.4.4"
+	}
 }

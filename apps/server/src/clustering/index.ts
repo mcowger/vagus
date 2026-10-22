@@ -43,9 +43,9 @@ export function computeJaccardSimilarity(setA: Set<string>, setB: Set<string>): 
 	return intersection / union;
 }
 
-export function selectPrimaryArticle<T extends { id: number; publish_date: string | null; content: string | null }>(
-	articles: T[],
-): T {
+export function selectPrimaryArticle<
+	T extends { id: number; publish_date: string | null; content: string | null },
+>(articles: T[]): T {
 	if (articles.length === 0) {
 		throw new Error("Cannot select primary article from empty array");
 	}
@@ -83,7 +83,37 @@ const DEFAULT_TOPIC_VALIDATION_MAX_BUCKETS = 20;
 const PROFILE_CONTEXT_LOOKBACK_MS = 48 * 60 * 60 * 1000;
 const MIN_TOPIC_FREQUENCY = 3;
 const TOPIC_STOP_WORDS = new Set([
-	"after", "ai", "america", "ap", "are", "bbc", "china", "chinese", "cnn", "deal", "exclusive", "here", "how", "latest", "live", "most", "new", "news", "red", "reuters", "the", "they", "today", "us", "war", "was", "watch", "what", "when", "why", "with",
+	"after",
+	"ai",
+	"america",
+	"ap",
+	"are",
+	"bbc",
+	"china",
+	"chinese",
+	"cnn",
+	"deal",
+	"exclusive",
+	"here",
+	"how",
+	"latest",
+	"live",
+	"most",
+	"new",
+	"news",
+	"red",
+	"reuters",
+	"the",
+	"they",
+	"today",
+	"us",
+	"war",
+	"was",
+	"watch",
+	"what",
+	"when",
+	"why",
+	"with",
 ]);
 
 function articleSimilarity(
@@ -96,14 +126,25 @@ function articleSimilarity(
 
 function topicTerms(article: { title: string; stage_a_bullet: string | null }): Set<string> {
 	const namedTerms = article.title.match(/\b(?:[A-Z][a-z]{2,}|[A-Z]{2,})\b/g) ?? [];
-	const terms = new Set(namedTerms.map((term) => term.toLowerCase()).filter((term) => !TOPIC_STOP_WORDS.has(term)));
-	const normalized = `${article.title}\n${article.stage_a_bullet ?? ""}`.toLowerCase().replaceAll("britain", "uk");
-	if (normalized.includes("iran") && !/(jewelry|zendaya|odyssey)/.test(normalized)) terms.add("iran-war");
-	if (normalized.includes("prime minister") && (normalized.includes("uk") || normalized.includes("burnham"))) terms.add("uk-prime-minister");
+	const terms = new Set(
+		namedTerms.map((term) => term.toLowerCase()).filter((term) => !TOPIC_STOP_WORDS.has(term)),
+	);
+	const normalized = `${article.title}\n${article.stage_a_bullet ?? ""}`
+		.toLowerCase()
+		.replaceAll("britain", "uk");
+	if (normalized.includes("iran") && !/(jewelry|zendaya|odyssey)/.test(normalized))
+		terms.add("iran-war");
+	if (
+		normalized.includes("prime minister") &&
+		(normalized.includes("uk") || normalized.includes("burnham"))
+	)
+		terms.add("uk-prime-minister");
 	return terms;
 }
 
-function topicPrompt<T extends { id: number; title: string; stage_a_bullet: string | null }>(articles: T[]): string {
+function topicPrompt<T extends { id: number; title: string; stage_a_bullet: string | null }>(
+	articles: T[],
+): string {
 	return articles
 		.slice(0, 12)
 		.map((article) => `[art_${article.id}] ${article.title}\n${article.stage_a_bullet ?? ""}`)
@@ -112,17 +153,24 @@ function topicPrompt<T extends { id: number; title: string; stage_a_bullet: stri
 
 function isSameTopic(response: string): boolean {
 	try {
-		const parsed = JSON.parse(response.replace(/^```json\s*|\s*```$/g, "")) as { same_topic?: unknown };
+		const parsed = JSON.parse(response.replace(/^```json\s*|\s*```$/g, "")) as {
+			same_topic?: unknown;
+		};
 		return parsed.same_topic === true;
 	} catch {
 		return false;
 	}
 }
 
-function semanticGroups<T extends { embedding: Float32Array | null; title: string }>(articles: T[], threshold: number): T[][] {
+function semanticGroups<T extends { embedding: Float32Array | null; title: string }>(
+	articles: T[],
+	threshold: number,
+): T[][] {
 	const groups: T[][] = [];
 	for (const article of articles) {
-		const group = groups.find((candidate) => candidate.every((member) => articleSimilarity(article, member) >= threshold));
+		const group = groups.find((candidate) =>
+			candidate.every((member) => articleSimilarity(article, member) >= threshold),
+		);
 		if (group) group.push(article);
 		else groups.push([article]);
 	}
@@ -136,19 +184,19 @@ export async function clusterRunArticles(
 ): Promise<ClusterRunResult> {
 	const threshold = options?.threshold ?? 0.8;
 	const llmMergeEnabled = options?.llmMergeEnabled ?? false;
-	const topicSubclusterThreshold = options?.topicSubclusterThreshold ?? DEFAULT_TOPIC_SUBCLUSTER_THRESHOLD;
-	const topicValidationMaxBuckets = options?.topicValidationMaxBuckets ?? DEFAULT_TOPIC_VALIDATION_MAX_BUCKETS;
+	const topicSubclusterThreshold =
+		options?.topicSubclusterThreshold ?? DEFAULT_TOPIC_SUBCLUSTER_THRESHOLD;
+	const topicValidationMaxBuckets =
+		options?.topicValidationMaxBuckets ?? DEFAULT_TOPIC_VALIDATION_MAX_BUCKETS;
 	const eligibilitySettings = await getArticleEligibilitySettings(db);
 
-	const runRow = await db
-		.selectFrom("run")
-		.selectAll()
-		.where("id", "=", runId)
-		.executeTakeFirst();
+	const runRow = await db.selectFrom("run").selectAll().where("id", "=", runId).executeTakeFirst();
 
 	const runKind = (runRow as any)?.kind;
-	const fromArticleId = options?.inputFromArticleId ?? (runRow as any)?.input_from_article_id ?? null;
-	const throughArticleId = options?.inputThroughArticleId ?? (runRow as any)?.input_through_article_id ?? null;
+	const fromArticleId =
+		options?.inputFromArticleId ?? (runRow as any)?.input_from_article_id ?? null;
+	const throughArticleId =
+		options?.inputThroughArticleId ?? (runRow as any)?.input_through_article_id ?? null;
 
 	let articleRows: Selectable<ArticleTable>[];
 
@@ -166,16 +214,18 @@ export async function clusterRunArticles(
 			.execute()) as Selectable<ArticleTable>[];
 
 		articleRows = embeddedArticles.filter((article) => {
-			const isNew = article.id > fromId && (throughId === null || throughId === undefined || article.id <= throughId);
-			const isContext = article.id <= fromId && new Date(article.created_at).getTime() >= contextCutoff;
+			const isNew =
+				article.id > fromId &&
+				(throughId === null || throughId === undefined || article.id <= throughId);
+			const isContext =
+				article.id <= fromId && new Date(article.created_at).getTime() >= contextCutoff;
 			if (!isNew && !isContext) return false;
 			return isEligibleArticle(article, eligibilitySettings);
 		});
 	} else {
-		articleRows = (await db
-			.selectFrom("article")
-			.selectAll()
-			.execute()).filter((article) => isEligibleArticle(article, eligibilitySettings));
+		articleRows = (await db.selectFrom("article").selectAll().execute()).filter((article) =>
+			isEligibleArticle(article, eligibilitySettings),
+		);
 	}
 
 	if (articleRows.length === 0) {
@@ -214,34 +264,59 @@ export async function clusterRunArticles(
 	const buckets = new Map<string, typeof articlesWithParsed>();
 	for (const article of articlesWithParsed) {
 		const terms = topicTerms(article);
-		const topic = terms.has("iran-war") || terms.has("uk-prime-minister")
-			? [...terms].find((term) => term === "iran-war" || term === "uk-prime-minister")
-			: [...terms]
-			.filter((term) => (frequencies.get(term) ?? 0) >= MIN_TOPIC_FREQUENCY)
-			.sort((left, right) => (frequencies.get(left) ?? 0) - (frequencies.get(right) ?? 0))[0];
+		const topic =
+			terms.has("iran-war") || terms.has("uk-prime-minister")
+				? [...terms].find((term) => term === "iran-war" || term === "uk-prime-minister")
+				: [...terms]
+						.filter((term) => (frequencies.get(term) ?? 0) >= MIN_TOPIC_FREQUENCY)
+						.sort((left, right) => (frequencies.get(left) ?? 0) - (frequencies.get(right) ?? 0))[0];
 		const key = topic ?? "unbucketed";
 		const bucket = buckets.get(key) ?? [];
 		bucket.push(article);
 		buckets.set(key, bucket);
 	}
 
-	let groups: typeof articlesWithParsed[] = [];
-	const topicBuckets = [...buckets.entries()].filter(([key, bucket]) => key !== "unbucketed" && bucket.length > 1).sort((left, right) => right[1].length - left[1].length);
+	let groups: (typeof articlesWithParsed)[] = [];
+	const topicBuckets = [...buckets.entries()]
+		.filter(([key, bucket]) => key !== "unbucketed" && bucket.length > 1)
+		.sort((left, right) => right[1].length - left[1].length);
 	const validatedTopics = new Set<string>();
 	if (llmMergeEnabled) {
-		const { systemPrompt, userPromptTemplate } = await getPromptTemplates(db, "event_identity_merge");
-		for (const [index, [topic, bucket]] of topicBuckets.slice(0, topicValidationMaxBuckets).entries()) {
-			log.info("Validating broad topic bucket", { runId, topic, articles: bucket.length, bucket: index + 1 });
-			const completion = await generateCompletion("event_identity_merge", renderPrompt(userPromptTemplate, { topic, articles: topicPrompt(bucket) }), { db, runId, systemPrompt });
+		const { systemPrompt, userPromptTemplate } = await getPromptTemplates(
+			db,
+			"event_identity_merge",
+		);
+		for (const [index, [topic, bucket]] of topicBuckets
+			.slice(0, topicValidationMaxBuckets)
+			.entries()) {
+			log.info("Validating broad topic bucket", {
+				runId,
+				topic,
+				articles: bucket.length,
+				bucket: index + 1,
+			});
+			const completion = await generateCompletion(
+				"event_identity_merge",
+				renderPrompt(userPromptTemplate, { topic, articles: topicPrompt(bucket) }),
+				{ db, runId, systemPrompt },
+			);
 			const accepted = isSameTopic(completion.text);
-			log.info("Completed broad topic validation", { runId, topic, articles: bucket.length, accepted });
+			log.info("Completed broad topic validation", {
+				runId,
+				topic,
+				articles: bucket.length,
+				accepted,
+			});
 			if (accepted) validatedTopics.add(topic);
 		}
 	}
 
 	for (const [topic, bucket] of buckets) {
 		if (validatedTopics.has(topic)) groups.push(bucket);
-		else groups.push(...semanticGroups(bucket, topic === "unbucketed" ? threshold : topicSubclusterThreshold));
+		else
+			groups.push(
+				...semanticGroups(bucket, topic === "unbucketed" ? threshold : topicSubclusterThreshold),
+			);
 	}
 
 	if (runKind === "profile" || fromArticleId !== null) {

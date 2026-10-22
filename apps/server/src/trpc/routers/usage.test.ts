@@ -18,7 +18,9 @@ afterEach(async () => {
 	dbObj.close();
 });
 
-function createCaller(user: { id: string; role?: "admin" | "user" } | null = { id: "user-1", role: "user" }) {
+function createCaller(
+	user: { id: string; role?: "admin" | "user" } | null = { id: "user-1", role: "user" },
+) {
 	return appRouter.createCaller({
 		db,
 		user: user
@@ -59,8 +61,22 @@ test("getStats groups llm_usage by run_id, provider, task_name, and model_name a
 	await db
 		.insertInto("run")
 		.values([
-			{ id: 1, trigger: "manual", status: "complete", started_at: now, finished_at: now, stats: null },
-			{ id: 2, trigger: "manual", status: "complete", started_at: now, finished_at: now, stats: null },
+			{
+				id: 1,
+				trigger: "manual",
+				status: "complete",
+				started_at: now,
+				finished_at: now,
+				stats: null,
+			},
+			{
+				id: 2,
+				trigger: "manual",
+				status: "complete",
+				started_at: now,
+				finished_at: now,
+				stats: null,
+			},
 		])
 		.execute();
 

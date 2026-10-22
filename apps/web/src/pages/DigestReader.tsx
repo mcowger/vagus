@@ -50,7 +50,10 @@ function parseRawClusterSummary(raw?: string | null): {
 
 	// Strip code fences if present
 	if (text.startsWith("```") || text.includes("```json")) {
-		text = text.replace(/^```(?:json|JSON)?\s*/i, "").replace(/\s*```$/i, "").trim();
+		text = text
+			.replace(/^```(?:json|JSON)?\s*/i, "")
+			.replace(/\s*```$/i, "")
+			.trim();
 	}
 
 	if (text.startsWith("{")) {
@@ -68,8 +71,10 @@ function parseRawClusterSummary(raw?: string | null): {
 		} catch {}
 
 		// 2. Fallback Regex Extraction
-		const summaryRegex = /(?:"summary"|summary)\s*:\s*"(.*?)"\s*,\s*(?:"perspectives"|perspectives|timeline|"timeline")/s;
-		const match = text.match(summaryRegex) || text.match(/(?:"summary"|summary)\s*:\s*"((?:[^"\\]|\\.)*)"/s);
+		const summaryRegex =
+			/(?:"summary"|summary)\s*:\s*"(.*?)"\s*,\s*(?:"perspectives"|perspectives|timeline|"timeline")/s;
+		const match =
+			text.match(summaryRegex) || text.match(/(?:"summary"|summary)\s*:\s*"((?:[^"\\]|\\.)*)"/s);
 		if (match && match[1]) {
 			const extractedSummary = match[1].replace(/\\"/g, '"').replace(/\\n/g, "\n").trim();
 			if (extractedSummary) {
@@ -118,11 +123,7 @@ function InlineFormattedText({ text }: { text: string }) {
 
 	return (
 		<span>
-			{titlePrefix && (
-				<strong className="font-bold text-slate-900 mr-1.5">
-					{titlePrefix}:
-				</strong>
-			)}
+			{titlePrefix && <strong className="font-bold text-slate-900 mr-1.5">{titlePrefix}:</strong>}
 			{parts.map((part, idx) => {
 				if (!part) return null;
 
@@ -163,12 +164,13 @@ export const DigestReader: React.FC = () => {
 	const { data: digestsList, isLoading: isLoadingList } = trpc.digest.listPublic.useQuery();
 
 	const routeDigestId = id ? parseInt(id, 10) : undefined;
-	const activeDigestId = routeDigestId ?? (digestsList && digestsList.length > 0 ? digestsList[0].id : undefined);
+	const activeDigestId =
+		routeDigestId ?? (digestsList && digestsList.length > 0 ? digestsList[0].id : undefined);
 
 	// Fetch detailed digest by id
 	const { data: digest, isLoading: isLoadingDigest } = trpc.digest.getPublicById.useQuery(
 		{ id: activeDigestId as number },
-		{ enabled: !!activeDigestId && !isNaN(activeDigestId) } as any
+		{ enabled: !!activeDigestId && !isNaN(activeDigestId) } as any,
 	);
 
 	const handleCopyJson = () => {
@@ -241,7 +243,12 @@ export const DigestReader: React.FC = () => {
 						</div>
 
 						{/* Export JSON Button */}
-						<Button variant="outline" size="sm" onClick={() => setShowJsonModal(true)} className="gap-1.5">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => setShowJsonModal(true)}
+							className="gap-1.5"
+						>
 							<Code className="h-4 w-4 text-slate-600" />
 							Export JSON
 						</Button>
@@ -296,15 +303,13 @@ export const DigestReader: React.FC = () => {
 											<span className="text-xs font-mono font-bold text-indigo-600">
 												Digest #{d.id}
 											</span>
-											<span className="text-[10px] text-slate-400 font-mono">
-												Run #{d.run_id}
-											</span>
+											<span className="text-[10px] text-slate-400 font-mono">Run #{d.run_id}</span>
 										</div>
 										<div className="mt-1">
 											<span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-100/80 text-indigo-800 border border-indigo-200/60 inline-block mb-1">
 												{d.profile_name || "General News"}
 											</span>
-									</div>
+										</div>
 										<div className="flex items-center gap-1 text-[11px] text-slate-400 mt-2">
 											<Clock className="h-3 w-3" />
 											<span>{createdDate}</span>
@@ -328,7 +333,7 @@ export const DigestReader: React.FC = () => {
 							<BookOpen className="h-12 w-12 text-slate-300 mx-auto" />
 							<h3 className="text-lg font-semibold text-slate-800">No digests available</h3>
 							<p className="text-sm text-slate-500 max-w-sm mx-auto">
-							No published digests are available yet.
+								No published digests are available yet.
 							</p>
 						</div>
 					) : (
@@ -379,25 +384,36 @@ export const DigestReader: React.FC = () => {
 									digest.clusters.map((cluster) => {
 										// Filter citations relevant to this cluster
 										const clusterCitations = (digest.citations || []).filter(
-											(c) => c.digest_cluster_id === cluster.id
+											(c) => c.digest_cluster_id === cluster.id,
 										);
 
 										const parsedCluster = parseRawClusterSummary(cluster.summary);
 										const cleanSummary = parsedCluster.summary || cluster.summary;
-										const rawPerspectives = "perspectives" in cluster && Array.isArray(cluster.perspectives) ? cluster.perspectives : undefined;
+										const rawPerspectives =
+											"perspectives" in cluster && Array.isArray(cluster.perspectives)
+												? cluster.perspectives
+												: undefined;
 										const perspectives = (
 											rawPerspectives && rawPerspectives.length > 0
 												? rawPerspectives
 												: parsedCluster.perspectives || []
-										).filter((p: unknown): p is string => typeof p === "string" && p.trim().length > 0);
+										).filter(
+											(p: unknown): p is string => typeof p === "string" && p.trim().length > 0,
+										);
 
-										const rawTimeline = "timeline" in cluster && Array.isArray(cluster.timeline) ? cluster.timeline : undefined;
+										const rawTimeline =
+											"timeline" in cluster && Array.isArray(cluster.timeline)
+												? cluster.timeline
+												: undefined;
 										const timeline = (
 											rawTimeline && rawTimeline.length > 0
 												? rawTimeline
 												: parsedCluster.timeline || []
-										).filter((t: unknown): t is string => typeof t === "string" && t.trim().length > 0);
-										const clusterVote = feedbackQuery.data?.feedback?.[`cluster:${cluster.id}`] ?? 0;
+										).filter(
+											(t: unknown): t is string => typeof t === "string" && t.trim().length > 0,
+										);
+										const clusterVote =
+											feedbackQuery.data?.feedback?.[`cluster:${cluster.id}`] ?? 0;
 
 										return (
 											<Card key={cluster.id} className="border-slate-200 shadow-sm overflow-hidden">
@@ -408,7 +424,8 @@ export const DigestReader: React.FC = () => {
 															{clusterCitations.length > 0 && (
 																<div className="flex items-center gap-2 mb-1.5">
 																	<span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
-																		{clusterCitations.length} source{clusterCitations.length > 1 ? "s" : ""}
+																		{clusterCitations.length} source
+																		{clusterCitations.length > 1 ? "s" : ""}
 																	</span>
 																</div>
 															)}
@@ -419,40 +436,40 @@ export const DigestReader: React.FC = () => {
 
 														{session?.user && (
 															<div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1 shadow-2xs">
-															<button
-																type="button"
-																title="Boost stories like this"
-																onClick={() =>
-																	voteClusterMutation.mutate({
-																		clusterId: cluster.id,
-																		vote: clusterVote === 1 ? 0 : 1,
-																	})
-																}
-																className={`p-1.5 rounded-md transition-all ${
-																	clusterVote === 1
-																		? "bg-emerald-100 text-emerald-700 shadow-2xs font-bold"
-																		: "text-slate-400 hover:text-emerald-600 hover:bg-slate-50"
-																}`}
-															>
-																<ThumbsUp className="h-4 w-4" />
-															</button>
-															<button
-																type="button"
-																title="Deprioritize stories like this"
-																onClick={() =>
-																	voteClusterMutation.mutate({
-																		clusterId: cluster.id,
-																		vote: clusterVote === -1 ? 0 : -1,
-																	})
-																}
-																className={`p-1.5 rounded-md transition-all ${
-																	clusterVote === -1
-																		? "bg-rose-100 text-rose-700 shadow-2xs font-bold"
-																		: "text-slate-400 hover:text-rose-600 hover:bg-slate-50"
-																}`}
-															>
-																<ThumbsDown className="h-4 w-4" />
-															</button>
+																<button
+																	type="button"
+																	title="Boost stories like this"
+																	onClick={() =>
+																		voteClusterMutation.mutate({
+																			clusterId: cluster.id,
+																			vote: clusterVote === 1 ? 0 : 1,
+																		})
+																	}
+																	className={`p-1.5 rounded-md transition-all ${
+																		clusterVote === 1
+																			? "bg-emerald-100 text-emerald-700 shadow-2xs font-bold"
+																			: "text-slate-400 hover:text-emerald-600 hover:bg-slate-50"
+																	}`}
+																>
+																	<ThumbsUp className="h-4 w-4" />
+																</button>
+																<button
+																	type="button"
+																	title="Deprioritize stories like this"
+																	onClick={() =>
+																		voteClusterMutation.mutate({
+																			clusterId: cluster.id,
+																			vote: clusterVote === -1 ? 0 : -1,
+																		})
+																	}
+																	className={`p-1.5 rounded-md transition-all ${
+																		clusterVote === -1
+																			? "bg-rose-100 text-rose-700 shadow-2xs font-bold"
+																			: "text-slate-400 hover:text-rose-600 hover:bg-slate-50"
+																	}`}
+																>
+																	<ThumbsDown className="h-4 w-4" />
+																</button>
 															</div>
 														)}
 													</div>
@@ -468,10 +485,13 @@ export const DigestReader: React.FC = () => {
 															</h4>
 															<ul className="space-y-2">
 																{getTldrBullets(cleanSummary).map((bullet, bIdx) => (
-																	<li key={bIdx} className="flex items-start gap-2 text-sm text-slate-800 leading-relaxed">
+																	<li
+																		key={bIdx}
+																		className="flex items-start gap-2 text-sm text-slate-800 leading-relaxed"
+																	>
 																		<span className="text-indigo-500 font-bold">•</span>
 																		<div>
-																					<InlineFormattedText text={bullet} />
+																			<InlineFormattedText text={bullet} />
 																		</div>
 																	</li>
 																))}
@@ -488,7 +508,7 @@ export const DigestReader: React.FC = () => {
 																<div className="text-sm text-slate-800 leading-relaxed space-y-3">
 																	{cleanSummary.split("\n\n").map((paragraph, pIdx) => (
 																		<p key={pIdx}>
-																					<InlineFormattedText text={paragraph} />
+																			<InlineFormattedText text={paragraph} />
 																		</p>
 																	))}
 																</div>
@@ -503,7 +523,10 @@ export const DigestReader: React.FC = () => {
 																	</h4>
 																	<ul className="space-y-1.5">
 																		{perspectives.map((persp, pIdx) => (
-																			<li key={pIdx} className="flex items-start gap-2 text-sm text-slate-700 leading-relaxed bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
+																			<li
+																				key={pIdx}
+																				className="flex items-start gap-2 text-sm text-slate-700 leading-relaxed bg-slate-50/80 p-2.5 rounded-lg border border-slate-100"
+																			>
 																				<span className="text-indigo-500 font-bold">•</span>
 																				<div>
 																					<InlineFormattedText text={persp} />
@@ -523,8 +546,13 @@ export const DigestReader: React.FC = () => {
 																	</h4>
 																	<ul className="space-y-1.5">
 																		{timeline.map((event, tIdx) => (
-																			<li key={tIdx} className="flex items-start gap-2 text-sm text-slate-700 leading-relaxed bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
-																				<span className="text-indigo-600 font-bold font-mono text-xs mt-0.5">[{tIdx + 1}]</span>
+																			<li
+																				key={tIdx}
+																				className="flex items-start gap-2 text-sm text-slate-700 leading-relaxed bg-slate-50/80 p-2.5 rounded-lg border border-slate-100"
+																			>
+																				<span className="text-indigo-600 font-bold font-mono text-xs mt-0.5">
+																					[{tIdx + 1}]
+																				</span>
 																				<div>
 																					<InlineFormattedText text={event} />
 																				</div>
@@ -539,38 +567,40 @@ export const DigestReader: React.FC = () => {
 													{/* Compact source citations */}
 													{clusterCitations.length > 0 && (
 														<div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-1.5">
-																<h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-																	<FileText className="h-3.5 w-3.5 text-slate-500" />
-																	Sources ({clusterCitations.length})
-																</h5>
-																{clusterCitations.map((cit) => {
-																	const domain = getDomainFromUrl(cit.article_url);
-																	const favicon = getFaviconUrl(cit.article_url);
+															<h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+																<FileText className="h-3.5 w-3.5 text-slate-500" />
+																Sources ({clusterCitations.length})
+															</h5>
+															{clusterCitations.map((cit) => {
+																const domain = getDomainFromUrl(cit.article_url);
+																const favicon = getFaviconUrl(cit.article_url);
 
-																	return (
-																		<a
-																			key={cit.id}
-																			href={cit.article_url}
-																			target="_blank"
-																			rel="noopener noreferrer"
-																			title={cit.article_title}
-																			className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
-																		>
-																			{favicon && (
-																				<img
-																					src={favicon}
-																					alt=""
-																					className="h-3.5 w-3.5 flex-shrink-0 rounded-xs object-contain"
-																					onError={(e) => {
-																						(e.target as HTMLElement).style.display = "none";
-																					}}
-																				/>
-																			)}
-																			<span className="max-w-40 truncate">{domain || cit.citation_key}</span>
-																			<ExternalLink className="h-3 w-3 flex-shrink-0" />
-																		</a>
-																	);
-																})}
+																return (
+																	<a
+																		key={cit.id}
+																		href={cit.article_url}
+																		target="_blank"
+																		rel="noopener noreferrer"
+																		title={cit.article_title}
+																		className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+																	>
+																		{favicon && (
+																			<img
+																				src={favicon}
+																				alt=""
+																				className="h-3.5 w-3.5 flex-shrink-0 rounded-xs object-contain"
+																				onError={(e) => {
+																					(e.target as HTMLElement).style.display = "none";
+																				}}
+																			/>
+																		)}
+																		<span className="max-w-40 truncate">
+																			{domain || cit.citation_key}
+																		</span>
+																		<ExternalLink className="h-3 w-3 flex-shrink-0" />
+																	</a>
+																);
+															})}
 														</div>
 													)}
 												</CardContent>
@@ -617,7 +647,12 @@ export const DigestReader: React.FC = () => {
 								Size: {JSON.stringify(digest).length} bytes
 							</span>
 							<div className="flex items-center gap-2">
-								<Button variant="outline" size="sm" onClick={handleDownloadJson} className="gap-1.5">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={handleDownloadJson}
+									className="gap-1.5"
+								>
 									<Download className="h-4 w-4" />
 									Download .json
 								</Button>

@@ -8,10 +8,7 @@ import { log } from "./log";
  * production. In production these code paths are never mounted.
  */
 export function isDevAuthEnabled(): boolean {
-	return (
-		process.env.DEV_AUTH_ENABLED === "true" &&
-		process.env.NODE_ENV !== "production"
-	);
+	return process.env.DEV_AUTH_ENABLED === "true" && process.env.NODE_ENV !== "production";
 }
 
 export interface DevLoginResult {
@@ -39,9 +36,7 @@ export async function devLogin(email: string): Promise<DevLoginResult> {
 
 	let user = db.sqlite
 		.query("SELECT id, role, isDisabled FROM user WHERE email = ?")
-		.get(normalizedEmail) as
-		| { id: string; role: string; isDisabled: number }
-		| null;
+		.get(normalizedEmail) as { id: string; role: string; isDisabled: number } | null;
 
 	if (!user) {
 		// Throws BAD_REQUEST (→ surfaced as 403 by the route) when disallowed.

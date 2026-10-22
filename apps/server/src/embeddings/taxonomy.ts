@@ -36,7 +36,11 @@ export async function projectVectorToTaxonomy(
 	const modelName = embedder.getModelName();
 
 	// Recompute taxonomy vectors if embedder model changed or cache is empty
-	if (!cachedTaxonomyVectors || cachedEmbedderModel !== modelName || cachedTaxonomyVectors[0]?.vector.length !== targetVector.length) {
+	if (
+		!cachedTaxonomyVectors ||
+		cachedEmbedderModel !== modelName ||
+		cachedTaxonomyVectors[0]?.vector.length !== targetVector.length
+	) {
 		const newVectors: { category: string; vector: Float32Array }[] = [];
 		for (const cat of STANDARD_NEWS_TAXONOMY) {
 			try {
@@ -54,7 +58,7 @@ export async function projectVectorToTaxonomy(
 	for (const item of cachedTaxonomyVectors) {
 		if (item.vector.length === targetVector.length) {
 			const sim = cosineSimilarity(targetVector, item.vector);
-			if (sim >= 0.40) {
+			if (sim >= 0.4) {
 				results.push({
 					category: item.category,
 					similarity: sim,

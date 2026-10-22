@@ -49,8 +49,12 @@ export async function processClusterRunJob(
 		await clusterRunArticles(db, runId, {
 			threshold: Number(setting.get("clustering_similarity_threshold") ?? 0.8),
 			llmMergeEnabled: setting.get("clustering_llm_merge_enabled") !== "false",
-			topicSubclusterThreshold: Number(setting.get("clustering_topic_subcluster_threshold") ?? 0.65),
-			topicValidationMaxBuckets: Number(setting.get("clustering_topic_validation_max_buckets") ?? 20),
+			topicSubclusterThreshold: Number(
+				setting.get("clustering_topic_subcluster_threshold") ?? 0.65,
+			),
+			topicValidationMaxBuckets: Number(
+				setting.get("clustering_topic_validation_max_buckets") ?? 20,
+			),
 		});
 		log.info("Completed cluster-run job", { jobId: job.id, runId });
 	} catch (err) {

@@ -35,16 +35,45 @@ describe("Milestone 7 Multi-Tenant E2E Test (Source Breadth, Usage & Admin Setti
 
 		await migrateToLatest(db);
 		globalThis.fetch = (async () =>
-			new Response(JSON.stringify({
-				choices: [{ message: { content: JSON.stringify({ title: "Test summary", summary: "Test cluster summary.", perspectives: [], timeline: [], citations: [], executive_summary: "Test executive summary.", key_takeaways: [], why_it_matters: "Test significance.", key_quotes: [] }) } }],
-				usage: { prompt_tokens: 10, completion_tokens: 5 },
-			}))) as unknown as typeof fetch;
-		await db.insertInto("provider_config").values({ provider: "test-llm", api_key: "test-key", enabled: 1, config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }) }).execute();
-		await db.insertInto("task_model").values([
-			{ task_name: "stage_a_bullet", provider: "test-llm", model_name: "test-model" },
-			{ task_name: "stage_b_synthesis", provider: "test-llm", model_name: "test-model" },
-			{ task_name: "stage_c_assembly", provider: "test-llm", model_name: "test-model" },
-		]).execute();
+			new Response(
+				JSON.stringify({
+					choices: [
+						{
+							message: {
+								content: JSON.stringify({
+									title: "Test summary",
+									summary: "Test cluster summary.",
+									perspectives: [],
+									timeline: [],
+									citations: [],
+									executive_summary: "Test executive summary.",
+									key_takeaways: [],
+									why_it_matters: "Test significance.",
+									key_quotes: [],
+								}),
+							},
+						},
+					],
+					usage: { prompt_tokens: 10, completion_tokens: 5 },
+				}),
+			)) as unknown as typeof fetch;
+		await db
+			.insertInto("provider_config")
+			.values({
+				provider: "test-llm",
+				api_key: "test-key",
+				enabled: 1,
+				config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }),
+			})
+			.execute();
+		await db
+			.insertInto("task_model")
+			.values([
+				{ task_name: "stage_a_bullet", provider: "test-llm", model_name: "test-model" },
+				{ task_name: "stage_b_synthesis", provider: "test-llm", model_name: "test-model" },
+				{ task_name: "stage_c_assembly", provider: "test-llm", model_name: "test-model" },
+			])
+			.execute();
 
 		queue = defineQueue({
 			connection: createPlainjobConnection(sqlite),
@@ -63,31 +92,66 @@ describe("Milestone 7 Multi-Tenant E2E Test (Source Breadth, Usage & Admin Setti
 		// 1. Insert sources for all 5 types
 		const rssSource = await db
 			.insertInto("source")
-			.values({ type: "rss", name: "RSS Feed", url: "https://example.com/feed", enabled: 1, created_at: now, updated_at: now })
+			.values({
+				type: "rss",
+				name: "RSS Feed",
+				url: "https://example.com/feed",
+				enabled: 1,
+				created_at: now,
+				updated_at: now,
+			})
 			.returning(["id"])
 			.executeTakeFirstOrThrow();
 
 		const braveSource = await db
 			.insertInto("source")
-			.values({ type: "brave-news", name: "Brave AI", config: JSON.stringify({ query: "AI" }), enabled: 1, created_at: now, updated_at: now })
+			.values({
+				type: "brave-news",
+				name: "Brave AI",
+				config: JSON.stringify({ query: "AI" }),
+				enabled: 1,
+				created_at: now,
+				updated_at: now,
+			})
 			.returning(["id"])
 			.executeTakeFirstOrThrow();
 
 		const hnSource = await db
 			.insertInto("source")
-			.values({ type: "hackernews", name: "Hacker News Top", config: JSON.stringify({ limit: 5 }), enabled: 1, created_at: now, updated_at: now })
+			.values({
+				type: "hackernews",
+				name: "Hacker News Top",
+				config: JSON.stringify({ limit: 5 }),
+				enabled: 1,
+				created_at: now,
+				updated_at: now,
+			})
 			.returning(["id"])
 			.executeTakeFirstOrThrow();
 
 		const ghSource = await db
 			.insertInto("source")
-			.values({ type: "github-trending", name: "GitHub Trending TypeScript", config: JSON.stringify({ language: "typescript" }), enabled: 1, created_at: now, updated_at: now })
+			.values({
+				type: "github-trending",
+				name: "GitHub Trending TypeScript",
+				config: JSON.stringify({ language: "typescript" }),
+				enabled: 1,
+				created_at: now,
+				updated_at: now,
+			})
 			.returning(["id"])
 			.executeTakeFirstOrThrow();
 
 		const scrapeSource = await db
 			.insertInto("source")
-			.values({ type: "scrape", name: "Scrape Target", url: "https://example.com/blog/ai-agent", enabled: 1, created_at: now, updated_at: now })
+			.values({
+				type: "scrape",
+				name: "Scrape Target",
+				url: "https://example.com/blog/ai-agent",
+				enabled: 1,
+				created_at: now,
+				updated_at: now,
+			})
 			.returning(["id"])
 			.executeTakeFirstOrThrow();
 
@@ -113,17 +177,43 @@ describe("Milestone 7 Multi-Tenant E2E Test (Source Breadth, Usage & Admin Setti
 		globalThis.fetch = (async (url: string | URL | Request) => {
 			const uStr = String(url);
 			if (uStr.includes("test.invalid")) {
-				return new Response(JSON.stringify({
-					choices: [{ message: { content: JSON.stringify({ title: "Test summary", summary: "Test cluster summary.", perspectives: [], timeline: [], citations: [], executive_summary: "Test executive summary.", key_takeaways: [], why_it_matters: "Test significance.", key_quotes: [] }) } }],
-					usage: { prompt_tokens: 10, completion_tokens: 5 },
-				}), { status: 200 });
+				return new Response(
+					JSON.stringify({
+						choices: [
+							{
+								message: {
+									content: JSON.stringify({
+										title: "Test summary",
+										summary: "Test cluster summary.",
+										perspectives: [],
+										timeline: [],
+										citations: [],
+										executive_summary: "Test executive summary.",
+										key_takeaways: [],
+										why_it_matters: "Test significance.",
+										key_quotes: [],
+									}),
+								},
+							},
+						],
+						usage: { prompt_tokens: 10, completion_tokens: 5 },
+					}),
+					{ status: 200 },
+				);
 			}
 			if (uStr.includes("firebaseio.com")) {
 				if (uStr.includes("topstories")) {
 					return new Response(JSON.stringify([9901]), { status: 200 });
 				}
 				return new Response(
-					JSON.stringify({ id: 9901, title: "Show HN: Autonomous LLM Runtime", by: "alice", score: 120, time: Math.floor(Date.now() / 1000) - 3600, url: "https://example.com/hn-show" }),
+					JSON.stringify({
+						id: 9901,
+						title: "Show HN: Autonomous LLM Runtime",
+						by: "alice",
+						score: 120,
+						time: Math.floor(Date.now() / 1000) - 3600,
+						url: "https://example.com/hn-show",
+					}),
 					{ status: 200 },
 				);
 			}
@@ -140,7 +230,13 @@ describe("Milestone 7 Multi-Tenant E2E Test (Source Breadth, Usage & Admin Setti
 
 			const stage = await db
 				.insertInto("run_stage")
-				.values({ run_id: run.id, stage: "full-pipeline", expected: 1, completed: 0, status: "running" })
+				.values({
+					run_id: run.id,
+					stage: "full-pipeline",
+					expected: 1,
+					completed: 0,
+					status: "running",
+				})
 				.returning(["id"])
 				.executeTakeFirstOrThrow();
 
@@ -151,7 +247,11 @@ describe("Milestone 7 Multi-Tenant E2E Test (Source Breadth, Usage & Admin Setti
 				data: { runId: run.id, stageId: stage.id, sourceId: scrapeSource.id },
 			} as unknown as Job);
 
-			const articles = await db.selectFrom("article").selectAll().where("source_id", "=", scrapeSource.id).execute();
+			const articles = await db
+				.selectFrom("article")
+				.selectAll()
+				.where("source_id", "=", scrapeSource.id)
+				.execute();
 			expect(articles.length).toBe(1);
 			const article = articles[0];
 			expect(article.title).toContain("Autonomous AI Agents");
@@ -190,7 +290,11 @@ describe("Milestone 7 Multi-Tenant E2E Test (Source Breadth, Usage & Admin Setti
 				data: { runId: run.id, stageId: stage.id },
 			} as unknown as Job);
 
-			const clusters = await db.selectFrom("cluster").selectAll().where("run_id", "=", run.id).execute();
+			const clusters = await db
+				.selectFrom("cluster")
+				.selectAll()
+				.where("run_id", "=", run.id)
+				.execute();
 			expect(clusters.length).toBe(1);
 
 			// Setup User Profile and Score
@@ -231,13 +335,23 @@ describe("Milestone 7 Multi-Tenant E2E Test (Source Breadth, Usage & Admin Setti
 				data: { runId: run.id, stageId: stage.id, userId },
 			} as unknown as Job);
 
-			const digest = await db.selectFrom("digest").selectAll().where("user_id", "=", userId).executeTakeFirstOrThrow();
+			const digest = await db
+				.selectFrom("digest")
+				.selectAll()
+				.where("user_id", "=", userId)
+				.executeTakeFirstOrThrow();
 			expect(digest.why_it_matters).toBeTruthy();
 
 			// 3. Verify tRPC Usage Router
 			const caller = appRouter.createCaller({
 				db,
-				user: { id: userId, email: "admin@example.com", name: "Admin", role: "admin", isDisabled: false },
+				user: {
+					id: userId,
+					email: "admin@example.com",
+					name: "Admin",
+					role: "admin",
+					isDisabled: false,
+				},
 				session: null,
 			});
 
@@ -249,7 +363,10 @@ describe("Milestone 7 Multi-Tenant E2E Test (Source Breadth, Usage & Admin Setti
 			const settings = await caller.settings.getSettings();
 			expect(settings.article_retention_days).toBe("30");
 
-			await caller.settings.updateSettings({ article_retention_days: "45", ntfy_base_url: "https://ntfy.sh" });
+			await caller.settings.updateSettings({
+				article_retention_days: "45",
+				ntfy_base_url: "https://ntfy.sh",
+			});
 			const updatedSettings = await caller.settings.getSettings();
 			expect(updatedSettings.article_retention_days).toBe("45");
 		} finally {

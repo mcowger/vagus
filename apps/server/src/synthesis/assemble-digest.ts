@@ -129,7 +129,10 @@ Summary: ${row.summary}`;
 					.join("\n");
 		}
 
-		const { systemPrompt, userPromptTemplate } = await getPromptTemplates(database, "stage_c_assembly");
+		const { systemPrompt, userPromptTemplate } = await getPromptTemplates(
+			database,
+			"stage_c_assembly",
+		);
 		const prompt = renderPrompt(userPromptTemplate, {
 			clustersText,
 			quotesText,

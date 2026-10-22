@@ -17,7 +17,6 @@ services:
       # - NTFY_BASE_URL=https://ntfy.sh
       # - APP_BASE_URL=https://vagus.example.com
 
-
       # Optional pre-configured provider keys
       # - TESTING_EMBEDDING_BASE_URL=https://api.openai.com/v1
       # - TESTING_EMBEDDING_KEY=sk-...
@@ -30,7 +29,11 @@ services:
       - ./data:/app/data
 
     healthcheck:
-      test: ["CMD-SHELL", "bun -e 'fetch(\"http://localhost:3000/healthz\").then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))'"]
+      test:
+        [
+          "CMD-SHELL",
+          'bun -e ''fetch("http://localhost:3000/healthz").then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))''',
+        ]
       interval: 30s
       timeout: 5s
       retries: 3

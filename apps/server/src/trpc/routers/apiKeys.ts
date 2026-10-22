@@ -39,12 +39,10 @@ export const apiKeysRouter = router({
 			return { id: created.id, key: created.key };
 		}),
 
-	revoke: adminProcedure
-		.input(z.object({ keyId: z.string() }))
-		.mutation(async ({ ctx, input }) => {
-			await sql`DELETE FROM apikey WHERE id = ${input.keyId} AND referenceId = ${ctx.user.id}`.execute(
-				ctx.db,
-			);
-			return { success: true };
-		}),
+	revoke: adminProcedure.input(z.object({ keyId: z.string() })).mutation(async ({ ctx, input }) => {
+		await sql`DELETE FROM apikey WHERE id = ${input.keyId} AND referenceId = ${ctx.user.id}`.execute(
+			ctx.db,
+		);
+		return { success: true };
+	}),
 });

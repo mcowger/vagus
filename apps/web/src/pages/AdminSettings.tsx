@@ -32,20 +32,32 @@ export const AdminSettings: React.FC = () => {
 	const updatePromptMutation = trpc.settings.updatePrompt.useMutation({
 		onSuccess: (_, variables) => {
 			utils.settings.getPrompts.invalidate();
-			setPromptSuccessMap((prev) => ({ ...prev, [variables.promptKey]: "Prompt saved successfully." }));
+			setPromptSuccessMap((prev) => ({
+				...prev,
+				[variables.promptKey]: "Prompt saved successfully.",
+			}));
 		},
 		onError: (err, variables) => {
-			setPromptErrorMap((prev) => ({ ...prev, [variables.promptKey]: err.message || "Failed to save prompt." }));
+			setPromptErrorMap((prev) => ({
+				...prev,
+				[variables.promptKey]: err.message || "Failed to save prompt.",
+			}));
 		},
 	});
 
 	const resetPromptMutation = trpc.settings.resetPrompt.useMutation({
 		onSuccess: (_, variables) => {
 			utils.settings.getPrompts.invalidate();
-			setPromptSuccessMap((prev) => ({ ...prev, [variables.promptKey]: "Prompt reset to default." }));
+			setPromptSuccessMap((prev) => ({
+				...prev,
+				[variables.promptKey]: "Prompt reset to default.",
+			}));
 		},
 		onError: (err, variables) => {
-			setPromptErrorMap((prev) => ({ ...prev, [variables.promptKey]: err.message || "Failed to reset prompt." }));
+			setPromptErrorMap((prev) => ({
+				...prev,
+				[variables.promptKey]: err.message || "Failed to reset prompt.",
+			}));
 		},
 	});
 
@@ -91,15 +103,23 @@ export const AdminSettings: React.FC = () => {
 			if (s.ntfy_base_url !== undefined) setNtfyBaseUrl(s.ntfy_base_url);
 			if (s.notification_base_url !== undefined) setAppBaseUrl(s.notification_base_url);
 			else if (s.app_base_url !== undefined) setAppBaseUrl(s.app_base_url);
-			if (s.notification_max_takeaways !== undefined) setNotificationMaxTakeaways(s.notification_max_takeaways);
-			if (s.notification_max_characters !== undefined) setNotificationMaxCharacters(s.notification_max_characters);
+			if (s.notification_max_takeaways !== undefined)
+				setNotificationMaxTakeaways(s.notification_max_takeaways);
+			if (s.notification_max_characters !== undefined)
+				setNotificationMaxCharacters(s.notification_max_characters);
 			if (s.worker_concurrency !== undefined) setWorkerConcurrency(s.worker_concurrency);
-			if (s.clustering_similarity_threshold !== undefined) setClusteringSimilarityThreshold(s.clustering_similarity_threshold);
-			if (s.clustering_llm_merge_min_similarity !== undefined) setClusteringLlmMergeMinSimilarity(s.clustering_llm_merge_min_similarity);
-			if (s.clustering_llm_merge_enabled !== undefined) setClusteringLlmMergeEnabled(s.clustering_llm_merge_enabled !== "false");
-			if (s.clustering_llm_merge_max_candidates !== undefined) setClusteringLlmMergeMaxCandidates(s.clustering_llm_merge_max_candidates);
-			if (s.pipeline_article_max_age_hours !== undefined) setPipelineArticleMaxAgeHours(s.pipeline_article_max_age_hours);
-			if (s.pipeline_filter_feed_artifacts !== undefined) setPipelineFilterFeedArtifacts(s.pipeline_filter_feed_artifacts !== "false");
+			if (s.clustering_similarity_threshold !== undefined)
+				setClusteringSimilarityThreshold(s.clustering_similarity_threshold);
+			if (s.clustering_llm_merge_min_similarity !== undefined)
+				setClusteringLlmMergeMinSimilarity(s.clustering_llm_merge_min_similarity);
+			if (s.clustering_llm_merge_enabled !== undefined)
+				setClusteringLlmMergeEnabled(s.clustering_llm_merge_enabled !== "false");
+			if (s.clustering_llm_merge_max_candidates !== undefined)
+				setClusteringLlmMergeMaxCandidates(s.clustering_llm_merge_max_candidates);
+			if (s.pipeline_article_max_age_hours !== undefined)
+				setPipelineArticleMaxAgeHours(s.pipeline_article_max_age_hours);
+			if (s.pipeline_filter_feed_artifacts !== undefined)
+				setPipelineFilterFeedArtifacts(s.pipeline_filter_feed_artifacts !== "false");
 		}
 	}, [settingsQuery.data]);
 
@@ -162,7 +182,10 @@ export const AdminSettings: React.FC = () => {
 	};
 
 	const handleResetPipeline = (level: "clustering" | "stage_a") => {
-		const label = level === "clustering" ? "clustering and downstream data" : "article summaries and all downstream data";
+		const label =
+			level === "clustering"
+				? "clustering and downstream data"
+				: "article summaries and all downstream data";
 		if (!window.confirm(`Clear ${label}? Raw articles and sources will be preserved.`)) return;
 		resetPipelineMutation.mutate({ level });
 	};
@@ -170,11 +193,10 @@ export const AdminSettings: React.FC = () => {
 	return (
 		<div className="space-y-8 max-w-4xl">
 			<div>
-				<h1 className="text-3xl font-bold tracking-tight text-slate-900">
-					Admin Settings
-				</h1>
+				<h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Settings</h1>
 				<p className="text-slate-500 mt-1">
-					Configure system retention windows, worker concurrency, and editable LLM pipeline prompt templates.
+					Configure system retention windows, worker concurrency, and editable LLM pipeline prompt
+					templates.
 				</p>
 			</div>
 
@@ -208,36 +230,90 @@ export const AdminSettings: React.FC = () => {
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 								<div className="space-y-2">
 									<Label htmlFor="clusteringSimilarityThreshold">Story Similarity Threshold</Label>
-									<Input id="clusteringSimilarityThreshold" type="number" min="0" max="1" step="0.01" value={clusteringSimilarityThreshold} onChange={(e) => setClusteringSimilarityThreshold(e.target.value)} required />
-									<p className="text-xs text-slate-500">Strict similarity required for deterministic multi-source story clusters.</p>
+									<Input
+										id="clusteringSimilarityThreshold"
+										type="number"
+										min="0"
+										max="1"
+										step="0.01"
+										value={clusteringSimilarityThreshold}
+										onChange={(e) => setClusteringSimilarityThreshold(e.target.value)}
+										required
+									/>
+									<p className="text-xs text-slate-500">
+										Strict similarity required for deterministic multi-source story clusters.
+									</p>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="clusteringLlmMergeMinSimilarity">LLM Merge Candidate Threshold</Label>
-									<Input id="clusteringLlmMergeMinSimilarity" type="number" min="0" max="1" step="0.01" value={clusteringLlmMergeMinSimilarity} onChange={(e) => setClusteringLlmMergeMinSimilarity(e.target.value)} required />
-									<p className="text-xs text-slate-500">Lower-bound similarity before the event-identity model evaluates a merge.</p>
+									<Label htmlFor="clusteringLlmMergeMinSimilarity">
+										LLM Merge Candidate Threshold
+									</Label>
+									<Input
+										id="clusteringLlmMergeMinSimilarity"
+										type="number"
+										min="0"
+										max="1"
+										step="0.01"
+										value={clusteringLlmMergeMinSimilarity}
+										onChange={(e) => setClusteringLlmMergeMinSimilarity(e.target.value)}
+										required
+									/>
+									<p className="text-xs text-slate-500">
+										Lower-bound similarity before the event-identity model evaluates a merge.
+									</p>
 								</div>
 							</div>
 
 							<label className="flex items-center gap-2 text-sm text-slate-700">
-								<input type="checkbox" checked={clusteringLlmMergeEnabled} onChange={(e) => setClusteringLlmMergeEnabled(e.target.checked)} />
+								<input
+									type="checkbox"
+									checked={clusteringLlmMergeEnabled}
+									onChange={(e) => setClusteringLlmMergeEnabled(e.target.checked)}
+								/>
 								Use LLM event-identity merge for nearby clusters
 							</label>
 
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 								<div className="space-y-2">
 									<Label htmlFor="clusteringLlmMergeMaxCandidates">LLM Merge Candidate Limit</Label>
-									<Input id="clusteringLlmMergeMaxCandidates" type="number" min="0" max="50" value={clusteringLlmMergeMaxCandidates} onChange={(e) => setClusteringLlmMergeMaxCandidates(e.target.value)} required />
-									<p className="text-xs text-slate-500">Maximum nearby cluster pairs evaluated per pipeline run.</p>
+									<Input
+										id="clusteringLlmMergeMaxCandidates"
+										type="number"
+										min="0"
+										max="50"
+										value={clusteringLlmMergeMaxCandidates}
+										onChange={(e) => setClusteringLlmMergeMaxCandidates(e.target.value)}
+										required
+									/>
+									<p className="text-xs text-slate-500">
+										Maximum nearby cluster pairs evaluated per pipeline run.
+									</p>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="pipelineArticleMaxAgeHours">Article Eligibility Window (Hours)</Label>
-									<Input id="pipelineArticleMaxAgeHours" type="number" min="1" max="720" value={pipelineArticleMaxAgeHours} onChange={(e) => setPipelineArticleMaxAgeHours(e.target.value)} required />
-									<p className="text-xs text-slate-500">Articles outside this publish-date window never reach extraction or clustering.</p>
+									<Label htmlFor="pipelineArticleMaxAgeHours">
+										Article Eligibility Window (Hours)
+									</Label>
+									<Input
+										id="pipelineArticleMaxAgeHours"
+										type="number"
+										min="1"
+										max="720"
+										value={pipelineArticleMaxAgeHours}
+										onChange={(e) => setPipelineArticleMaxAgeHours(e.target.value)}
+										required
+									/>
+									<p className="text-xs text-slate-500">
+										Articles outside this publish-date window never reach extraction or clustering.
+									</p>
 								</div>
 							</div>
 
 							<label className="flex items-center gap-2 text-sm text-slate-700">
-								<input type="checkbox" checked={pipelineFilterFeedArtifacts} onChange={(e) => setPipelineFilterFeedArtifacts(e.target.checked)} />
+								<input
+									type="checkbox"
+									checked={pipelineFilterFeedArtifacts}
+									onChange={(e) => setPipelineFilterFeedArtifacts(e.target.checked)}
+								/>
 								Exclude feed hubs, navigation pages, and empty article records
 							</label>
 
@@ -333,7 +409,8 @@ export const AdminSettings: React.FC = () => {
 										required
 									/>
 									<p className="text-xs text-slate-500">
-										Public URL used for links embedded in push notifications (e.g. <code>https://vagus.example.com</code>).
+										Public URL used for links embedded in push notifications (e.g.{" "}
+										<code>https://vagus.example.com</code>).
 									</p>
 								</div>
 							</div>
@@ -388,13 +465,26 @@ export const AdminSettings: React.FC = () => {
 						<Trash2 className="h-5 w-5 text-rose-600" />
 						Pipeline Test Data
 					</CardTitle>
-					<CardDescription>Clear derived pipeline records without touching sources or raw articles.</CardDescription>
+					<CardDescription>
+						Clear derived pipeline records without touching sources or raw articles.
+					</CardDescription>
 				</CardHeader>
 				<CardContent className="p-5 flex flex-col sm:flex-row gap-3">
-					<Button type="button" variant="outline" onClick={() => handleResetPipeline("clustering")} disabled={resetPipelineMutation.isPending} className="border-rose-200 text-rose-700 hover:bg-rose-50">
+					<Button
+						type="button"
+						variant="outline"
+						onClick={() => handleResetPipeline("clustering")}
+						disabled={resetPipelineMutation.isPending}
+						className="border-rose-200 text-rose-700 hover:bg-rose-50"
+					>
 						Clear Clustering Onward
 					</Button>
-					<Button type="button" variant="destructive" onClick={() => handleResetPipeline("stage_a")} disabled={resetPipelineMutation.isPending}>
+					<Button
+						type="button"
+						variant="destructive"
+						onClick={() => handleResetPipeline("stage_a")}
+						disabled={resetPipelineMutation.isPending}
+					>
 						Clear Article Summaries Onward
 					</Button>
 				</CardContent>
@@ -408,7 +498,8 @@ export const AdminSettings: React.FC = () => {
 						Pipeline LLM Prompts & Templates
 					</h2>
 					<p className="text-sm text-slate-500 mt-1">
-						Customize System and User Prompts across all pipeline stage tasks. Use <code>{"{{variable}}"}</code> tags to inject runtime article and cluster parameters.
+						Customize System and User Prompts across all pipeline stage tasks. Use{" "}
+						<code>{"{{variable}}"}</code> tags to inject runtime article and cluster parameters.
 					</p>
 				</div>
 
@@ -419,10 +510,16 @@ export const AdminSettings: React.FC = () => {
 				) : (
 					<div className="space-y-6">
 						{promptsQuery.data?.map((p) => {
-							const form = promptForms[p.key] || { systemPrompt: p.systemPrompt, userPrompt: p.userPrompt };
+							const form = promptForms[p.key] || {
+								systemPrompt: p.systemPrompt,
+								userPrompt: p.userPrompt,
+							};
 							const isCustomized = p.isCustomized;
-							const isPendingSave = updatePromptMutation.isPending && updatePromptMutation.variables?.promptKey === p.key;
-							const isPendingReset = resetPromptMutation.isPending && resetPromptMutation.variables?.promptKey === p.key;
+							const isPendingSave =
+								updatePromptMutation.isPending &&
+								updatePromptMutation.variables?.promptKey === p.key;
+							const isPendingReset =
+								resetPromptMutation.isPending && resetPromptMutation.variables?.promptKey === p.key;
 
 							return (
 								<Card key={p.key} className="border-slate-200 shadow-xs">
@@ -483,7 +580,9 @@ export const AdminSettings: React.FC = () => {
 
 										{/* System Prompt Field */}
 										<div className="space-y-1.5">
-											<Label className="text-xs font-semibold text-slate-700">System Prompt / Role Instruction</Label>
+											<Label className="text-xs font-semibold text-slate-700">
+												System Prompt / Role Instruction
+											</Label>
 											<textarea
 												rows={2}
 												value={form.systemPrompt}
@@ -500,7 +599,9 @@ export const AdminSettings: React.FC = () => {
 
 										{/* User Prompt Template Field */}
 										<div className="space-y-1.5">
-											<Label className="text-xs font-semibold text-slate-700">User Prompt Template</Label>
+											<Label className="text-xs font-semibold text-slate-700">
+												User Prompt Template
+											</Label>
 											<textarea
 												rows={6}
 												value={form.userPrompt}

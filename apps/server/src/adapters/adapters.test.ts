@@ -8,10 +8,7 @@ import { RssAdapter } from "./rss";
 
 describe("Source Adapters", () => {
 	test("RssAdapter parses RSS fixture correctly", async () => {
-		const xmlFixture = readFileSync(
-			join(__dirname, "fixtures/rss_feed.xml"),
-			"utf-8",
-		);
+		const xmlFixture = readFileSync(join(__dirname, "fixtures/rss_feed.xml"), "utf-8");
 
 		// Intercept fetch call for rss feed url
 		const originalFetch = globalThis.fetch;
@@ -47,10 +44,7 @@ describe("Source Adapters", () => {
 	});
 
 	test("BraveNewsAdapter parses Brave News json fixture correctly", async () => {
-		const jsonFixture = readFileSync(
-			join(__dirname, "fixtures/brave_news.json"),
-			"utf-8",
-		);
+		const jsonFixture = readFileSync(join(__dirname, "fixtures/brave_news.json"), "utf-8");
 
 		const originalFetch = globalThis.fetch;
 		globalThis.fetch = (async (input: any, init?: any) => {

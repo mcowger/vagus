@@ -8,16 +8,10 @@ import {
 	EMBED_ARTICLE_JOB_TYPE,
 	SCORE_USER_JOB_TYPE,
 } from "./clustering-contracts";
-import {
-	EXTRACT_ARTICLE_JOB_TYPE,
-	STAGE_A_BULLET_JOB_TYPE,
-} from "./extraction-contracts";
+import { EXTRACT_ARTICLE_JOB_TYPE, STAGE_A_BULLET_JOB_TYPE } from "./extraction-contracts";
 import { FETCH_SOURCE_JOB_TYPE, type FetchSourceJobData } from "./ingestion";
 import { NOOP_JOB_TYPE, type NoopJobData } from "./jobs";
-import {
-	ASSEMBLE_DIGEST_JOB_TYPE,
-	SYNTHESIZE_CLUSTER_JOB_TYPE,
-} from "./synthesis-contracts";
+import { ASSEMBLE_DIGEST_JOB_TYPE, SYNTHESIZE_CLUSTER_JOB_TYPE } from "./synthesis-contracts";
 
 let cachedQueue: Queue | null = null;
 async function resolveQueue(queueArg?: Queue): Promise<Queue | null> {
@@ -58,11 +52,7 @@ export async function startRun(
 	}
 
 	// Fetch enabled sources
-	const sources = await db
-		.selectFrom("source")
-		.select("id")
-		.where("enabled", "=", 1)
-		.execute();
+	const sources = await db.selectFrom("source").select("id").where("enabled", "=", 1).execute();
 
 	const isExplicitStage = options?.stageName !== undefined || options?.expectedJobs !== undefined;
 
@@ -246,11 +236,7 @@ export async function triggerNextStage(
 ): Promise<void> {
 	log.info("Triggering next pipeline stage", { runId, completedStage });
 
-	const runRow = await db
-		.selectFrom("run")
-		.selectAll()
-		.where("id", "=", runId)
-		.executeTakeFirst();
+	const runRow = await db.selectFrom("run").selectAll().where("id", "=", runId).executeTakeFirst();
 
 	const runKind = (runRow as any)?.kind ?? "global";
 	const profileId = (runRow as any)?.profile_id;
@@ -258,12 +244,14 @@ export async function triggerNextStage(
 	if (completedStage === "ingest" || completedStage === "fetch-source") {
 		// Ingest -> Extract
 		const settings = await getArticleEligibilitySettings(db);
-		const articles = (await db
-			.selectFrom("article")
-			.selectAll()
-			.where("run_id", "=", runId)
-			.where((eb) => eb.or([eb("content", "is", null), eb("stage_a_bullet", "is", null)]))
-			.execute()).filter((article) => isEligibleArticle(article, settings));
+		const articles = (
+			await db
+				.selectFrom("article")
+				.selectAll()
+				.where("run_id", "=", runId)
+				.where((eb) => eb.or([eb("content", "is", null), eb("stage_a_bullet", "is", null)]))
+				.execute()
+		).filter((article) => isEligibleArticle(article, settings));
 
 		if (articles.length > 0) {
 			const stageRow = await db
@@ -291,12 +279,14 @@ export async function triggerNextStage(
 	} else if (completedStage === "extract" || completedStage === "extract-article") {
 		// Extract -> Stage A Bullet
 		const settings = await getArticleEligibilitySettings(db);
-		const articles = (await db
-			.selectFrom("article")
-			.selectAll()
-			.where("run_id", "=", runId)
-			.where("stage_a_bullet", "is", null)
-			.execute()).filter((article) => isEligibleArticle(article, settings));
+		const articles = (
+			await db
+				.selectFrom("article")
+				.selectAll()
+				.where("run_id", "=", runId)
+				.where("stage_a_bullet", "is", null)
+				.execute()
+		).filter((article) => isEligibleArticle(article, settings));
 
 		if (articles.length > 0) {
 			const stageRow = await db
@@ -324,13 +314,21 @@ export async function triggerNextStage(
 	} else if (completedStage === "stage_a" || completedStage === "stage_a_bullet") {
 		// Stage A -> Embed
 		const settings = await getArticleEligibilitySettings(db);
-		const unembeddedArticles = (await db
-			.selectFrom("article as a")
-			.leftJoin("article_embedding as ae", "ae.article_id", "a.id")
-			.select(["a.id as id", "a.title as title", "a.content as content", "a.stage_a_bullet as stage_a_bullet", "a.publish_date as publish_date"])
-			.where("a.run_id", "=", runId)
-			.where("ae.id", "is", null)
-			.execute()).filter((article) => isEligibleArticle(article, settings));
+		const unembeddedArticles = (
+			await db
+				.selectFrom("article as a")
+				.leftJoin("article_embedding as ae", "ae.article_id", "a.id")
+				.select([
+					"a.id as id",
+					"a.title as title",
+					"a.content as content",
+					"a.stage_a_bullet as stage_a_bullet",
+					"a.publish_date as publish_date",
+				])
+				.where("a.run_id", "=", runId)
+				.where("ae.id", "is", null)
+				.execute()
+		).filter((article) => isEligibleArticle(article, settings));
 
 		if (unembeddedArticles.length > 0) {
 			const stageRow = await db
@@ -364,11 +362,13 @@ export async function triggerNextStage(
 
 		// Explicit/legacy support if non-global run triggers embed
 		const settings = await getArticleEligibilitySettings(db);
-		const articleCount = (await db
-			.selectFrom("article")
-			.select(["title", "content", "stage_a_bullet", "publish_date"])
-			.where("run_id", "=", runId)
-			.execute()).filter((article) => isEligibleArticle(article, settings)).length;
+		const articleCount = (
+			await db
+				.selectFrom("article")
+				.select(["title", "content", "stage_a_bullet", "publish_date"])
+				.where("run_id", "=", runId)
+				.execute()
+		).filter((article) => isEligibleArticle(article, settings)).length;
 
 		if (articleCount > 0) {
 			const stageRow = await db
@@ -500,7 +500,11 @@ export async function triggerNextStage(
 		} else {
 			await triggerNextStage(db, queue, runId, "synthesize");
 		}
-	} else if (completedStage === "synthesize" || completedStage === "synthesize-cluster" || completedStage === "synthesize_cluster") {
+	} else if (
+		completedStage === "synthesize" ||
+		completedStage === "synthesize-cluster" ||
+		completedStage === "synthesize_cluster"
+	) {
 		// Synthesize -> Assemble Digest
 		const targetTuples = await db
 			.selectFrom("user_selected_cluster")
@@ -576,11 +580,21 @@ export async function advanceStage(
 			.executeTakeFirst();
 
 		if (!stage) {
-			return { advanced: false, completed: 0, stageStatus: "failed" as StageStatus, reason: "stage_not_found" };
+			return {
+				advanced: false,
+				completed: 0,
+				stageStatus: "failed" as StageStatus,
+				reason: "stage_not_found",
+			};
 		}
 
 		if (stage.status === "complete" || stage.status === "failed") {
-			return { advanced: false, completed: stage.completed, stageStatus: stage.status, reason: "stage_already_finished" };
+			return {
+				advanced: false,
+				completed: stage.completed,
+				stageStatus: stage.status,
+				reason: "stage_already_finished",
+			};
 		}
 
 		const run = await trx
@@ -590,7 +604,12 @@ export async function advanceStage(
 			.executeTakeFirst();
 
 		if (!run) {
-			return { advanced: false, completed: stage.completed, stageStatus: stage.status, reason: "run_not_found" };
+			return {
+				advanced: false,
+				completed: stage.completed,
+				stageStatus: stage.status,
+				reason: "run_not_found",
+			};
 		}
 
 		let stats: { completedJobIds?: number[]; isExplicitStage?: boolean } = {};
@@ -604,7 +623,12 @@ export async function advanceStage(
 		const completedJobIds: number[] = stats.completedJobIds ?? [];
 
 		if (jobId !== undefined && completedJobIds.includes(jobId)) {
-			return { advanced: false, completed: stage.completed, stageStatus: stage.status, reason: "duplicate_job" };
+			return {
+				advanced: false,
+				completed: stage.completed,
+				stageStatus: stage.status,
+				reason: "duplicate_job",
+			};
 		}
 
 		if (jobId !== undefined) {
@@ -649,7 +673,11 @@ export async function advanceStage(
 				await triggerNextStage(db, q, runId, completedStageName);
 			}
 		} catch (err) {
-			log.error("Failed to trigger next pipeline stage", { runId, completedStageName, error: String(err) });
+			log.error("Failed to trigger next pipeline stage", {
+				runId,
+				completedStageName,
+				error: String(err),
+			});
 		}
 
 		// Check if any stage is incomplete
@@ -711,7 +739,12 @@ export async function failStage(
 		} catch {}
 		stats.failure = { stage: stage.stage, error };
 
-		if (run && (run as any).kind === "profile" && (run as any).profile_id && (run as any).input_through_article_id) {
+		if (
+			run &&
+			(run as any).kind === "profile" &&
+			(run as any).profile_id &&
+			(run as any).input_through_article_id
+		) {
 			await trx
 				.updateTable("interest_profile")
 				.set({ cursor_article_id: (run as any).input_through_article_id } as any)
@@ -732,16 +765,8 @@ export async function failStage(
 
 export type RunWithStages = Selectable<RunTable> & { stages: Selectable<RunStageTable>[] };
 
-export async function listRuns(
-	db: Kysely<Database>,
-	limit = 50,
-): Promise<RunWithStages[]> {
-	const runs = await db
-		.selectFrom("run")
-		.selectAll()
-		.orderBy("id", "desc")
-		.limit(limit)
-		.execute();
+export async function listRuns(db: Kysely<Database>, limit = 50): Promise<RunWithStages[]> {
+	const runs = await db.selectFrom("run").selectAll().orderBy("id", "desc").limit(limit).execute();
 
 	if (runs.length === 0) return [];
 
@@ -765,23 +790,12 @@ export async function listRuns(
 	}));
 }
 
-export async function getRun(
-	db: Kysely<Database>,
-	runId: number,
-): Promise<RunWithStages | null> {
-	const run = await db
-		.selectFrom("run")
-		.selectAll()
-		.where("id", "=", runId)
-		.executeTakeFirst();
+export async function getRun(db: Kysely<Database>, runId: number): Promise<RunWithStages | null> {
+	const run = await db.selectFrom("run").selectAll().where("id", "=", runId).executeTakeFirst();
 
 	if (!run) return null;
 
-	const stages = await db
-		.selectFrom("run_stage")
-		.selectAll()
-		.where("run_id", "=", runId)
-		.execute();
+	const stages = await db.selectFrom("run_stage").selectAll().where("run_id", "=", runId).execute();
 
 	return {
 		...run,

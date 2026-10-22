@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, stage-status-check ]
+    branches: [main, stage-status-check]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
@@ -21,6 +21,9 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Check formatting
+        run: bun fmt --check
 
       - name: Run tests
         run: bun test

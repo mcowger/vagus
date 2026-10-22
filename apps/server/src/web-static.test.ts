@@ -9,18 +9,14 @@ test("web HTML builds with a non-empty SPA shell and client assets", async () =>
 
 	try {
 		const result = await Bun.build({
-			entrypoints: [
-				fileURLToPath(new URL("../../web/index.html", import.meta.url)),
-			],
+			entrypoints: [fileURLToPath(new URL("../../web/index.html", import.meta.url))],
 			target: "bun",
 			outdir,
 		});
 
 		expect(result.success).toBe(true);
 
-		const html = await result.outputs
-			.find(({ path }) => path.endsWith("index.html"))
-			?.text();
+		const html = await result.outputs.find(({ path }) => path.endsWith("index.html"))?.text();
 		expect(html).toBeDefined();
 		expect(html ?? "").toContain('<base href="/" />');
 		expect(html ?? "").toContain('<div id="root"></div>');

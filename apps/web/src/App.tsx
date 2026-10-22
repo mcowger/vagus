@@ -18,7 +18,11 @@ import { UsageDashboard } from "./pages/UsageDashboard";
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
 	const { data: session, isPending, error } = useSession();
 
-	console.log("[Vagus Client] ProtectedRoute session state:", { isPending, user: session?.user?.email, error });
+	console.log("[Vagus Client] ProtectedRoute session state:", {
+		isPending,
+		user: session?.user?.email,
+		error,
+	});
 
 	if (isPending) {
 		return (
@@ -39,7 +43,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function PublicRoute({ children }: { children: React.ReactNode }) {
 	const { data: session, isPending } = useSession();
 
-	console.log("[Vagus Client] PublicRoute session state:", { isPending, user: session?.user?.email });
+	console.log("[Vagus Client] PublicRoute session state:", {
+		isPending,
+		user: session?.user?.email,
+	});
 
 	if (isPending) {
 		return (
@@ -58,14 +65,17 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 export function App() {
-	const [queryClient] = useState(() => new QueryClient({
-		defaultOptions: {
-			queries: {
-				staleTime: 5000,
-				refetchOnWindowFocus: false,
-			},
-		},
-	}));
+	const [queryClient] = useState(
+		() =>
+			new QueryClient({
+				defaultOptions: {
+					queries: {
+						staleTime: 5000,
+						refetchOnWindowFocus: false,
+					},
+				},
+			}),
+	);
 
 	const [trpcClient] = useState(() =>
 		trpc.createClient({
@@ -83,10 +93,7 @@ export function App() {
 				<BrowserRouter>
 					<Routes>
 						<Route path="/" element={<Layout />}>
-							<Route
-								index
-								element={<DigestReader />}
-							/>
+							<Route index element={<DigestReader />} />
 							<Route
 								path="sources"
 								element={
@@ -135,14 +142,8 @@ export function App() {
 									</ProtectedRoute>
 								}
 							/>
-						<Route
-							path="digests"
-							element={<DigestReader />}
-						/>
-						<Route
-							path="digests/:id"
-							element={<DigestReader />}
-						/>
+							<Route path="digests" element={<DigestReader />} />
+							<Route path="digests/:id" element={<DigestReader />} />
 							<Route
 								path="admin/settings"
 								element={

@@ -15,6 +15,7 @@ Each track fills in its module **without changing these exported signatures**, s
 the pieces integrate cleanly. `index.ts` imports exactly these:
 
 ### Track A — Auth (`src/auth.ts`, `src/trpc/context.ts`, `src/trpc/routers/auth.ts`)
+
 - `export const auth: AuthLike` where `AuthLike.handler(request: Request): Response | Promise<Response>`.
   Mounted at `/api/auth/*`. Implemented with BetterAuth on `db.sqlite`:
   **Google OAuth only** (no email/password) + api-key plugin, `user`/`admin`
@@ -30,6 +31,7 @@ the pieces integrate cleanly. `index.ts` imports exactly these:
 - Fill `authRouter` in `src/trpc/routers/auth.ts` (e.g. `me`, user management).
 
 ### Track B — Queue/coordinator (`src/queue/index.ts`, `src/trpc/routers/runs.ts`)
+
 - `export async function startWorker(): Promise<void>` — build plainjob queue on
   `bun(db.sqlite)`, define worker(s), register the no-op job + run/stage
   coordinator (over the `run` / `run_stage` tables), start the worker loop.
@@ -38,6 +40,7 @@ the pieces integrate cleanly. `index.ts` imports exactly these:
   `runsRouter` in `src/trpc/routers/runs.ts` (`startRun`, `listRuns`, `getRun`).
 
 ### Track C — Web shell (`apps/web`)
+
 - Replace the placeholder `apps/web/src/main.tsx` with the React + shadcn/ui app
   shell: router, `@tanstack/react-query` tRPC client importing the server
   `AppRouter` **type** only (`import type { AppRouter } from "../../server/src/trpc/router"`),
@@ -45,6 +48,7 @@ the pieces integrate cleanly. `index.ts` imports exactly these:
   `apps/web/index.html` entry that `index.ts` imports.
 
 ### Track D — Ops plumbing (`src/config.ts`, `src/log.ts`, `/healthz`)
+
 - `src/config.ts`: `export const config: Config` — validate env
   (`BETTER_AUTH_SECRET` ≥ 32, warn in prod), keep fields
   `{ dbPath, port, betterAuthSecret, nodeEnv }`.
@@ -53,6 +57,7 @@ the pieces integrate cleanly. `index.ts` imports exactly these:
 - Refine the `/healthz` handler in `index.ts` (DB check, etc.).
 
 ## Shared contracts (already landed — import, don't redefine)
+
 - `src/db/connection.ts`: `db` (shared `{ sqlite, kysely, close }`), `createDb(path)`.
 - `src/db/schema.ts`: Kysely `Database` interface (`run`, `run_stage`).
 - `src/db/migrate.ts`: `migrateToLatest(db)` + in-code migration registry.

@@ -182,7 +182,7 @@ test("updateProfile supports string inputs for array fields", async () => {
 
 	const updated = await caller.profiles.updateProfile({
 		keywords: "ts, react, bun",
-		topics: "[\"Web\", \"Dev\"]",
+		topics: '["Web", "Dev"]',
 	});
 
 	expect(JSON.parse(updated.keywords)).toEqual(["ts", "react", "bun"]);

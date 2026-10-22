@@ -18,20 +18,20 @@ afterEach(() => {
 	stopScheduler();
 });
 
-	test("parseScheduleInterval only parses explicit duration schedules", () => {
+test("parseScheduleInterval only parses explicit duration schedules", () => {
 	expect(parseScheduleInterval("100")).toBe(100);
 	expect(parseScheduleInterval("250ms")).toBe(250);
 	expect(parseScheduleInterval("5s")).toBe(5000);
 	expect(parseScheduleInterval("2m")).toBe(120000);
 	expect(parseScheduleInterval("1h")).toBe(3600000);
-		expect(parseScheduleInterval("0 * * * *")).toBeNull();
-	});
+	expect(parseScheduleInterval("0 * * * *")).toBeNull();
+});
 
-	test("cron schedules run at calendar boundaries instead of process-relative intervals", () => {
-		const nextRun = getNextCronRun("0 * * * *", new Date("2026-07-23T05:58:27.000Z"));
+test("cron schedules run at calendar boundaries instead of process-relative intervals", () => {
+	const nextRun = getNextCronRun("0 * * * *", new Date("2026-07-23T05:58:27.000Z"));
 
-		expect(nextRun?.toISOString()).toBe("2026-07-23T06:00:00.000Z");
-	});
+	expect(nextRun?.toISOString()).toBe("2026-07-23T06:00:00.000Z");
+});
 
 test("starts a scheduled run", async () => {
 	const db = createDb(":memory:");
@@ -196,7 +196,13 @@ test("triggerManualProfileRun triggers a profile run when new embedded articles 
 	// Insert source, article, embedding
 	const source = await db.kysely
 		.insertInto("source")
-		.values({ type: "rss", name: "Source 1", enabled: 1, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+		.values({
+			type: "rss",
+			name: "Source 1",
+			enabled: 1,
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString(),
+		})
 		.returningAll()
 		.executeTakeFirstOrThrow();
 

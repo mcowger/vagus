@@ -32,9 +32,7 @@ export function parseRange(spec: string): PortRange {
 	const start = Number(match[1]);
 	const end = Number(match[2]);
 	if (start < 1 || end > 65535 || end < start) {
-		throw new Error(
-			`Invalid port range: "${spec}" (bounds must be 1-65535 and START <= END)`,
-		);
+		throw new Error(`Invalid port range: "${spec}" (bounds must be 1-65535 and START <= END)`);
 	}
 	return { start, end };
 }
@@ -60,11 +58,7 @@ export interface AllocateOptions {
 }
 
 /** Map (service, branch) to a stable port inside the range. */
-export function allocatePort({
-	service,
-	branch = "",
-	range,
-}: AllocateOptions): number {
+export function allocatePort({ service, branch = "", range }: AllocateOptions): number {
 	const { start, end } = range ?? resolveRange();
 	const span = end - start + 1;
 	const key = `${service}@${branch}`;
@@ -89,10 +83,7 @@ export function currentGitBranch(): string {
  * git branch. Paseo's own portScript path is handled by `paseo-port.ts`; the
  * `$PASEO_PORT` preference is handled by the shell (`${PASEO_PORT:-...}`).
  */
-export function resolvePort(
-	service = "web",
-	env: NodeJS.ProcessEnv = process.env,
-): number {
+export function resolvePort(service = "web", env: NodeJS.ProcessEnv = process.env): number {
 	const branch = env.PASEO_BRANCH_NAME ?? currentGitBranch();
 	return allocatePort({ service, branch, range: resolveRange(env) });
 }

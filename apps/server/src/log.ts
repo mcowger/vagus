@@ -4,7 +4,6 @@ export type LogMeta = Record<string, unknown>;
 
 function emit(level: string, message: string, meta?: LogMeta): void {
 	const line = { level, message, time: new Date().toISOString(), ...meta };
-	// eslint-disable-next-line no-console
 	console.log(JSON.stringify(line));
 }
 
@@ -23,10 +22,7 @@ export function requestLogger(): MiddlewareHandler {
 	return async (c, next) => {
 		const start = performance.now();
 		const headerReqId = c.req.header("x-request-id");
-		const reqId =
-			headerReqId && headerReqId.trim().length > 0
-				? headerReqId
-				: requestId();
+		const reqId = headerReqId && headerReqId.trim().length > 0 ? headerReqId : requestId();
 
 		c.set("requestId", reqId);
 

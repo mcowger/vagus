@@ -88,7 +88,14 @@ test("resetPipelineData preserves or clears Stage A based on level", async () =>
 		.executeTakeFirstOrThrow();
 	const article = await db
 		.insertInto("article")
-		.values({ identity_key: "test", source_id: source.id, title: "Test", url: "https://example.com/test", content: "Test content", stage_a_bullet: "Test summary" })
+		.values({
+			identity_key: "test",
+			source_id: source.id,
+			title: "Test",
+			url: "https://example.com/test",
+			content: "Test content",
+			stage_a_bullet: "Test summary",
+		})
 		.returningAll()
 		.executeTakeFirstOrThrow();
 	await db
@@ -97,12 +104,20 @@ test("resetPipelineData preserves or clears Stage A based on level", async () =>
 		.execute();
 
 	await caller.settings.resetPipelineData({ level: "clustering" });
-	let retained = await db.selectFrom("article").select(["stage_a_bullet"]).where("id", "=", article.id).executeTakeFirstOrThrow();
+	let retained = await db
+		.selectFrom("article")
+		.select(["stage_a_bullet"])
+		.where("id", "=", article.id)
+		.executeTakeFirstOrThrow();
 	expect(retained.stage_a_bullet).toBe("Test summary");
 	expect(await db.selectFrom("article_embedding").select("id").execute()).toHaveLength(1);
 
 	await caller.settings.resetPipelineData({ level: "stage_a" });
-	retained = await db.selectFrom("article").select(["stage_a_bullet"]).where("id", "=", article.id).executeTakeFirstOrThrow();
+	retained = await db
+		.selectFrom("article")
+		.select(["stage_a_bullet"])
+		.where("id", "=", article.id)
+		.executeTakeFirstOrThrow();
 	expect(retained.stage_a_bullet).toBeNull();
 	expect(await db.selectFrom("article_embedding").select("id").execute()).toHaveLength(0);
 });

@@ -45,7 +45,5 @@ test("validateConfig warns and allows fallback or short secret in dev", () => {
 	const fallbackDev = validateConfig({
 		NODE_ENV: "development",
 	});
-	expect(fallbackDev.betterAuthSecret).toBe(
-		"dev-insecure-secret-change-me-0123456789",
-	);
+	expect(fallbackDev.betterAuthSecret).toBe("dev-insecure-secret-change-me-0123456789");
 });

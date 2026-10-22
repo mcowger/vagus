@@ -42,14 +42,9 @@ export class ScrapeAdapter implements SourceAdapter {
 			const identityKey = `scrape-${sha256(source.url)}`;
 
 			const title =
-				article?.title?.trim() ||
-				doc.querySelector("title")?.textContent?.trim() ||
-				"Untitled";
+				article?.title?.trim() || doc.querySelector("title")?.textContent?.trim() || "Untitled";
 
-			const content =
-				article?.textContent?.trim() ||
-				article?.content ||
-				null;
+			const content = article?.textContent?.trim() || article?.content || null;
 
 			const author =
 				article?.byline?.trim() ||
@@ -59,7 +54,10 @@ export class ScrapeAdapter implements SourceAdapter {
 
 			const publishDate =
 				article?.publishedTime?.trim() ||
-				doc.querySelector('meta[property="article:published_time"]')?.getAttribute("content")?.trim() ||
+				doc
+					.querySelector('meta[property="article:published_time"]')
+					?.getAttribute("content")
+					?.trim() ||
 				doc.querySelector('meta[name="date"]')?.getAttribute("content")?.trim() ||
 				doc.querySelector("time")?.getAttribute("datetime")?.trim() ||
 				null;

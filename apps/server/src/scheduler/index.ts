@@ -2,7 +2,12 @@ import type { Kysely } from "kysely";
 import type { Queue } from "plainjob";
 import type { Database } from "../db/schema";
 import { log } from "../log";
-import { startProfileRun, startRun, type StartProfileRunResult, type StartRunResult } from "../queue/coordinator";
+import {
+	startProfileRun,
+	startRun,
+	type StartProfileRunResult,
+	type StartRunResult,
+} from "../queue/coordinator";
 
 let schedulerInterval: Timer | ReturnType<typeof setInterval> | null = null;
 let schedulerCron: Bun.CronJob | null = null;
@@ -95,18 +100,19 @@ async function syncProfileSchedulers(db: Kysely<Database>, queue: Queue): Promis
 
 		profileCrons.get(profile.id)?.stop();
 		try {
-			const cron = Bun.cron(
-				schedule,
-				() => triggerScheduledProfileRun(db, queue, profile.id),
-				{ tz: timezone },
-			);
+			const cron = Bun.cron(schedule, () => triggerScheduledProfileRun(db, queue, profile.id), {
+				tz: timezone,
+			});
 			profileCrons.set(profile.id, cron);
 			profileScheduleKeys.set(profile.id, scheduleKey);
 			log.info("Profile scheduler started", { profileId: profile.id, schedule, timezone });
 		} catch (err) {
 			profileCrons.delete(profile.id);
 			profileScheduleKeys.delete(profile.id);
-			log.error("Failed to setup profile cron schedule", { profileId: profile.id, error: String(err) });
+			log.error("Failed to setup profile cron schedule", {
+				profileId: profile.id,
+				error: String(err),
+			});
 		}
 	}
 }
@@ -167,11 +173,9 @@ export async function startScheduler(
 		return;
 	}
 
-	schedulerCron = Bun.cron(
-		cronSchedule,
-		() => triggerScheduledRun(db, queue),
-		{ tz: SCHEDULER_TIMEZONE },
-	);
+	schedulerCron = Bun.cron(cronSchedule, () => triggerScheduledRun(db, queue), {
+		tz: SCHEDULER_TIMEZONE,
+	});
 	log.info("Scheduler started with cron", {
 		schedule: cronSchedule,
 		timezone: SCHEDULER_TIMEZONE,

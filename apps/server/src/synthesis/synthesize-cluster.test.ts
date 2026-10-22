@@ -8,7 +8,10 @@ import type { Database } from "../db/schema";
 import { FakeEmbedder } from "../embeddings/fake";
 import { createPlainjobConnection } from "../queue/index";
 import { advanceStage, startRun } from "../queue/coordinator";
-import { SYNTHESIZE_CLUSTER_JOB_TYPE, type SynthesizeClusterJobData } from "../queue/synthesis-contracts";
+import {
+	SYNTHESIZE_CLUSTER_JOB_TYPE,
+	type SynthesizeClusterJobData,
+} from "../queue/synthesis-contracts";
 import { parseClusterSummaryResponse, processSynthesizeClusterJob } from "./synthesize-cluster";
 import { validateAndFilterCitations } from "./types";
 
@@ -24,12 +27,37 @@ describe("Synthesize Cluster Worker", () => {
 		});
 		await migrateToLatest(db);
 		globalThis.fetch = (async () =>
-			new Response(JSON.stringify({
-				choices: [{ message: { content: JSON.stringify({ title: "Test summary", summary: "Test cluster summary.", perspectives: [], timeline: [], citations: [] }) } }],
-				usage: { prompt_tokens: 10, completion_tokens: 5 },
-			}))) as unknown as typeof fetch;
-		await db.insertInto("provider_config").values({ provider: "test-llm", api_key: "test-key", enabled: 1, config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }) }).execute();
-		await db.insertInto("task_model").values({ task_name: "stage_b_synthesis", provider: "test-llm", model_name: "test-model" }).execute();
+			new Response(
+				JSON.stringify({
+					choices: [
+						{
+							message: {
+								content: JSON.stringify({
+									title: "Test summary",
+									summary: "Test cluster summary.",
+									perspectives: [],
+									timeline: [],
+									citations: [],
+								}),
+							},
+						},
+					],
+					usage: { prompt_tokens: 10, completion_tokens: 5 },
+				}),
+			)) as unknown as typeof fetch;
+		await db
+			.insertInto("provider_config")
+			.values({
+				provider: "test-llm",
+				api_key: "test-key",
+				enabled: 1,
+				config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }),
+			})
+			.execute();
+		await db
+			.insertInto("task_model")
+			.values({ task_name: "stage_b_synthesis", provider: "test-llm", model_name: "test-model" })
+			.execute();
 
 		queue = defineQueue({
 			connection: createPlainjobConnection(sqlite),

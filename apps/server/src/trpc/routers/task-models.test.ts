@@ -65,9 +65,9 @@ test("getThinkingEfforts resolves catalog models selected through a custom provi
 		expect(model).toBeDefined();
 
 		const expectedEfforts = getSupportedThinkingLevels(model!).filter((level) => level !== "off");
-		expect(
-			await caller.taskModels.getThinkingEfforts({ provider: "Plexus", modelName }),
-		).toEqual(expectedEfforts);
+		expect(await caller.taskModels.getThinkingEfforts({ provider: "Plexus", modelName })).toEqual(
+			expectedEfforts,
+		);
 	}
 });
 

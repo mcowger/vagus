@@ -60,10 +60,7 @@ describe("Citations Module", () => {
 
 		test("rejects hallucinated keys not in validArticleMap", () => {
 			const rawCitations = ["art_1", "art_999", "art_fake", "art_2"];
-			const { validKeys, articleIds } = validateAndRepairCitations(
-				rawCitations,
-				validArticleMap,
-			);
+			const { validKeys, articleIds } = validateAndRepairCitations(rawCitations, validArticleMap);
 
 			expect(validKeys).toEqual(["art_1", "art_2"]);
 			expect(articleIds).toEqual([101, 102]);
@@ -71,10 +68,7 @@ describe("Citations Module", () => {
 
 		test("deduplicates citation keys", () => {
 			const rawCitations = ["art_1", "[art_1]", "art_2", "art_1", "[art_2]"];
-			const { validKeys, articleIds } = validateAndRepairCitations(
-				rawCitations,
-				validArticleMap,
-			);
+			const { validKeys, articleIds } = validateAndRepairCitations(rawCitations, validArticleMap);
 
 			expect(validKeys).toEqual(["art_1", "art_2"]);
 			expect(articleIds).toEqual([101, 102]);
@@ -82,10 +76,7 @@ describe("Citations Module", () => {
 
 		test("repairs bracketed citation strings", () => {
 			const rawCitations = ["[art_1]", "[art_3]"];
-			const { validKeys, articleIds } = validateAndRepairCitations(
-				rawCitations,
-				validArticleMap,
-			);
+			const { validKeys, articleIds } = validateAndRepairCitations(rawCitations, validArticleMap);
 
 			expect(validKeys).toEqual(["art_1", "art_3"]);
 			expect(articleIds).toEqual([101, 103]);
@@ -93,10 +84,7 @@ describe("Citations Module", () => {
 
 		test("returns empty arrays if no valid citations exist", () => {
 			const rawCitations = ["art_999", "invalid_key"];
-			const { validKeys, articleIds } = validateAndRepairCitations(
-				rawCitations,
-				validArticleMap,
-			);
+			const { validKeys, articleIds } = validateAndRepairCitations(rawCitations, validArticleMap);
 
 			expect(validKeys).toEqual([]);
 			expect(articleIds).toEqual([]);
@@ -214,12 +202,10 @@ describe("Citations Module", () => {
 				[`art_${article2.id}`, article2.id],
 			]);
 
-			const inserts = buildCitationInserts(
-				digest.id,
-				digestCluster.id,
-				map,
-				[`art_${article1.id}`, `art_${article2.id}`],
-			);
+			const inserts = buildCitationInserts(digest.id, digestCluster.id, map, [
+				`art_${article1.id}`,
+				`art_${article2.id}`,
+			]);
 
 			await db.insertInto("citation").values(inserts).execute();
 

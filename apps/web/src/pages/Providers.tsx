@@ -129,7 +129,8 @@ export const Providers: React.FC = () => {
 			<div>
 				<h1 className="text-3xl font-bold tracking-tight text-slate-900">Provider & API Keys</h1>
 				<p className="text-slate-500 mt-1">
-					Configure LLM providers, custom OpenAI-compatible endpoints, base URLs, and external search credentials.
+					Configure LLM providers, custom OpenAI-compatible endpoints, base URLs, and external
+					search credentials.
 				</p>
 			</div>
 
@@ -217,8 +218,8 @@ export const Providers: React.FC = () => {
 									{upsertProviderMutation.isPending
 										? "Saving..."
 										: editingId
-										? "Update Provider"
-										: "Save Provider"}
+											? "Update Provider"
+											: "Save Provider"}
 								</Button>
 								{editingId && (
 									<Button type="button" variant="outline" onClick={resetLlmForm}>
@@ -241,7 +242,8 @@ export const Providers: React.FC = () => {
 							<div className="text-slate-500 py-4">Loading provider configurations...</div>
 						) : llmProviders.length === 0 ? (
 							<div className="text-slate-500 py-6 text-center border rounded-md border-dashed">
-								No custom LLM providers configured. Standard default models will use environment fallbacks.
+								No custom LLM providers configured. Standard default models will use environment
+								fallbacks.
 							</div>
 						) : (
 							<div className="space-y-3">
@@ -261,9 +263,7 @@ export const Providers: React.FC = () => {
 										>
 											<div className="space-y-1">
 												<div className="flex items-center gap-2">
-													<span className="font-bold text-slate-900 capitalize">
-														{p.provider}
-													</span>
+													<span className="font-bold text-slate-900 capitalize">{p.provider}</span>
 													{p.api_key ? (
 														<span className="text-[10px] px-2 py-0.5 rounded font-mono bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">
 															API Key Set
@@ -282,11 +282,7 @@ export const Providers: React.FC = () => {
 											</div>
 
 											<div className="flex items-center gap-2">
-												<Button
-													variant="outline"
-													size="sm"
-													onClick={() => handleEditProvider(p)}
-												>
+												<Button variant="outline" size="sm" onClick={() => handleEditProvider(p)}>
 													Edit
 												</Button>
 												<Button
@@ -322,9 +318,7 @@ export const Providers: React.FC = () => {
 							<Input
 								id="braveKey"
 								type="password"
-								placeholder={
-									braveProvider?.api_key ? "••••••••••••••••" : "BSA..."
-								}
+								placeholder={braveProvider?.api_key ? "••••••••••••••••" : "BSA..."}
 								value={braveKey}
 								onChange={(e) => setBraveKey(e.target.value)}
 							/>
@@ -339,10 +333,7 @@ export const Providers: React.FC = () => {
 									<span className="text-amber-600 font-semibold">Not Configured</span>
 								)}
 							</div>
-							<Button
-								type="submit"
-								disabled={upsertProviderMutation.isPending || !braveKey}
-							>
+							<Button type="submit" disabled={upsertProviderMutation.isPending || !braveKey}>
 								{upsertProviderMutation.isPending ? "Saving..." : "Save Key"}
 							</Button>
 						</div>

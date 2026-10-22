@@ -31,7 +31,9 @@ export async function pruneOldData(
 	const digestRetentionDays = Number.isNaN(parsedDigestDays) ? 90 : parsedDigestDays;
 
 	const nowMs = Date.now();
-	const articleCutoffIso = new Date(nowMs - articleRetentionDays * 24 * 60 * 60 * 1000).toISOString();
+	const articleCutoffIso = new Date(
+		nowMs - articleRetentionDays * 24 * 60 * 60 * 1000,
+	).toISOString();
 	const digestCutoffIso = new Date(nowMs - digestRetentionDays * 24 * 60 * 60 * 1000).toISOString();
 
 	return await db.transaction().execute(async (trx) => {

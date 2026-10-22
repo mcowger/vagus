@@ -4,20 +4,12 @@ import { createDb, type Db } from "./db/connection";
 
 describe("resolveSignupRole", () => {
 	test("admin email becomes admin and bypasses the domain whitelist", () => {
-		const role = resolveSignupRole(
-			"boss@gmail.com",
-			"allowed.com",
-			"boss@gmail.com",
-		);
+		const role = resolveSignupRole("boss@gmail.com", "allowed.com", "boss@gmail.com");
 		expect(role).toBe("admin");
 	});
 
 	test("admin match is case-insensitive", () => {
-		const role = resolveSignupRole(
-			"Boss@Gmail.com",
-			"allowed.com",
-			"boss@gmail.com",
-		);
+		const role = resolveSignupRole("Boss@Gmail.com", "allowed.com", "boss@gmail.com");
 		expect(role).toBe("admin");
 	});
 
@@ -27,9 +19,7 @@ describe("resolveSignupRole", () => {
 	});
 
 	test("non-admin email off the whitelist is rejected", () => {
-		expect(() =>
-			resolveSignupRole("jane@disallowed.com", "allowed.com", ""),
-		).toThrow();
+		expect(() => resolveSignupRole("jane@disallowed.com", "allowed.com", "")).toThrow();
 	});
 
 	test("empty whitelist allows any non-admin domain", () => {
@@ -38,9 +28,7 @@ describe("resolveSignupRole", () => {
 	});
 
 	test("whitelist accepts comma/space separated domains", () => {
-		expect(
-			resolveSignupRole("x@company.org", "allowed.com, company.org", ""),
-		).toBe("user");
+		expect(resolveSignupRole("x@company.org", "allowed.com, company.org", "")).toBe("user");
 	});
 });
 
@@ -111,9 +99,9 @@ describe("Auth instance", () => {
 		const account = testDb.sqlite
 			.query("SELECT id, providerId FROM account WHERE id = ?")
 			.get("account-1") as { id: string; providerId: string } | null;
-		const accountColumns = testDb.sqlite
-			.query("PRAGMA table_info(account)")
-			.all() as { name: string }[];
+		const accountColumns = testDb.sqlite.query("PRAGMA table_info(account)").all() as {
+			name: string;
+		}[];
 
 		expect(account).toEqual({ id: "account-1", providerId: "google" });
 		expect(accountColumns.map(({ name }) => name)).not.toContain("issuer");

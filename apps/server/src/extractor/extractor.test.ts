@@ -8,10 +8,7 @@ import {
 	extractArticleFromUrl,
 } from "./index";
 
-const sampleHtml = readFileSync(
-	join(import.meta.dir, "fixtures", "sample_article.html"),
-	"utf-8",
-);
+const sampleHtml = readFileSync(join(import.meta.dir, "fixtures", "sample_article.html"), "utf-8");
 
 describe("extractor", () => {
 	it("cleanContent strips HTML tags", () => {
@@ -27,10 +24,7 @@ describe("extractor", () => {
 	});
 
 	it("extracts content from HTML fixture using extractArticleFromUrl with htmlOverride", async () => {
-		const result = await extractArticleFromUrl(
-			"https://example.com/test-article",
-			sampleHtml,
-		);
+		const result = await extractArticleFromUrl("https://example.com/test-article", sampleHtml);
 
 		expect(result.title).toContain("Sample Article Title for Testing");
 		expect(result.author).toBe("Jane Doe");

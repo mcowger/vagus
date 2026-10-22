@@ -2,22 +2,13 @@ import { spawnSync } from "node:child_process";
 
 const context = process.env.VAGUS_STAGING_DOCKER_CONTEXT ?? "dolphin";
 const sshHost = process.env.VAGUS_STAGING_SSH_HOST ?? context;
-const stagingUrl = (
-	process.env.VAGUS_STAGING_URL ?? "http://localhost:5173"
-).replace(/\/$/, "");
+const stagingUrl = (process.env.VAGUS_STAGING_URL ?? "http://localhost:5173").replace(/\/$/, "");
 const containerName = process.env.VAGUS_STAGING_CONTAINER_NAME ?? "vagus-news-digest";
 const serviceName = process.env.VAGUS_STAGING_SERVICE_NAME ?? "vagus";
 const imageName = process.env.VAGUS_STAGING_IMAGE_NAME ?? "vagus";
-const imageRetention = Number.parseInt(
-	process.env.VAGUS_STAGING_IMAGE_RETAIN ?? "3",
-	10,
-);
-const healthTimeout = Number.parseInt(
-	process.env.VAGUS_STAGING_HEALTH_TIMEOUT ?? "60",
-	10,
-);
-const targetPlatform =
-	process.env.VAGUS_STAGING_TARGET_PLATFORM ?? "linux/amd64";
+const imageRetention = Number.parseInt(process.env.VAGUS_STAGING_IMAGE_RETAIN ?? "3", 10);
+const healthTimeout = Number.parseInt(process.env.VAGUS_STAGING_HEALTH_TIMEOUT ?? "60", 10);
+const targetPlatform = process.env.VAGUS_STAGING_TARGET_PLATFORM ?? "linux/amd64";
 
 const buildDate = new Date().toISOString();
 const timestamp = buildDate
@@ -50,10 +41,7 @@ function runCommand(
 	return { success, stdout, stderr };
 }
 
-function docker(
-	args: string[],
-	options: { fatal?: boolean; stream?: boolean } = {},
-) {
+function docker(args: string[], options: { fatal?: boolean; stream?: boolean } = {}) {
 	return runCommand("docker", ["--context", context, ...args], options);
 }
 
@@ -102,14 +90,10 @@ if (inspect.success && inspect.stdout) {
 			Image?: string;
 			State?: { Status?: string };
 		};
-		if (!container.Config?.Image || !container.Image)
-			throw new Error("missing image details");
-		const composeWorkingDir =
-			container.Config.Labels?.["com.docker.compose.project.working_dir"];
-		const composeProject =
-			container.Config.Labels?.["com.docker.compose.project"];
-		if (!composeWorkingDir || !composeProject)
-			throw new Error("missing Compose project metadata");
+		if (!container.Config?.Image || !container.Image) throw new Error("missing image details");
+		const composeWorkingDir = container.Config.Labels?.["com.docker.compose.project.working_dir"];
+		const composeProject = container.Config.Labels?.["com.docker.compose.project"];
+		if (!composeWorkingDir || !composeProject) throw new Error("missing Compose project metadata");
 		previous = {
 			image: container.Config.Image,
 			imageId: container.Image,
@@ -117,9 +101,7 @@ if (inspect.success && inspect.stdout) {
 			composeWorkingDir,
 			composeProject,
 		};
-		console.log(
-			`  Current image: ${previous.image} (${previous.imageId}, ${previous.status})`,
-		);
+		console.log(`  Current image: ${previous.image} (${previous.imageId}, ${previous.status})`);
 		console.log(`  Compose project: ${composeProject} (${composeWorkingDir})`);
 	} catch {
 		console.error(`\nCould not read current image details for ${containerName}.`);
@@ -128,14 +110,12 @@ if (inspect.success && inspect.stdout) {
 }
 
 if (!previous) {
-	console.error(
-		`\nCannot deploy without an existing Compose-managed ${containerName} container.`,
-	);
+	console.error(`\nCannot deploy without an existing Compose-managed ${containerName} container.`);
 	process.exit(1);
 }
 
 console.log("\nBuilding image on staging context...");
-	docker(
+docker(
 	[
 		"build",
 		"--platform",
@@ -159,11 +139,7 @@ compose(previous.composeWorkingDir, previous.composeProject);
 const updated = docker(["inspect", "--format", "{{.Image}}", containerName], {
 	fatal: false,
 });
-if (
-	!updated.success ||
-	!updated.stdout ||
-	(previous && updated.stdout === previous.imageId)
-) {
+if (!updated.success || !updated.stdout || (previous && updated.stdout === previous.imageId)) {
 	console.error("\nDeploy did not replace the running image.");
 	process.exit(1);
 }
@@ -183,13 +159,11 @@ for (let elapsed = 1; elapsed <= healthTimeout; elapsed += 1) {
 			version?: string;
 			builtAt?: string;
 		};
-		if (
-			response.ok &&
-			(body.status === "ok" || body.db === "ok") &&
-			body.builtAt === buildDate
-		) {
+		if (response.ok && (body.status === "ok" || body.db === "ok") && body.builtAt === buildDate) {
 			healthy = true;
-			console.log(`  Healthy after ${elapsed}s: v${body.version ?? "unknown"}, built ${body.builtAt}.`);
+			console.log(
+				`  Healthy after ${elapsed}s: v${body.version ?? "unknown"}, built ${body.builtAt}.`,
+			);
 			break;
 		}
 	} catch {

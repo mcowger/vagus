@@ -6,28 +6,28 @@ For each proposed reader-facing topic, mark exactly one: **Keep**, **Split**, or
 
 ## Interactive review results
 
-| Bucket | Decision | Note |
-| --- | --- | --- |
-| ai | Split | |
-| iran-war | Keep | |
-| trump | Keep | |
-| saudi | Keep | |
-| ukraine | Keep | |
-| house | Split | |
-| india | Split | |
-| nvidia | Keep | |
-| meta | Split | Two overarching stories. |
-| tesla | Keep | |
-| hormuz | Exclude | |
-| anthropic | Keep | |
-| ram | Split | |
-| are | Exclude | |
-| arizona | Split | |
-| samsung | Keep | |
-| uk | Split | |
-| top | Exclude | |
-| general | Exclude | |
-| rubio | Exclude | |
+| Bucket    | Decision | Note                     |
+| --------- | -------- | ------------------------ |
+| ai        | Split    |                          |
+| iran-war  | Keep     |                          |
+| trump     | Keep     |                          |
+| saudi     | Keep     |                          |
+| ukraine   | Keep     |                          |
+| house     | Split    |                          |
+| india     | Split    |                          |
+| nvidia    | Keep     |                          |
+| meta      | Split    | Two overarching stories. |
+| tesla     | Keep     |                          |
+| hormuz    | Exclude  |                          |
+| anthropic | Keep     |                          |
+| ram       | Split    |                          |
+| are       | Exclude  |                          |
+| arizona   | Split    |                          |
+| samsung   | Keep     |                          |
+| uk        | Split    |                          |
+| top       | Exclude  |                          |
+| general   | Exclude  |                          |
+| rubio     | Exclude  |                          |
 
 ## Interactive semantic-split review
 

@@ -5,7 +5,8 @@ import { extractJsonFromText, sanitizeTextContent, cleanMarkdownFences } from ".
 
 describe("Defensive JSON Extractor & Sanitizer", () => {
 	it("extracts valid JSON from markdown code fences starting with ```json { ... }", () => {
-		const rawLlmOutput = '```json { "title": "Home Assistant Release", "summary": "New features released.", "perspectives": ["User-centered"], "timeline": ["June 2026"], "citations": ["home-assistant.io"] } ```';
+		const rawLlmOutput =
+			'```json { "title": "Home Assistant Release", "summary": "New features released.", "perspectives": ["User-centered"], "timeline": ["June 2026"], "citations": ["home-assistant.io"] } ```';
 		const parsed = extractJsonFromText(rawLlmOutput);
 
 		expect(parsed).not.toBeNull();
@@ -21,14 +22,16 @@ describe("Defensive JSON Extractor & Sanitizer", () => {
 	});
 
 	it("extracts inner summary string when raw JSON string is passed without code fences", () => {
-		const rawJsonString = '{ title: "Home Assistant", summary: "Home Assistant 2026.6 introduces intuitive card pickers.", perspectives: ["User design"] }';
+		const rawJsonString =
+			'{ title: "Home Assistant", summary: "Home Assistant 2026.6 introduces intuitive card pickers.", perspectives: ["User design"] }';
 		const sanitized = sanitizeTextContent(rawJsonString);
 
 		expect(sanitized).toBe("Home Assistant 2026.6 introduces intuitive card pickers.");
 	});
 
 	it("parses cluster summary response defensively when LLM includes extraneous ```json wrappers", () => {
-		const rawLlmOutput = '```json { "title": "Home Assistant 2026.6 Release", "summary": "Home Assistant 2026.6 introduces intuitive card pickers.", "perspectives": ["User design"], "timeline": ["June 5, 2026"], "citations": ["art_1"] } ```';
+		const rawLlmOutput =
+			'```json { "title": "Home Assistant 2026.6 Release", "summary": "Home Assistant 2026.6 introduces intuitive card pickers.", "perspectives": ["User design"], "timeline": ["June 5, 2026"], "citations": ["art_1"] } ```';
 		const validKeys = new Set(["art_1"]);
 
 		const result = parseClusterSummaryResponse(rawLlmOutput, validKeys, "Fallback Title");
@@ -40,7 +43,8 @@ describe("Defensive JSON Extractor & Sanitizer", () => {
 	});
 
 	it("parses digest assembly result defensively when LLM includes backticks and trailing spaces", () => {
-		const rawLlmOutput = '```json\n{\n  "key_takeaways": ["Takeaway 1"],\n  "why_it_matters": "High impact.",\n  "key_quotes": [{"quote": "Sample", "citation": "art_1"}]\n}\n```';
+		const rawLlmOutput =
+			'```json\n{\n  "key_takeaways": ["Takeaway 1"],\n  "why_it_matters": "High impact.",\n  "key_quotes": [{"quote": "Sample", "citation": "art_1"}]\n}\n```';
 
 		const result = parseDigestResult(rawLlmOutput);
 

@@ -29,7 +29,10 @@ export const Layout: React.FC = () => {
 			<header className="border-b border-slate-200 bg-white shadow-sm">
 				<div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
 					<div className="flex items-center gap-6 min-w-0">
-						<Link to="/" className="text-xl font-bold tracking-tight text-slate-900 hover:text-slate-700">
+						<Link
+							to="/"
+							className="text-xl font-bold tracking-tight text-slate-900 hover:text-slate-700"
+						>
 							vagus
 						</Link>
 						{session?.user && (
@@ -64,9 +67,7 @@ export const Layout: React.FC = () => {
 						) : (
 							<div className="flex items-center gap-2">
 								<Link to="/login">
-									<Button size="sm">
-										Sign in
-									</Button>
+									<Button size="sm">Sign in</Button>
 								</Link>
 							</div>
 						)}

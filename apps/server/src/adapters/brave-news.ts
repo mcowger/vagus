@@ -48,7 +48,7 @@ export class BraveNewsAdapter implements SourceAdapter {
 		try {
 			const res = await fetch(searchUrl.toString(), {
 				headers: {
-					"Accept": "application/json",
+					Accept: "application/json",
 					"X-Subscription-Token": apiKey,
 					"User-Agent": "Vagus/1.0 News Digest Bot (+https://vagus.local)",
 				},

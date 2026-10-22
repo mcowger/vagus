@@ -127,9 +127,7 @@ describe("HackerNewsAdapter", () => {
 		try {
 			const adapter = new HackerNewsAdapter();
 			// minScore: 10 allows item 1002 (score 20); maxAgeHours: 200 allows item 1003; limit: 1 returns only 1 item
-			const source = createFakeSource(
-				JSON.stringify({ minScore: 10, limit: 1, maxAgeHours: 200 }),
-			);
+			const source = createFakeSource(JSON.stringify({ minScore: 10, limit: 1, maxAgeHours: 200 }));
 			const items = await adapter.fetchItems(source);
 
 			expect(items.length).toBe(1);

@@ -4,7 +4,7 @@ Guidance for AI agents and contributors working in this repository. See `docs/pl
 
 ## Stack
 
-- **Bun** runtime, **TypeScript** end-to-end, **Bun workspaces** monorepo (`apps/server` + `apps/web`).
+- **Bun 1.4.4** runtime, **TypeScript** end-to-end, **Bun workspaces** monorepo (`apps/server` + `apps/web`). Formatting is handled by `bun fmt` (configured in `bunfig.toml`); there is no Node.js, Biome, ESLint, or Prettier toolchain.
 - Server: **Hono** on `Bun.serve`, **tRPC**, **BetterAuth**, **Kysely** + `bun:sqlite`, **plainjob**.
 - Frontend: **React 19**, **tRPC + TanStack Query**, **Tailwind CSS v4** via `bun-plugin-tailwind`.
 
@@ -20,6 +20,7 @@ bun run dev:stop          # stop server process group and clean up pidfile
 ```
 
 ### Server Execution & Port Selection
+
 - The server binds to a branch-stable port allocated by `scripts/port-allocator.ts` (or `$PASEO_PORT` / `$PORT` env override).
 - Pidfile lives at `.dev-server.pid` and logs at `.dev-server.log` (gitignored).
 
@@ -29,13 +30,13 @@ Humans sign in **only** via **Google OAuth**; robots/automation authenticate wit
 
 ### Env vars
 
-| Var | Purpose |
-| --- | --- |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth creds. If either is unset, the Google provider is **not mounted** and `/api/auth/sign-in/social` 404s. |
-| `BETTER_AUTH_URL` | Public base URL (e.g. `https://host`). Required in prod for OAuth callbacks and secure cookies. |
-| `ADMIN_EMAILS` | Comma-separated admin allowlist (case-insensitive). These emails become `admin` and **bypass** the domain whitelist. |
-| `SIGNUP_ALLOWED_DOMAINS` | Comma-separated domains allowed to create an account. Empty = any domain. |
-| `DEV_AUTH_ENABLED` | Dev/test only (ignored when `NODE_ENV=production`). Enables `POST /dev/login` and the seed script. |
+| Var                                         | Purpose                                                                                                              |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth creds. If either is unset, the Google provider is **not mounted** and `/api/auth/sign-in/social` 404s.  |
+| `BETTER_AUTH_URL`                           | Public base URL (e.g. `https://host`). Required in prod for OAuth callbacks and secure cookies.                      |
+| `ADMIN_EMAILS`                              | Comma-separated admin allowlist (case-insensitive). These emails become `admin` and **bypass** the domain whitelist. |
+| `SIGNUP_ALLOWED_DOMAINS`                    | Comma-separated domains allowed to create an account. Empty = any domain.                                            |
+| `DEV_AUTH_ENABLED`                          | Dev/test only (ignored when `NODE_ENV=production`). Enables `POST /dev/login` and the seed script.                   |
 
 ### Agent login in dev (no real Google needed)
 
@@ -99,15 +100,17 @@ curl -c cookies.txt -X POST "http://localhost:$(bun run port)/dev/login" \
 
 ## Root Scripts (`package.json`)
 
-| Command | What it does |
-| --- | --- |
-| `bun run dev:agent` | Managed detached dev server (preferred for background agents) |
-| `bun run dev:foreground` | Run server interactively in foreground |
-| `bun run dev:status` | Check dev server running state and port |
-| `bun run dev:stop` | Gracefully stop dev server process group |
-| `bun run port` | Print branch-allocated port for current worktree |
-| `bun run typecheck` | Typecheck server and web apps |
-| `bun run test` | Run test suite via `bun test` |
+| Command                  | What it does                                                  |
+| ------------------------ | ------------------------------------------------------------- |
+| `bun run dev:agent`      | Managed detached dev server (preferred for background agents) |
+| `bun run dev:foreground` | Run server interactively in foreground                        |
+| `bun run dev:status`     | Check dev server running state and port                       |
+| `bun run dev:stop`       | Gracefully stop dev server process group                      |
+| `bun run port`           | Print branch-allocated port for current worktree              |
+| `bun run typecheck`      | Typecheck server and web apps                                 |
+| `bun run format`         | Format the repository with `bun fmt`                          |
+| `bun run format:check`   | Verify formatting without writing (`bun fmt --check`)         |
+| `bun run test`           | Run test suite via `bun test`                                 |
 
 ## Live Tests Protocol
 
@@ -120,6 +123,6 @@ curl -c cookies.txt -X POST "http://localhost:$(bun run port)/dev/login" \
 
 ## Verification & agent-browser
 
-- **Run checks before finishing**: Always run `bun test` and `bun run typecheck` after making changes.
+- **Run checks before finishing**: Always run `bun fmt --check`, `bun test`, and `bun run typecheck` after making changes.
 - **Visual Verification**: Use the `agent-browser` tool/CLI to verify UI features and end-to-end user flows in the browser.
 - **Inspect Images**: Use the `read` tool to inspect generated screenshots (`.png`) and confirm page layout and styling.

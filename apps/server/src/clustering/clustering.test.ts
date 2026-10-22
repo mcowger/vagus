@@ -3,7 +3,12 @@ import { Database as SQLite } from "bun:sqlite";
 import { Kysely } from "kysely";
 import { BunSqliteDialect } from "kysely-bun-sqlite";
 import { defineQueue, type Queue } from "plainjob";
-import { clusterRunArticles, computeJaccardSimilarity, selectPrimaryArticle, tokenizeTitle } from "./index";
+import {
+	clusterRunArticles,
+	computeJaccardSimilarity,
+	selectPrimaryArticle,
+	tokenizeTitle,
+} from "./index";
 import { processClusterRunJob } from "../queue/cluster-job";
 import { CLUSTER_RUN_JOB_TYPE, type ClusterRunJobData } from "../queue/clustering-contracts";
 import { advanceStage, startRun } from "../queue/coordinator";
@@ -187,7 +192,9 @@ describe("Clustering Module & Job", () => {
 			);
 			expect(clusterA).toBeDefined();
 
-			const clusterAArticles = result.clusterArticles.filter((ca) => ca.cluster_id === clusterA!.id);
+			const clusterAArticles = result.clusterArticles.filter(
+				(ca) => ca.cluster_id === clusterA!.id,
+			);
 			expect(clusterAArticles.length).toBe(2);
 
 			// Primary should be art2 because publish_date 09:00 is earlier than 10:00
@@ -202,7 +209,9 @@ describe("Clustering Module & Job", () => {
 			// Find cluster containing art3
 			const clusterB = result.clusters.find((c) => c.primary_article_id === art3.id);
 			expect(clusterB).toBeDefined();
-			const clusterBArticles = result.clusterArticles.filter((ca) => ca.cluster_id === clusterB!.id);
+			const clusterBArticles = result.clusterArticles.filter(
+				(ca) => ca.cluster_id === clusterB!.id,
+			);
 			expect(clusterBArticles.length).toBe(1);
 		});
 
@@ -288,14 +297,36 @@ describe("Clustering Module & Job", () => {
 			const articles = await db
 				.insertInto("article")
 				.values([
-					{ run_id: 401, identity_key: "prior-run", source_id: source.id, title: "Iran war funding request", url: "https://example.com/prior", content: "Prior coverage", publish_date: new Date().toISOString() },
-					{ run_id: 402, identity_key: "current-run", source_id: source.id, title: "Iran war funding request update", url: "https://example.com/current", content: "Current coverage", publish_date: new Date().toISOString() },
+					{
+						run_id: 401,
+						identity_key: "prior-run",
+						source_id: source.id,
+						title: "Iran war funding request",
+						url: "https://example.com/prior",
+						content: "Prior coverage",
+						publish_date: new Date().toISOString(),
+					},
+					{
+						run_id: 402,
+						identity_key: "current-run",
+						source_id: source.id,
+						title: "Iran war funding request update",
+						url: "https://example.com/current",
+						content: "Current coverage",
+						publish_date: new Date().toISOString(),
+					},
 				])
 				.returningAll()
 				.execute();
 			await db
 				.insertInto("article_embedding")
-				.values(articles.map((article) => ({ article_id: article.id, embedding: serializeFloat32(new Float32Array([1, 0, 0])), model_name: "test" })))
+				.values(
+					articles.map((article) => ({
+						article_id: article.id,
+						embedding: serializeFloat32(new Float32Array([1, 0, 0])),
+						model_name: "test",
+					})),
+				)
 				.execute();
 
 			const result = await clusterRunArticles(db, 402, { threshold: 0.8 });

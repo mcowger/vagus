@@ -43,7 +43,10 @@ export async function processStageABulletJob(
 			log.info("stage_a_bullet already set for article, skipping LLM call", { articleId });
 		} else {
 			const contentSnippet = article.content ? article.content.trim() : "";
-			const { systemPrompt, userPromptTemplate } = await getPromptTemplates(database, "stage_a_bullet");
+			const { systemPrompt, userPromptTemplate } = await getPromptTemplates(
+				database,
+				"stage_a_bullet",
+			);
 			const prompt = renderPrompt(userPromptTemplate, {
 				title: article.title,
 				content: contentSnippet,

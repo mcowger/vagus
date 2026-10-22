@@ -23,19 +23,53 @@ function parseDecision(text: string): boolean | null {
 
 const db = createDb(DEV_DB_PATH);
 try {
-	const taskModel = await db.kysely.selectFrom("task_model").select(["provider"]).where("task_name", "=", "event_identity_merge").executeTakeFirstOrThrow();
-	const provider = await db.kysely.selectFrom("provider_config").selectAll().where("provider", "=", taskModel.provider).where("enabled", "=", 1).executeTakeFirstOrThrow();
-	const baseUrl = provider.config ? (JSON.parse(provider.config) as { baseUrl?: string }).baseUrl : undefined;
-	const results: Array<{ model: string; topic: string; expected: boolean; actual: boolean | null; latencyMs: number; cost: number }> = [];
+	const taskModel = await db.kysely
+		.selectFrom("task_model")
+		.select(["provider"])
+		.where("task_name", "=", "event_identity_merge")
+		.executeTakeFirstOrThrow();
+	const provider = await db.kysely
+		.selectFrom("provider_config")
+		.selectAll()
+		.where("provider", "=", taskModel.provider)
+		.where("enabled", "=", 1)
+		.executeTakeFirstOrThrow();
+	const baseUrl = provider.config
+		? (JSON.parse(provider.config) as { baseUrl?: string }).baseUrl
+		: undefined;
+	const results: Array<{
+		model: string;
+		topic: string;
+		expected: boolean;
+		actual: boolean | null;
+		latencyMs: number;
+		cost: number;
+	}> = [];
 
 	for (const modelName of MODELS) {
 		for (const benchmark of BENCHMARKS) {
-			const articles = await db.kysely.selectFrom("article").select(["id", "title", "stage_a_bullet"]).where("id", "in", benchmark.articleIds).execute();
+			const articles = await db.kysely
+				.selectFrom("article")
+				.select(["id", "title", "stage_a_bullet"])
+				.where("id", "in", benchmark.articleIds)
+				.execute();
 			const prompt = `Do these articles belong in one reader-facing ongoing topic? Accept only coverage tied to the same ongoing event, conflict, policy agenda, or developing situation. Reject a broad category, company, country, government body, or person when the articles describe unrelated developments. Respond only with JSON: {"same_topic": true} or {"same_topic": false}.\n\nTopic: ${benchmark.topic}\n\n${articles.map((article) => `[art_${article.id}] ${article.title}\n${article.stage_a_bullet ?? ""}`).join("\n\n")}`;
 			console.log(`[benchmark] ${modelName}: ${benchmark.topic}...`);
 			const startedAt = performance.now();
-			const completion = await callLlmCompletion({ baseUrl, apiKey: provider.api_key ?? undefined, modelName, prompt });
-			results.push({ model: modelName, topic: benchmark.topic, expected: benchmark.expected, actual: parseDecision(completion.text), latencyMs: Math.round(performance.now() - startedAt), cost: completion.usage.cost });
+			const completion = await callLlmCompletion({
+				baseUrl,
+				apiKey: provider.api_key ?? undefined,
+				modelName,
+				prompt,
+			});
+			results.push({
+				model: modelName,
+				topic: benchmark.topic,
+				expected: benchmark.expected,
+				actual: parseDecision(completion.text),
+				latencyMs: Math.round(performance.now() - startedAt),
+				cost: completion.usage.cost,
+			});
 		}
 	}
 
@@ -45,7 +79,9 @@ try {
 			model,
 			correct: modelResults.filter((result) => result.actual === result.expected).length,
 			total: modelResults.length,
-			averageLatencyMs: Math.round(modelResults.reduce((sum, result) => sum + result.latencyMs, 0) / modelResults.length),
+			averageLatencyMs: Math.round(
+				modelResults.reduce((sum, result) => sum + result.latencyMs, 0) / modelResults.length,
+			),
 			totalCost: modelResults.reduce((sum, result) => sum + result.cost, 0),
 		};
 	});

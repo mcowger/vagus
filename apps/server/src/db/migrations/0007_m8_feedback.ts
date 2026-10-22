@@ -8,12 +8,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 		.addColumn("target_type", "text", (c) => c.notNull()) // "source" | "cluster"
 		.addColumn("target_id", "text", (c) => c.notNull())
 		.addColumn("vote", "integer", (c) => c.notNull()) // 1 = thumbs_up, -1 = thumbs_down, 0 = neutral
-		.addColumn("created_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
-		.addColumn("updated_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("created_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
+		.addColumn("updated_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	await db.schema
@@ -31,9 +27,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 			c.notNull().references("source.id").onDelete("cascade"),
 		)
 		.addColumn("weight", "real", (c) => c.notNull().defaultTo(1.0))
-		.addColumn("updated_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("updated_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	await db.schema
@@ -43,15 +37,9 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 		.unique()
 		.execute();
 
-	await db.schema
-		.alterTable("interest_profile")
-		.addColumn("positive_embedding", "blob")
-		.execute();
+	await db.schema.alterTable("interest_profile").addColumn("positive_embedding", "blob").execute();
 
-	await db.schema
-		.alterTable("interest_profile")
-		.addColumn("negative_embedding", "blob")
-		.execute();
+	await db.schema.alterTable("interest_profile").addColumn("negative_embedding", "blob").execute();
 }
 
 export async function down(db: Kysely<unknown>): Promise<void> {

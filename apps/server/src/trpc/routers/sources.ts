@@ -9,12 +9,7 @@ export const sourcesRouter = router({
 		return await ctx.db
 			.selectFrom("source")
 			.selectAll()
-			.where((eb) =>
-				eb.or([
-					eb("owner_user_id", "is", null),
-					eb("owner_user_id", "=", userId),
-				]),
-			)
+			.where((eb) => eb.or([eb("owner_user_id", "is", null), eb("owner_user_id", "=", userId)]))
 			.orderBy("id", "desc")
 			.execute();
 	}),
@@ -81,7 +76,11 @@ export const sourcesRouter = router({
 				throw new TRPCError({ code: "NOT_FOUND", message: "Source not found" });
 			}
 
-			if (source.owner_user_id !== null && source.owner_user_id !== ctx.user.id && ctx.user.role !== "admin") {
+			if (
+				source.owner_user_id !== null &&
+				source.owner_user_id !== ctx.user.id &&
+				ctx.user.role !== "admin"
+			) {
 				throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to update this source" });
 			}
 
@@ -114,7 +113,11 @@ export const sourcesRouter = router({
 				throw new TRPCError({ code: "NOT_FOUND", message: "Source not found" });
 			}
 
-			if (source.owner_user_id !== null && source.owner_user_id !== ctx.user.id && ctx.user.role !== "admin") {
+			if (
+				source.owner_user_id !== null &&
+				source.owner_user_id !== ctx.user.id &&
+				ctx.user.role !== "admin"
+			) {
 				throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to delete this source" });
 			}
 

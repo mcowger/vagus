@@ -10,7 +10,7 @@ export class FakeEmbedder implements Embedder {
 	async embedText(text: string): Promise<Float32Array> {
 		const vec = new Float32Array(this.dimensions);
 		const lower = text.toLowerCase();
-		
+
 		for (let i = 0; i < lower.length; i++) {
 			const charCode = lower.charCodeAt(i);
 			const idx = (charCode * (i + 1)) % this.dimensions;

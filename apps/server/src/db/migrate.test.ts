@@ -6,9 +6,9 @@ test("migrateToLatest creates the app tables on a fresh DB", async () => {
 	const db = createDb(":memory:");
 	await migrateToLatest(db.kysely);
 
-	const tables = db.sqlite
-		.query("SELECT name FROM sqlite_master WHERE type = 'table';")
-		.all() as { name: string }[];
+	const tables = db.sqlite.query("SELECT name FROM sqlite_master WHERE type = 'table';").all() as {
+		name: string;
+	}[];
 	const names = tables.map((t) => t.name);
 
 	expect(names).toContain("run");
@@ -27,9 +27,7 @@ test("0016 migration adds run kind and interest_profile schedule fields", async 
 	const db = createDb(":memory:");
 	await migrateToLatest(db.kysely);
 
-	const runCols = db.sqlite
-		.query("PRAGMA table_info(run);")
-		.all() as { name: string }[];
+	const runCols = db.sqlite.query("PRAGMA table_info(run);").all() as { name: string }[];
 	const runColNames = runCols.map((c) => c.name);
 
 	expect(runColNames).toContain("kind");
@@ -37,9 +35,9 @@ test("0016 migration adds run kind and interest_profile schedule fields", async 
 	expect(runColNames).toContain("input_from_article_id");
 	expect(runColNames).toContain("input_through_article_id");
 
-	const profileCols = db.sqlite
-		.query("PRAGMA table_info(interest_profile);")
-		.all() as { name: string }[];
+	const profileCols = db.sqlite.query("PRAGMA table_info(interest_profile);").all() as {
+		name: string;
+	}[];
 	const profileColNames = profileCols.map((c) => c.name);
 
 	expect(profileColNames).toContain("schedule_enabled");
@@ -79,10 +77,7 @@ test("0016 migration adds run kind and interest_profile schedule fields", async 
 		})
 		.execute();
 
-	const runRow = await db.kysely
-		.selectFrom("run")
-		.selectAll()
-		.executeTakeFirstOrThrow();
+	const runRow = await db.kysely.selectFrom("run").selectAll().executeTakeFirstOrThrow();
 
 	expect(runRow.kind).toBe("global");
 	expect(runRow.profile_id).toBeNull();

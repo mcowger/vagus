@@ -4,7 +4,20 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Sliders, ThumbsUp, ThumbsDown, RotateCcw, Plus, Trash2, CheckCircle2, Bookmark, Clock, Play, AlertCircle, AlertTriangle } from "lucide-react";
+import {
+	Sliders,
+	ThumbsUp,
+	ThumbsDown,
+	RotateCcw,
+	Plus,
+	Trash2,
+	CheckCircle2,
+	Bookmark,
+	Clock,
+	Play,
+	AlertCircle,
+	AlertTriangle,
+} from "lucide-react";
 
 function arrayToString(val: string | string[] | null | undefined): string {
 	if (!val) return "";
@@ -32,12 +45,17 @@ export const Profiles: React.FC = () => {
 	const [activeProfileId, setActiveProfileId] = useState<number | undefined>(undefined);
 
 	useEffect(() => {
-		if (profilesListQuery.data && profilesListQuery.data.length > 0 && activeProfileId === undefined) {
+		if (
+			profilesListQuery.data &&
+			profilesListQuery.data.length > 0 &&
+			activeProfileId === undefined
+		) {
 			setActiveProfileId(profilesListQuery.data[0].id);
 		}
 	}, [profilesListQuery.data, activeProfileId]);
 
-	const activeProfile = profilesListQuery.data?.find((p) => p.id === activeProfileId) || profilesListQuery.data?.[0];
+	const activeProfile =
+		profilesListQuery.data?.find((p) => p.id === activeProfileId) || profilesListQuery.data?.[0];
 
 	const profileQuery = trpc.profiles.getProfile.useQuery(
 		{ id: activeProfileId },
@@ -112,9 +130,14 @@ export const Profiles: React.FC = () => {
 	const startProfileRunMutation = trpc.runs.startProfileRun.useMutation({
 		onSuccess: (data) => {
 			utils.runs.listRuns.invalidate();
-			setGenerateFeedback(data.started
-				? { type: "success", message: `Digest run #${data.runId} started.` }
-				: { type: "skipped", message: `Digest generation skipped: ${data.reason.replaceAll("_", " ")}.` });
+			setGenerateFeedback(
+				data.started
+					? { type: "success", message: `Digest run #${data.runId} started.` }
+					: {
+							type: "skipped",
+							message: `Digest generation skipped: ${data.reason.replaceAll("_", " ")}.`,
+						},
+			);
 			setTimeout(() => setGenerateFeedback(null), 6000);
 		},
 		onError: (error) => {
@@ -194,7 +217,8 @@ export const Profiles: React.FC = () => {
 			<div>
 				<h1 className="text-3xl font-bold tracking-tight text-slate-900">Interest Profile</h1>
 				<p className="text-slate-500 mt-1">
-					Configure your interest criteria, topic rules, scoring threshold, and push notification topic.
+					Configure your interest criteria, topic rules, scoring threshold, and push notification
+					topic.
 				</p>
 			</div>
 
@@ -224,7 +248,9 @@ export const Profiles: React.FC = () => {
 								<Bookmark className="h-3.5 w-3.5" />
 								<span>{p.name}</span>
 								{p.is_default === 1 && (
-									<span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
+									<span
+										className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}
+									>
 										Default
 									</span>
 								)}
@@ -246,22 +272,28 @@ export const Profiles: React.FC = () => {
 						{startProfileRunMutation.isPending ? "Generating..." : "Generate Now"}
 					</Button>
 
-					{activeProfile && activeProfile.is_default !== 1 && (profilesListQuery.data?.length || 0) > 1 && (
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={() => {
-								if (confirm(`Are you sure you want to delete category profile '${activeProfile.name}'?`)) {
-									deleteProfileMutation.mutate({ id: activeProfile.id });
-								}
-							}}
-							className="text-xs text-rose-600 hover:text-rose-700 border-rose-200 hover:bg-rose-50 gap-1"
-						>
-							<Trash2 className="h-3.5 w-3.5" />
-							Delete Category
-						</Button>
-					)}
+					{activeProfile &&
+						activeProfile.is_default !== 1 &&
+						(profilesListQuery.data?.length || 0) > 1 && (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => {
+									if (
+										confirm(
+											`Are you sure you want to delete category profile '${activeProfile.name}'?`,
+										)
+									) {
+										deleteProfileMutation.mutate({ id: activeProfile.id });
+									}
+								}}
+								className="text-xs text-rose-600 hover:text-rose-700 border-rose-200 hover:bg-rose-50 gap-1"
+							>
+								<Trash2 className="h-3.5 w-3.5" />
+								Delete Category
+							</Button>
+						)}
 
 					<Button
 						type="button"
@@ -283,7 +315,10 @@ export const Profiles: React.FC = () => {
 						<Plus className="h-4 w-4 text-indigo-600" />
 						Create New Interest Category Profile
 					</h3>
-					<form onSubmit={handleCreateNewProfile} className="flex flex-col sm:flex-row items-center gap-3">
+					<form
+						onSubmit={handleCreateNewProfile}
+						className="flex flex-col sm:flex-row items-center gap-3"
+					>
 						<Input
 							placeholder="e.g. Tech & AI News, Personal Finance, Sports"
 							value={newProfileName}
@@ -295,7 +330,12 @@ export const Profiles: React.FC = () => {
 							<Button type="submit" size="sm" disabled={createProfileMutation.isPending}>
 								{createProfileMutation.isPending ? "Creating..." : "Create Profile"}
 							</Button>
-							<Button type="button" variant="ghost" size="sm" onClick={() => setShowNewProfileModal(false)}>
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={() => setShowNewProfileModal(false)}
+							>
 								Cancel
 							</Button>
 						</div>
@@ -344,7 +384,8 @@ export const Profiles: React.FC = () => {
 					<CardHeader>
 						<CardTitle className="text-lg">Interest Criteria</CardTitle>
 						<CardDescription>
-							Optional vector embedding and lexical search criteria to prioritize stories matching your focus.
+							Optional vector embedding and lexical search criteria to prioritize stories matching
+							your focus.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
@@ -353,7 +394,10 @@ export const Profiles: React.FC = () => {
 								<span>💡 What happens if left blank? (Broad Curator Mode)</span>
 							</div>
 							<p className="leading-relaxed">
-								You don't need to know what you want to read in advance! If you leave these fields empty, Vagus operates in <strong>Broad Curator Mode</strong> — digesting and summarizing the top story clusters across all your configured sources without filtering out topics.
+								You don't need to know what you want to read in advance! If you leave these fields
+								empty, Vagus operates in <strong>Broad Curator Mode</strong> — digesting and
+								summarizing the top story clusters across all your configured sources without
+								filtering out topics.
 							</p>
 						</div>
 
@@ -366,7 +410,8 @@ export const Profiles: React.FC = () => {
 								onChange={(e) => setKeywords(e.target.value)}
 							/>
 							<p className="text-xs text-slate-500 leading-relaxed">
-								<strong>Specific Terms:</strong> Comma-separated technical terms or jargon. Matching terms boost story cluster scores (+0.1 bonus per match) and shape vector similarity.
+								<strong>Specific Terms:</strong> Comma-separated technical terms or jargon. Matching
+								terms boost story cluster scores (+0.1 bonus per match) and shape vector similarity.
 							</p>
 						</div>
 
@@ -379,7 +424,8 @@ export const Profiles: React.FC = () => {
 								onChange={(e) => setTopics(e.target.value)}
 							/>
 							<p className="text-xs text-slate-500 leading-relaxed">
-								<strong>High-Level Domains:</strong> Comma-separated thematic categories to guide semantic vector matching for broad story selection.
+								<strong>High-Level Domains:</strong> Comma-separated thematic categories to guide
+								semantic vector matching for broad story selection.
 							</p>
 						</div>
 
@@ -392,7 +438,8 @@ export const Profiles: React.FC = () => {
 								onChange={(e) => setEntities(e.target.value)}
 							/>
 							<p className="text-xs text-slate-500 leading-relaxed">
-								<strong>Organizations & Brands:</strong> Comma-separated names of specific companies, products, or people to highlight when mentioned in articles.
+								<strong>Organizations & Brands:</strong> Comma-separated names of specific
+								companies, products, or people to highlight when mentioned in articles.
 							</p>
 						</div>
 					</CardContent>
@@ -403,7 +450,8 @@ export const Profiles: React.FC = () => {
 					<CardHeader>
 						<CardTitle className="text-lg">Include & Exclude Rules</CardTitle>
 						<CardDescription>
-							Deterministic keyword filters that force or block story cluster selection regardless of vector similarity scores.
+							Deterministic keyword filters that force or block story cluster selection regardless
+							of vector similarity scores.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
@@ -412,7 +460,8 @@ export const Profiles: React.FC = () => {
 								<span>💡 How Rule Filtering Works</span>
 							</div>
 							<p className="leading-relaxed">
-								Rules are evaluated against the synthesized title and content of each story cluster during the scoring phase of a pipeline run.
+								Rules are evaluated against the synthesized title and content of each story cluster
+								during the scoring phase of a pipeline run.
 							</p>
 						</div>
 
@@ -425,7 +474,9 @@ export const Profiles: React.FC = () => {
 								onChange={(e) => setIncludeRules(e.target.value)}
 							/>
 							<p className="text-xs text-slate-500 leading-relaxed">
-								<strong>Force Include:</strong> Comma-separated terms. Any story cluster containing these words/phrases will be automatically selected for your digest, bypassing vector similarity checks (unless blocked by an exclude rule).
+								<strong>Force Include:</strong> Comma-separated terms. Any story cluster containing
+								these words/phrases will be automatically selected for your digest, bypassing vector
+								similarity checks (unless blocked by an exclude rule).
 							</p>
 						</div>
 
@@ -438,7 +489,9 @@ export const Profiles: React.FC = () => {
 								onChange={(e) => setExcludeRules(e.target.value)}
 							/>
 							<p className="text-xs text-slate-500 leading-relaxed">
-								<strong>Hard Block:</strong> Comma-separated terms. Any story cluster containing these words/phrases is immediately discarded and will never appear in your digest, regardless of its vector relevance score.
+								<strong>Hard Block:</strong> Comma-separated terms. Any story cluster containing
+								these words/phrases is immediately discarded and will never appear in your digest,
+								regardless of its vector relevance score.
 							</p>
 						</div>
 					</CardContent>
@@ -449,7 +502,8 @@ export const Profiles: React.FC = () => {
 					<CardHeader>
 						<CardTitle className="text-lg">Scoring & Clustering Settings</CardTitle>
 						<CardDescription>
-							Adjust vector embedding cosine similarity thresholds and cluster limits for digest synthesis.
+							Adjust vector embedding cosine similarity thresholds and cluster limits for digest
+							synthesis.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
@@ -458,7 +512,9 @@ export const Profiles: React.FC = () => {
 								<span>🧠 Vector Scoring & Threshold Tuning</span>
 							</div>
 							<p className="leading-relaxed">
-								Your Interest Criteria (keywords, topics, entities) are compiled into a dense vector embedding representation. During each pipeline run, story cluster embeddings are compared against your profile using cosine similarity (0.00 to 1.00).
+								Your Interest Criteria (keywords, topics, entities) are compiled into a dense vector
+								embedding representation. During each pipeline run, story cluster embeddings are
+								compared against your profile using cosine similarity (0.00 to 1.00).
 							</p>
 						</div>
 
@@ -468,7 +524,11 @@ export const Profiles: React.FC = () => {
 									Similarity Threshold ({similarityThreshold.toFixed(2)})
 								</Label>
 								<span className="text-xs text-slate-600 font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
-									{similarityThreshold < 0.5 ? "Low (Broader Matching)" : similarityThreshold > 0.8 ? "High (Strict Direct Match)" : "Balanced Relevance"}
+									{similarityThreshold < 0.5
+										? "Low (Broader Matching)"
+										: similarityThreshold > 0.8
+											? "High (Strict Direct Match)"
+											: "Balanced Relevance"}
 								</span>
 							</div>
 							<input
@@ -487,7 +547,10 @@ export const Profiles: React.FC = () => {
 								<span>1.00 (Exact Semantic)</span>
 							</div>
 							<p className="text-xs text-slate-500 leading-relaxed pt-1">
-								<strong>Threshold Controls:</strong> Sets the minimum similarity score required for a story cluster to qualify for your digest. Lower values (e.g. <code>0.40 - 0.60</code>) capture broader industry context; higher values (e.g. <code>0.75 - 0.90</code>) require strict topical alignment.
+								<strong>Threshold Controls:</strong> Sets the minimum similarity score required for
+								a story cluster to qualify for your digest. Lower values (e.g.{" "}
+								<code>0.40 - 0.60</code>) capture broader industry context; higher values (e.g.{" "}
+								<code>0.75 - 0.90</code>) require strict topical alignment.
 							</p>
 						</div>
 
@@ -504,7 +567,8 @@ export const Profiles: React.FC = () => {
 									required
 								/>
 								<p className="text-xs text-slate-500 leading-relaxed">
-									<strong>Minimum Threshold:</strong> If fewer than N qualifying stories exist during a run cycle, digest creation is suppressed to avoid thin reports.
+									<strong>Minimum Threshold:</strong> If fewer than N qualifying stories exist
+									during a run cycle, digest creation is suppressed to avoid thin reports.
 								</p>
 							</div>
 
@@ -520,7 +584,8 @@ export const Profiles: React.FC = () => {
 									required
 								/>
 								<p className="text-xs text-slate-500 leading-relaxed">
-									<strong>Digest Size Limit:</strong> Maximum number of top-scoring story clusters included in a single briefing digest cycle.
+									<strong>Digest Size Limit:</strong> Maximum number of top-scoring story clusters
+									included in a single briefing digest cycle.
 								</p>
 							</div>
 						</div>
@@ -535,7 +600,8 @@ export const Profiles: React.FC = () => {
 							Automatic Digest Schedule
 						</CardTitle>
 						<CardDescription>
-							Configure automated cron schedule and timezone for this category profile's digest generation.
+							Configure automated cron schedule and timezone for this category profile's digest
+							generation.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
@@ -544,7 +610,8 @@ export const Profiles: React.FC = () => {
 								<span>🌐 Global Preparation & Profile Schedules</span>
 							</div>
 							<p className="leading-relaxed">
-								Article ingestion and content extraction run globally. This schedule automatically generates and evaluates this profile's digest from globally prepared content.
+								Article ingestion and content extraction run globally. This schedule automatically
+								generates and evaluates this profile's digest from globally prepared content.
 							</p>
 						</div>
 
@@ -556,7 +623,10 @@ export const Profiles: React.FC = () => {
 								onChange={(e) => setScheduleEnabled(e.target.checked)}
 								className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
 							/>
-							<Label htmlFor="scheduleEnabled" className="font-medium text-slate-900 cursor-pointer text-sm">
+							<Label
+								htmlFor="scheduleEnabled"
+								className="font-medium text-slate-900 cursor-pointer text-sm"
+							>
 								Enable Automatic Digest Schedule
 							</Label>
 						</div>
@@ -573,7 +643,8 @@ export const Profiles: React.FC = () => {
 									className="font-mono text-xs"
 								/>
 								<p className="text-xs text-slate-500 leading-relaxed">
-									Standard 5-field cron expression (e.g. <code>0 9 * * *</code> for 9:00 AM daily, <code>0 8,18 * * *</code> for twice daily).
+									Standard 5-field cron expression (e.g. <code>0 9 * * *</code> for 9:00 AM daily,{" "}
+									<code>0 8,18 * * *</code> for twice daily).
 								</p>
 							</div>
 
@@ -588,7 +659,8 @@ export const Profiles: React.FC = () => {
 									className="font-mono text-xs"
 								/>
 								<p className="text-xs text-slate-500 leading-relaxed">
-									Valid IANA timezone identifier (e.g. <code>America/Los_Angeles</code>, <code>America/New_York</code>, <code>UTC</code>).
+									Valid IANA timezone identifier (e.g. <code>America/Los_Angeles</code>,{" "}
+									<code>America/New_York</code>, <code>UTC</code>).
 								</p>
 							</div>
 						</div>
@@ -597,7 +669,8 @@ export const Profiles: React.FC = () => {
 							<div>
 								<div className="text-xs font-semibold text-slate-800">Manual Digest Generation</div>
 								<div className="text-xs text-slate-500">
-									Generate a digest immediately for <strong>{name || "this profile"}</strong> using persisted settings and prepared articles, even when schedule is disabled.
+									Generate a digest immediately for <strong>{name || "this profile"}</strong> using
+									persisted settings and prepared articles, even when schedule is disabled.
 								</div>
 							</div>
 							<Button
@@ -619,13 +692,19 @@ export const Profiles: React.FC = () => {
 									generateFeedback.type === "success"
 										? "bg-emerald-50 border border-emerald-200 text-emerald-800"
 										: generateFeedback.type === "skipped"
-										? "bg-amber-50 border border-amber-200 text-amber-800"
-										: "bg-rose-50 border border-rose-200 text-rose-800"
+											? "bg-amber-50 border border-amber-200 text-amber-800"
+											: "bg-rose-50 border border-rose-200 text-rose-800"
 								}`}
 							>
-								{generateFeedback.type === "success" && <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />}
-								{generateFeedback.type === "skipped" && <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />}
-								{generateFeedback.type === "error" && <AlertCircle className="h-4 w-4 text-rose-600 flex-shrink-0" />}
+								{generateFeedback.type === "success" && (
+									<CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+								)}
+								{generateFeedback.type === "skipped" && (
+									<AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+								)}
+								{generateFeedback.type === "error" && (
+									<AlertCircle className="h-4 w-4 text-rose-600 flex-shrink-0" />
+								)}
 								<span>{generateFeedback.message}</span>
 							</div>
 						)}
@@ -640,7 +719,8 @@ export const Profiles: React.FC = () => {
 							Source Weightings & Preference Adaptation
 						</CardTitle>
 						<CardDescription>
-							Active source score multipliers and topic preferences learned from your thumbs up/down votes.
+							Active source score multipliers and topic preferences learned from your thumbs up/down
+							votes.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
@@ -663,53 +743,64 @@ export const Profiles: React.FC = () => {
 												Active Negative Vector (Suppresses Disliked Topics)
 											</span>
 										) : null}
-										{!feedbackQuery.data?.hasPositiveVector && !feedbackQuery.data?.hasNegativeVector && (
-											<span className="text-xs text-slate-400 italic">
-												No topic preference vectors trained yet. Vote thumbs up or down on stories in Digest Reader to adapt topic scoring.
-											</span>
-										)}
+										{!feedbackQuery.data?.hasPositiveVector &&
+											!feedbackQuery.data?.hasNegativeVector && (
+												<span className="text-xs text-slate-400 italic">
+													No topic preference vectors trained yet. Vote thumbs up or down on stories
+													in Digest Reader to adapt topic scoring.
+												</span>
+											)}
 									</div>
 
 									{/* Method B: Inferred Taxonomy Category Vector Projections */}
-									{((feedbackQuery.data?.positiveProjections?.length || 0) > 0 || (feedbackQuery.data?.negativeProjections?.length || 0) > 0) && (
+									{((feedbackQuery.data?.positiveProjections?.length || 0) > 0 ||
+										(feedbackQuery.data?.negativeProjections?.length || 0) > 0) && (
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-											{feedbackQuery.data?.positiveProjections && feedbackQuery.data.positiveProjections.length > 0 && (
-												<div className="space-y-1.5">
-													<div className="font-bold text-emerald-900 flex items-center gap-1.5">
-														<ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
-														<span>Inferred Boosted Domains (Vector Match)</span>
+											{feedbackQuery.data?.positiveProjections &&
+												feedbackQuery.data.positiveProjections.length > 0 && (
+													<div className="space-y-1.5">
+														<div className="font-bold text-emerald-900 flex items-center gap-1.5">
+															<ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
+															<span>Inferred Boosted Domains (Vector Match)</span>
+														</div>
+														<ul className="space-y-1">
+															{feedbackQuery.data.positiveProjections.slice(0, 3).map((p, idx) => (
+																<li
+																	key={idx}
+																	className="flex items-center justify-between text-slate-700 font-medium"
+																>
+																	<span className="truncate mr-2">• {p.category}</span>
+																	<span className="font-mono text-[11px] text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
+																		{p.matchPercentage} (+0.20)
+																	</span>
+																</li>
+															))}
+														</ul>
 													</div>
-													<ul className="space-y-1">
-														{feedbackQuery.data.positiveProjections.slice(0, 3).map((p, idx) => (
-															<li key={idx} className="flex items-center justify-between text-slate-700 font-medium">
-																<span className="truncate mr-2">• {p.category}</span>
-																<span className="font-mono text-[11px] text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
-																	{p.matchPercentage} (+0.20)
-																</span>
-															</li>
-														))}
-													</ul>
-												</div>
-											)}
+												)}
 
-											{feedbackQuery.data?.negativeProjections && feedbackQuery.data.negativeProjections.length > 0 && (
-												<div className="space-y-1.5">
-													<div className="font-bold text-rose-900 flex items-center gap-1.5">
-														<ThumbsDown className="h-3.5 w-3.5 text-rose-600" />
-														<span>Inferred Suppressed Domains (Vector Match)</span>
+											{feedbackQuery.data?.negativeProjections &&
+												feedbackQuery.data.negativeProjections.length > 0 && (
+													<div className="space-y-1.5">
+														<div className="font-bold text-rose-900 flex items-center gap-1.5">
+															<ThumbsDown className="h-3.5 w-3.5 text-rose-600" />
+															<span>Inferred Suppressed Domains (Vector Match)</span>
+														</div>
+														<ul className="space-y-1">
+															{feedbackQuery.data.negativeProjections.slice(0, 3).map((p, idx) => (
+																<li
+																	key={idx}
+																	className="flex items-center justify-between text-slate-700 font-medium"
+																>
+																	<span className="truncate mr-2">• {p.category}</span>
+																	<span className="font-mono text-[11px] text-rose-700 bg-rose-100/80 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
+																		{p.matchPercentage} (-0.30)
+																	</span>
+																</li>
+															))}
+														</ul>
 													</div>
-													<ul className="space-y-1">
-														{feedbackQuery.data.negativeProjections.slice(0, 3).map((p, idx) => (
-															<li key={idx} className="flex items-center justify-between text-slate-700 font-medium">
-																<span className="truncate mr-2">• {p.category}</span>
-																<span className="font-mono text-[11px] text-rose-700 bg-rose-100/80 px-1.5 py-0.5 rounded font-bold flex-shrink-0">
-																	{p.matchPercentage} (-0.30)
-																</span>
-															</li>
-														))}
-													</ul>
-												</div>
-											)}
+												)}
 										</div>
 									)}
 								</div>
@@ -717,10 +808,13 @@ export const Profiles: React.FC = () => {
 								{/* Sub-section 1: Story Cluster Feedback */}
 								<div className="space-y-2">
 									<h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-										<span>Story Topic Feedback ({feedbackQuery.data?.clusterFeedback?.length || 0})</span>
+										<span>
+											Story Topic Feedback ({feedbackQuery.data?.clusterFeedback?.length || 0})
+										</span>
 									</h4>
 
-									{!feedbackQuery.data?.clusterFeedback || feedbackQuery.data.clusterFeedback.length === 0 ? (
+									{!feedbackQuery.data?.clusterFeedback ||
+									feedbackQuery.data.clusterFeedback.length === 0 ? (
 										<div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-500 text-center">
 											No story topic votes recorded yet.
 										</div>
@@ -746,14 +840,21 @@ export const Profiles: React.FC = () => {
 																{cf.topicCategory}
 															</span>
 														)}
-														<span className="font-semibold text-slate-800 truncate">{cf.title}</span>
+														<span className="font-semibold text-slate-800 truncate">
+															{cf.title}
+														</span>
 													</div>
 
 													<Button
 														type="button"
 														variant="ghost"
 														size="sm"
-														onClick={() => voteClusterMutation.mutate({ clusterId: Number(cf.clusterId), vote: 0 })}
+														onClick={() =>
+															voteClusterMutation.mutate({
+																clusterId: Number(cf.clusterId),
+																vote: 0,
+															})
+														}
 														className="text-[11px] text-slate-500 hover:text-slate-800 h-7 px-2 gap-1 flex-shrink-0"
 													>
 														<RotateCcw className="h-3 w-3" />
@@ -768,12 +869,16 @@ export const Profiles: React.FC = () => {
 								{/* Sub-section 2: Source Weight Multipliers */}
 								<div className="space-y-2 pt-2 border-t border-slate-100">
 									<h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-										<span>Source Weight Overrides ({feedbackQuery.data?.sourceWeights?.length || 0})</span>
+										<span>
+											Source Weight Overrides ({feedbackQuery.data?.sourceWeights?.length || 0})
+										</span>
 									</h4>
 
-									{!feedbackQuery.data?.sourceWeights || feedbackQuery.data.sourceWeights.length === 0 ? (
+									{!feedbackQuery.data?.sourceWeights ||
+									feedbackQuery.data.sourceWeights.length === 0 ? (
 										<div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-500 text-center">
-											No custom source weightings configured yet. Use the thumbs up/down buttons on sources in the Sources tab to adjust weights.
+											No custom source weightings configured yet. Use the thumbs up/down buttons on
+											sources in the Sources tab to adjust weights.
 										</div>
 									) : (
 										<div className="space-y-2">
@@ -786,7 +891,8 @@ export const Profiles: React.FC = () => {
 													statusClass = "bg-rose-100 text-rose-800 border-rose-200 font-bold";
 												} else if (sw.weight > 1.0) {
 													statusPill = `${sw.weight.toFixed(1)}x (Boosted)`;
-													statusClass = "bg-emerald-100 text-emerald-800 border-emerald-200 font-bold";
+													statusClass =
+														"bg-emerald-100 text-emerald-800 border-emerald-200 font-bold";
 												} else if (sw.weight < 1.0) {
 													statusPill = `${sw.weight.toFixed(1)}x (Lowered)`;
 													statusClass = "bg-amber-100 text-amber-800 border-amber-200 font-bold";
@@ -799,7 +905,9 @@ export const Profiles: React.FC = () => {
 													>
 														<div className="flex items-center gap-2">
 															<span className="font-semibold text-slate-800">{sw.source_name}</span>
-															<span className={`px-2 py-0.5 rounded-full border text-[11px] ${statusClass}`}>
+															<span
+																className={`px-2 py-0.5 rounded-full border text-[11px] ${statusClass}`}
+															>
 																{statusPill}
 															</span>
 														</div>
@@ -808,7 +916,9 @@ export const Profiles: React.FC = () => {
 															type="button"
 															variant="ghost"
 															size="sm"
-															onClick={() => voteSourceMutation.mutate({ sourceId: sw.source_id, vote: 0 })}
+															onClick={() =>
+																voteSourceMutation.mutate({ sourceId: sw.source_id, vote: 0 })
+															}
 															className="text-[11px] text-slate-500 hover:text-slate-800 h-7 px-2 gap-1"
 														>
 															<RotateCcw className="h-3 w-3" />

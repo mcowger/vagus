@@ -28,6 +28,7 @@ Vagus includes an adaptive feedback engine that continuously tailors digest gene
 ```
 
 ### 1. Source Weight Tuning (`user_source_weight`)
+
 - **Per-User Isolation**: Multi-tenant isolation ensures one user's source preferences do not affect global ingest or other users' digests.
 - **Dynamic Multipliers**: Each source starts at a baseline weight of `1.0x`.
   - **Thumbs Up** on a source increments its weight multiplier (e.g. `1.0x` → `1.3x` → `1.6x` → `2.0x` max boost).
@@ -35,6 +36,7 @@ Vagus includes an adaptive feedback engine that continuously tailors digest gene
 - **Source Muting**: When a source's weight drops to `0.0x` (or $\le 0.1$), story clusters relying exclusively on that source receive a score of `0` (`"Source muted by user preference"`) and are excluded from synthesis.
 
 ### 2. Topic & Story Vector Adaptation
+
 Clicking **Thumbs Up** or **Thumbs Down** on a **Story Cluster** card in the Digest Reader adapts the user's semantic profile without requiring manual keyword configuration:
 
 - **Positive Vector Nudging (`positive_embedding`)**:
@@ -48,6 +50,7 @@ Clicking **Thumbs Up** or **Thumbs Down** on a **Story Cluster** card in the Dig
   - Future stories semantically similar to suppressed topics (e.g. personal banking listicles, product roundups, or unwanted niches) incur a **cosine similarity penalty** (up to $-0.30$). Stories penalized below the user's similarity threshold are filtered out automatically.
 
 ### 3. Feedback Audit Log (`user_feedback`)
+
 - Every vote logs an immutable event record containing `user_id`, `target_type` (`"source"` or `"cluster"`), `target_id`, and `vote` (`1`, `-1`, or `0`).
 - Users can review and reset their custom source weightings at any time in **Profile Management** or **Source Settings**.
 
@@ -56,6 +59,7 @@ Clicking **Thumbs Up** or **Thumbs Down** on a **Story Cluster** card in the Dig
 ## Recency & Sequential Run Deduplication
 
 Vagus prevents repetitive digests when running multiple pipeline cycles per day:
+
 - **`processed_key` Ingest Deduplication**: Permanently records canonical item keys to prevent re-ingesting raw articles.
 - **Prior Digest History Filtering**: Before selecting clusters for a new run, the scoring engine queries all articles previously delivered in prior digests for that specific user.
 - **Delta Synthesis**:
@@ -113,12 +117,12 @@ Vagus decouples global content processing from individual user profile evaluatio
 
 ### Required environment (production)
 
-| Var | Purpose |
-| --- | --- |
+| Var                                         | Purpose                                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------------------------ |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth client. If unset, the Google login route is not mounted (sign-in 404s). |
-| `BETTER_AUTH_URL` | Public HTTPS base URL, used for OAuth callbacks and secure cookies. |
-| `ADMIN_EMAILS` | Comma-separated admin allowlist (bypasses the domain whitelist). |
-| `SIGNUP_ALLOWED_DOMAINS` | Comma-separated domains allowed to create an account. |
+| `BETTER_AUTH_URL`                           | Public HTTPS base URL, used for OAuth callbacks and secure cookies.                  |
+| `ADMIN_EMAILS`                              | Comma-separated admin allowlist (bypasses the domain whitelist).                     |
+| `SIGNUP_ALLOWED_DOMAINS`                    | Comma-separated domains allowed to create an account.                                |
 
 Google OAuth redirect URI is `${BETTER_AUTH_URL}/api/auth/callback/google`. These are wired through `docker-compose.yml`.
 

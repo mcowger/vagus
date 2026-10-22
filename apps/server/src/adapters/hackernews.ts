@@ -64,7 +64,7 @@ export class HackerNewsAdapter implements SourceAdapter {
 		try {
 			const topStoriesRes = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json", {
 				headers: {
-					"Accept": "application/json",
+					Accept: "application/json",
 					"User-Agent": "Vagus/1.0 News Digest Bot (+https://vagus.local)",
 				},
 				signal: controller.signal,
@@ -92,7 +92,7 @@ export class HackerNewsAdapter implements SourceAdapter {
 					try {
 						const res = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, {
 							headers: {
-								"Accept": "application/json",
+								Accept: "application/json",
 								"User-Agent": "Vagus/1.0 News Digest Bot (+https://vagus.local)",
 							},
 							signal: controller.signal,

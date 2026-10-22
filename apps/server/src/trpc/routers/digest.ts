@@ -3,22 +3,16 @@ import { publicProcedure, router } from "../trpc";
 import { TRPCError } from "@trpc/server";
 
 export const digestRouter = router({
-	listPublic: publicProcedure
-		.query(async ({ ctx }) => {
-			const digests = await ctx.db
-				.selectFrom("digest as d")
-				.leftJoin("interest_profile as p", "p.id", "d.profile_id")
-				.select([
-					"d.id",
-					"d.run_id",
-					"d.created_at",
-					"p.name as profile_name",
-				])
-				.orderBy("d.created_at", "desc")
-				.execute();
+	listPublic: publicProcedure.query(async ({ ctx }) => {
+		const digests = await ctx.db
+			.selectFrom("digest as d")
+			.leftJoin("interest_profile as p", "p.id", "d.profile_id")
+			.select(["d.id", "d.run_id", "d.created_at", "p.name as profile_name"])
+			.orderBy("d.created_at", "desc")
+			.execute();
 
-			return digests;
-		}),
+		return digests;
+	}),
 
 	getPublicById: publicProcedure
 		.input(z.object({ id: z.number().int() }))

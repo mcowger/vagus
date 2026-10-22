@@ -62,10 +62,7 @@ export function buildCitationInserts(
 	validArticleMap: Map<string, number>,
 	citationKeys: string[],
 ): Insertable<CitationTable>[] {
-	const { validKeys, articleIds } = validateAndRepairCitations(
-		citationKeys,
-		validArticleMap,
-	);
+	const { validKeys, articleIds } = validateAndRepairCitations(citationKeys, validArticleMap);
 
 	return validKeys.map((key, index) => ({
 		digest_id: digestId,

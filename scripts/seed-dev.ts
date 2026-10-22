@@ -15,10 +15,7 @@ const ROOT = join(import.meta.dir, "..");
 const KEY_FILE = join(ROOT, ".dev-api-key");
 
 async function main(): Promise<void> {
-	if (
-		process.env.DEV_AUTH_ENABLED !== "true" ||
-		process.env.NODE_ENV === "production"
-	) {
+	if (process.env.DEV_AUTH_ENABLED !== "true" || process.env.NODE_ENV === "production") {
 		console.log("[seed-dev] skipped (DEV_AUTH_ENABLED != true or production)");
 		return;
 	}
@@ -36,9 +33,9 @@ async function main(): Promise<void> {
 	await initAuthSchema(auth);
 
 	// Ensure the seeded admin user exists.
-	let admin = db.sqlite
-		.query("SELECT id FROM user WHERE email = ?")
-		.get(adminEmail) as { id: string } | null;
+	let admin = db.sqlite.query("SELECT id FROM user WHERE email = ?").get(adminEmail) as {
+		id: string;
+	} | null;
 
 	if (!admin) {
 		const now = new Date().toISOString();

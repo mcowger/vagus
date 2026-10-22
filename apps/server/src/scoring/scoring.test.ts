@@ -308,12 +308,25 @@ describe("Scoring Module & Score User Job", () => {
 	test("Triggers LLM tiebreaker for borderline scores (0.5 to 0.7)", async () => {
 		const { run, cluster1 } = await setupTestRunAndArticles();
 		globalThis.fetch = (async () =>
-			new Response(JSON.stringify({
-				choices: [{ message: { content: "RELEVANT" } }],
-				usage: { prompt_tokens: 10, completion_tokens: 1 },
-			}))) as unknown as typeof fetch;
-		await db.insertInto("provider_config").values({ provider: "test-llm", api_key: "test-key", enabled: 1, config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }) }).execute();
-		await db.insertInto("task_model").values({ task_name: "scoring_tiebreaker", provider: "test-llm", model_name: "test-model" }).execute();
+			new Response(
+				JSON.stringify({
+					choices: [{ message: { content: "RELEVANT" } }],
+					usage: { prompt_tokens: 10, completion_tokens: 1 },
+				}),
+			)) as unknown as typeof fetch;
+		await db
+			.insertInto("provider_config")
+			.values({
+				provider: "test-llm",
+				api_key: "test-key",
+				enabled: 1,
+				config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }),
+			})
+			.execute();
+		await db
+			.insertInto("task_model")
+			.values({ task_name: "scoring_tiebreaker", provider: "test-llm", model_name: "test-model" })
+			.execute();
 
 		// Base score = 0.5 (1 of 2 keywords match in title) + no boosts => 0.5 (borderline 0.5-0.7)
 		await db
@@ -510,7 +523,12 @@ describe("Scoring Module & Score User Job", () => {
 
 		await db
 			.insertInto("cluster_article")
-			.values({ cluster_id: clusterRun2.id, article_id: article1.id, is_primary: 1, created_at: now })
+			.values({
+				cluster_id: clusterRun2.id,
+				article_id: article1.id,
+				is_primary: 1,
+				created_at: now,
+			})
 			.execute();
 
 		// Score run 2 for user - cluster containing article1 should now be skipped as already delivered

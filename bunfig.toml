@@ -1,2 +1,10 @@
 [serve.static]
 plugins = ["bun-plugin-tailwind"]
+
+[fmt]
+printWidth = 100
+useTabs = true
+singleQuote = false
+semi = true
+trailingComma = "all"
+ignorePatterns = ["**/fixtures/**"]

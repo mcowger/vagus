@@ -26,11 +26,7 @@ export function getTaskModelThinkingEfforts(provider: string, modelName: string)
 
 export const taskModelsRouter = router({
 	getTaskModels: adminProcedure.query(async ({ ctx }) => {
-		return await ctx.db
-			.selectFrom("task_model")
-			.selectAll()
-			.orderBy("task_name", "asc")
-			.execute();
+		return await ctx.db.selectFrom("task_model").selectAll().orderBy("task_name", "asc").execute();
 	}),
 
 	getThinkingEfforts: adminProcedure
@@ -96,10 +92,7 @@ export const taskModelsRouter = router({
 	deleteTaskModel: adminProcedure
 		.input(z.object({ id: z.number() }))
 		.mutation(async ({ ctx, input }) => {
-			await ctx.db
-				.deleteFrom("task_model")
-				.where("id", "=", input.id)
-				.execute();
+			await ctx.db.deleteFrom("task_model").where("id", "=", input.id).execute();
 			return { success: true };
 		}),
 

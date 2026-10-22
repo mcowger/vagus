@@ -7,20 +7,11 @@ export async function up(db: Kysely<any>): Promise<void> {
 		.addColumn("kind", "text", (c) => c.notNull().defaultTo("global"))
 		.execute();
 
-	await db.schema
-		.alterTable("run")
-		.addColumn("profile_id", "integer")
-		.execute();
+	await db.schema.alterTable("run").addColumn("profile_id", "integer").execute();
 
-	await db.schema
-		.alterTable("run")
-		.addColumn("input_from_article_id", "integer")
-		.execute();
+	await db.schema.alterTable("run").addColumn("input_from_article_id", "integer").execute();
 
-	await db.schema
-		.alterTable("run")
-		.addColumn("input_through_article_id", "integer")
-		.execute();
+	await db.schema.alterTable("run").addColumn("input_through_article_id", "integer").execute();
 
 	// 2. Rebuild interest_profile table to add schedule fields / cursor_article_id and remove legacy pacing fields
 	await sql`ALTER TABLE interest_profile RENAME TO interest_profile_old`.execute(db);
@@ -43,18 +34,12 @@ export async function up(db: Kysely<any>): Promise<void> {
 		.addColumn("min_cluster_count", "integer", (c) => c.notNull().defaultTo(1))
 		.addColumn("schedule_enabled", "integer", (c) => c.notNull().defaultTo(0))
 		.addColumn("schedule_cron", "text", (c) => c.notNull().defaultTo("0 9 * * *"))
-		.addColumn("schedule_timezone", "text", (c) =>
-			c.notNull().defaultTo("America/Los_Angeles"),
-		)
+		.addColumn("schedule_timezone", "text", (c) => c.notNull().defaultTo("America/Los_Angeles"))
 		.addColumn("cursor_article_id", "integer")
 		.addColumn("ntfy_topic", "text")
 		.addColumn("is_default", "integer", (c) => c.notNull().defaultTo(0))
-		.addColumn("created_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
-		.addColumn("updated_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("created_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
+		.addColumn("updated_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	// 3. Migrate existing data from interest_profile_old
@@ -101,12 +86,8 @@ export async function down(db: Kysely<any>): Promise<void> {
 		.addColumn("target_delivery_time", "text")
 		.addColumn("ntfy_topic", "text")
 		.addColumn("is_default", "integer", (c) => c.notNull().defaultTo(0))
-		.addColumn("created_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
-		.addColumn("updated_at", "text", (c) =>
-			c.notNull().defaultTo(sql`(datetime('now'))`),
-		)
+		.addColumn("created_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
+		.addColumn("updated_at", "text", (c) => c.notNull().defaultTo(sql`(datetime('now'))`))
 		.execute();
 
 	await sql`

@@ -20,15 +20,44 @@ async function createTestDb(): Promise<{ db: Kysely<Database>; sqlite: BunSqlite
 
 	await migrateToLatest(db);
 	globalThis.fetch = (async () =>
-		new Response(JSON.stringify({
-			choices: [{ message: { content: JSON.stringify({ title: "Test summary", summary: "Test cluster summary.", perspectives: [], timeline: [], citations: [], executive_summary: "Test executive summary.", key_takeaways: [], why_it_matters: "Test significance.", key_quotes: [] }) } }],
-			usage: { prompt_tokens: 10, completion_tokens: 5 },
-		}))) as unknown as typeof fetch;
-	await db.insertInto("provider_config").values({ provider: "test-llm", api_key: "test-key", enabled: 1, config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }) }).execute();
-	await db.insertInto("task_model").values([
-		{ task_name: "stage_b_synthesis", provider: "test-llm", model_name: "test-model" },
-		{ task_name: "stage_c_assembly", provider: "test-llm", model_name: "test-model" },
-	]).execute();
+		new Response(
+			JSON.stringify({
+				choices: [
+					{
+						message: {
+							content: JSON.stringify({
+								title: "Test summary",
+								summary: "Test cluster summary.",
+								perspectives: [],
+								timeline: [],
+								citations: [],
+								executive_summary: "Test executive summary.",
+								key_takeaways: [],
+								why_it_matters: "Test significance.",
+								key_quotes: [],
+							}),
+						},
+					},
+				],
+				usage: { prompt_tokens: 10, completion_tokens: 5 },
+			}),
+		)) as unknown as typeof fetch;
+	await db
+		.insertInto("provider_config")
+		.values({
+			provider: "test-llm",
+			api_key: "test-key",
+			enabled: 1,
+			config: JSON.stringify({ baseUrl: "https://test.invalid/v1" }),
+		})
+		.execute();
+	await db
+		.insertInto("task_model")
+		.values([
+			{ task_name: "stage_b_synthesis", provider: "test-llm", model_name: "test-model" },
+			{ task_name: "stage_c_assembly", provider: "test-llm", model_name: "test-model" },
+		])
+		.execute();
 
 	return { db, sqlite };
 }
@@ -62,7 +91,8 @@ describe("Milestone 5 Multi-Tenant E2E Test (Synthesis, Digests & Citations)", (
 				source_id: source.id,
 				title: "James Webb Telescope Discovers Exoplanet Atmosphere",
 				url: "https://example.com/webb-exoplanet",
-				content: "NASA's James Webb Space Telescope detected water vapor on distant exoplanet WASP-96b.",
+				content:
+					"NASA's James Webb Space Telescope detected water vapor on distant exoplanet WASP-96b.",
 				stage_a_bullet: "JWST discovers water vapor in exoplanet atmosphere.",
 			})
 			.returning(["id"])
@@ -75,7 +105,8 @@ describe("Milestone 5 Multi-Tenant E2E Test (Synthesis, Digests & Citations)", (
 				source_id: source.id,
 				title: "Hubble and Webb Joint Observations Confirm Cosmic Expansion",
 				url: "https://example.com/cosmic-expansion",
-				content: "Joint observations from Hubble and Webb space telescopes refine measurement of Hubble constant.",
+				content:
+					"Joint observations from Hubble and Webb space telescopes refine measurement of Hubble constant.",
 				stage_a_bullet: "Telescopes confirm cosmic expansion measurement.",
 			})
 			.returning(["id"])
@@ -88,7 +119,8 @@ describe("Milestone 5 Multi-Tenant E2E Test (Synthesis, Digests & Citations)", (
 				source_id: source.id,
 				title: "Quantum Computer Achieves 1000 Qubit Milestone",
 				url: "https://example.com/quantum-1000",
-				content: "Tech researchers announce a fault-tolerant quantum processing unit operating 1000 qubits.",
+				content:
+					"Tech researchers announce a fault-tolerant quantum processing unit operating 1000 qubits.",
 				stage_a_bullet: "Researchers demonstrate 1000 qubit quantum processor.",
 			})
 			.returning(["id"])
@@ -153,7 +185,12 @@ describe("Milestone 5 Multi-Tenant E2E Test (Synthesis, Digests & Citations)", (
 
 		await db
 			.insertInto("cluster_article")
-			.values({ cluster_id: clusterQuantum.id, article_id: art3.id, is_primary: 1, created_at: now })
+			.values({
+				cluster_id: clusterQuantum.id,
+				article_id: art3.id,
+				is_primary: 1,
+				created_at: now,
+			})
 			.execute();
 
 		// 3. User 1: Space enthusiast selected clusterSpace
@@ -193,7 +230,12 @@ describe("Milestone 5 Multi-Tenant E2E Test (Synthesis, Digests & Citations)", (
 		await processSynthesizeClusterJob(db, queue, {
 			id: 2,
 			type: "synthesize-cluster",
-			data: { runId: run.id, stageId: stage.id, userId: userQuantumId, clusterId: clusterQuantum.id },
+			data: {
+				runId: run.id,
+				stageId: stage.id,
+				userId: userQuantumId,
+				clusterId: clusterQuantum.id,
+			},
 		} as unknown as Job);
 
 		// 5. Run Stage C Assembly for both users

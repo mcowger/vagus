@@ -6,10 +6,7 @@ import type { SourceTable } from "../db/schema";
 import { GitHubTrendingAdapter } from "./github-trending";
 
 describe("GitHubTrendingAdapter", () => {
-	const htmlFixture = readFileSync(
-		join(__dirname, "fixtures/github_trending.html"),
-		"utf-8",
-	);
+	const htmlFixture = readFileSync(join(__dirname, "fixtures/github_trending.html"), "utf-8");
 
 	test("parses HTML fixture correctly", () => {
 		const adapter = new GitHubTrendingAdapter();
